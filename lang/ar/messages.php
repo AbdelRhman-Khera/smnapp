@@ -34,5 +34,7 @@ return [
     'product_removed' => 'تمت إزالة المنتج من قائمة العميل بنجاح.',
     'product_not_found' => 'المنتج غير موجود.',
     'customer_products_fetched' => 'تم جلب منتجات العميل بنجاح.',
+    'landing_fetched' => 'تم جلب بيانات الصفحة بنجاح.',
+    'landing_not_found' => 'صفحة الهبوط غير موجودة.',
 
 ];

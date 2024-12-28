@@ -4,6 +4,7 @@ use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Middleware\SetLanguage;
 
@@ -40,7 +41,10 @@ Route::middleware([SetLanguage::class])->group(function () {
 
 
     /// Master Data
+
+    Route::get('/landing', [LandingController::class, 'getLandingPage']);
     Route::get('/cities', [AddressController::class, 'cities']);
     Route::get('/cities/{city}/districts', [AddressController::class, 'getDistricts']);
+    Route::get('/categories', [ProductController::class, 'getAllcategories']);
     Route::get('/products', [ProductController::class, 'getAllProducts']);
 });

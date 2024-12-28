@@ -34,6 +34,8 @@ return [
     'product_removed' => 'Product removed from customer list successfully.',
     'product_not_found' => 'Product not found.',
     'customer_products_fetched' => 'Customer products fetched successfully.',
+    'landing_fetched' => 'Landing page data fetched successfully.',
+    'landing_not_found' => 'Landing page not found.',
 
 
 ];

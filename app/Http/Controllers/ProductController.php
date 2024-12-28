@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -9,6 +10,18 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
+    public function getAllCategories()
+    {
+        $categories = Category::all();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'PRODUCTS_FETCHED',
+            'message' => __('messages.products_fetched'),
+            'data' => $categories,
+        ], 200);
+    }
+
     public function getAllProducts()
     {
         $products = Product::all();
