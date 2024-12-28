@@ -3,10 +3,10 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    'Samnan';
+    echo'Samnan';
     // return view('welcome');
 });
 Route::get('/test', function () {
-    'test';
+   echo 'test';
     // return view('welcome');
 });
