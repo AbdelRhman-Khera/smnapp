@@ -1,25 +1,35 @@
 server {
-    listen 80;
+    #proxy_cache cache;
+    #proxy_cache_valid 200 1s;
+    listen 8080;
+    listen [::]:8080;
     root /home/site/wwwroot/public;
+    index  index.php index.html index.htm;
     server_name  smnapp.azurewebsites.net;
-
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-
-    index index.php index.html index.htm;
-
-    charset utf-8;
+    port_in_redirect off;
 
     location / {
-        try_files $uri $uri/ /index.php?$query_string;
+        index  index.php index.html index.htm hostingstart.html;
+        try_files $uri $uri/ /index.php?$args;
     }
 
-    location = /public/index.php {
-        return 301 /;
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /html/;
     }
 
-    location ~* [^/]\.php(/|$) {
-        fastcgi_split_path_info ^(.+?\.[Pp][Hh][Pp])(|/.*)$;
+    # Disable .git directory
+    location ~ /\.git {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Add locations of phpmyadmin here.
+    location ~ [^/]\.php(/|$) {
+        fastcgi_split_path_info ^(.+?\.php)(|/.*)$;
         fastcgi_pass 127.0.0.1:9000;
         include fastcgi_params;
         fastcgi_param HTTP_PROXY "";
@@ -34,9 +44,5 @@ server {
         fastcgi_buffers 4 256k;
         fastcgi_busy_buffers_size 256k;
         fastcgi_temp_file_write_size 256k;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
     }
 }
