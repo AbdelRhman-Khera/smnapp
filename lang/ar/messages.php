@@ -36,5 +36,13 @@ return [
     'customer_products_fetched' => 'تم جلب منتجات العميل بنجاح.',
     'landing_fetched' => 'تم جلب بيانات الصفحة بنجاح.',
     'landing_not_found' => 'صفحة الهبوط غير موجودة.',
+    'sliders_fetched_successfully_ar' => 'تم جلب السلايدر بنجاح.',
+    'technician_not_found' => 'الفني غير موجود.',
+    'technician_found' => 'تم العثور على الفني بنجاح.',
+    'invalid_credentials' => 'بيانات الاعتماد غير صحيحة.',
+    'login_success' => 'تم تسجيل الدخول بنجاح.',
+    'logout_success' => 'تم تسجيل الخروج بنجاح.',
+    'invalid_current_password' => 'كلمة المرور الحالية غير صحيحة.',
+    'password_changed' => 'تم تغيير كلمة المرور بنجاح.',
 
 ];

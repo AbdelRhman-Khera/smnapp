@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerController extends Controller
 {
-    public function getCustomer($id)
+    public function getCustomer()
     {
-        $customer = Customer::find($id);
+        // $customer = Customer::find($id);
+        $customer = Customer::find(auth()->user()->id);
 
         if (!$customer) {
             return response()->json([

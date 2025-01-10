@@ -36,6 +36,15 @@ return [
     'customer_products_fetched' => 'Customer products fetched successfully.',
     'landing_fetched' => 'Landing page data fetched successfully.',
     'landing_not_found' => 'Landing page not found.',
+    'sliders_fetched_successfully' => 'Sliders fetched successfully.',
+    'technician_not_found' => 'Technician not found.',
+    'technician_found' => 'Technician found successfully.',
+    'invalid_credentials' => 'Invalid credentials provided.',
+    'login_success' => 'Login successful.',
+    'logout_success' => 'Logout successful.',
+    'invalid_current_password' => 'The current password is incorrect.',
+    'password_changed' => 'Password changed successfully.',
+
 
 
 ];

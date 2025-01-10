@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Landing;
+use App\Models\Slider;
 use Illuminate\Http\Request;
 
 class LandingController extends Controller
@@ -24,6 +25,17 @@ class LandingController extends Controller
             'response_code' => 'LANDING_FETCHED',
             'message' => __('messages.landing_fetched'),
             'data' => $landing,
+        ], 200);
+    }
+
+    function sliders() {
+        $sliders = Slider::all();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'SLIDERS_FETCHED_SUCCESSFULLY',
+            'message' => __('messages.sliders_fetched_successfully'),
+            'data' => $sliders,
         ], 200);
     }
 }

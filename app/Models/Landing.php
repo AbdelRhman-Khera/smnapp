@@ -50,6 +50,13 @@ class Landing extends Model
         'download_title',
         'translated_steps',
         'translated_services',
+        'main_image_url',
+        'logo_url',
+        'feature_image_url',
+        'services_image_url',
+        'store_image_url',
+        'map_image_url',
+        'download_image_url',
     ];
 
     protected $hidden = [
@@ -69,6 +76,13 @@ class Landing extends Model
         'download_title_en',
         'steps',
         'services',
+        'main_image',
+        'logo',
+        'feature_image',
+        'services_image',
+        'store_image',
+        'map_image',
+        'download_image',
     ];
 
     public function getMainTitleAttribute()
@@ -118,7 +132,7 @@ class Landing extends Model
         $locale = app()->getLocale();
         return array_map(function ($step) use ($locale) {
             return [
-                'step_icon' => $step['step_icon'],
+                'step_icon' => url('public/storage/' . $step['step_icon']),
                 'step_title' => $locale === 'ar' ? $step['step_title_ar'] : $step['step_title_en'],
                 'step_description' => $locale === 'ar' ? $step['step_description_ar'] : $step['step_description_en'],
             ];
@@ -135,4 +149,39 @@ class Landing extends Model
             ];
         }, $this->services ?? []);
     }
+    public function getMainImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->main_image);
+    }
+
+    public function getLogoUrlAttribute()
+    {
+        return url('public/storage/' . $this->logo);
+    }
+
+    public function getFeatureImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->feature_image);
+    }
+
+    public function getServicesImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->services_image);
+    }
+
+    public function getStoreImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->store_image);
+    }
+
+    public function getMapImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->map_image);
+    }
+
+    public function getDownloadImageUrlAttribute()
+    {
+        return url('public/storage/' . $this->download_image);
+    }
 }
+
