@@ -105,7 +105,7 @@ class AddressController extends Controller
 
     public function index()
     {
-        $addresses = Address::where('customer_id', auth()->id())->get();
+        $addresses = Address::where('customer_id', auth()->id())->with(['city', 'district'])->get();
 
         return response()->json([
             'status' => 200,
@@ -115,8 +115,20 @@ class AddressController extends Controller
         ], 200);
     }
 
-    public function show(Address $address)
+    public function show($id)
     {
+
+        $address = Address::with(['city', 'district'])->find($id);
+
+        if (!$address) {
+            return response()->json([
+                'status' => 404,
+                'response_code' => 'ADDRESS_NOT_FOUND',
+                'message' => __('messages.address_not_found'),
+                'data' => null,
+            ], 404);
+        }
+
         if ((int) $address->customer_id !== (int) auth()->id()) {
             return response()->json([
                 'status' => 403,

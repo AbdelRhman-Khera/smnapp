@@ -44,6 +44,9 @@ return [
     'logout_success' => 'Logout successful.',
     'invalid_current_password' => 'The current password is incorrect.',
     'password_changed' => 'Password changed successfully.',
+    'invalid_password' => 'The provided password is incorrect.',
+    'customer_removed' => 'Your account has been successfully removed.',
+
 
 
 

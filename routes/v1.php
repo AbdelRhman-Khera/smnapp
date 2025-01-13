@@ -27,6 +27,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::put('/customer/update-phone', [CustomerController::class, 'updatePhoneNumber']);
         Route::post('/customer/change-password', [CustomerController::class, 'changePassword']);
         Route::get('/customer', [CustomerController::class, 'getCustomer']);
+        Route::delete('/customer/remove', [CustomerController::class, 'removeCustomer']);
 
         //// address
         Route::get('/addresses', [AddressController::class, 'index']);

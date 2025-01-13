@@ -44,5 +44,8 @@ return [
     'logout_success' => 'تم تسجيل الخروج بنجاح.',
     'invalid_current_password' => 'كلمة المرور الحالية غير صحيحة.',
     'password_changed' => 'تم تغيير كلمة المرور بنجاح.',
+    'invalid_password' => 'كلمة المرور المقدمة غير صحيحة.',
+    'customer_removed' => 'تم حذف حسابك بنجاح.',
+
 
 ];

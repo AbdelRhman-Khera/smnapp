@@ -24,6 +24,7 @@ return new class extends Migration
             $table->boolean('authorized')->default(false)->nullable();
             $table->boolean('activated')->default(false)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

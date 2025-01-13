@@ -8,7 +8,7 @@ class District extends Model
 {
     protected $fillable = ['name_ar', 'name_en', 'city_id'];
     protected $appends = ['name', 'city_name'];
-    protected $hidden = ['name_ar', 'name_en', 'city_id'];
+    protected $hidden = ['name_ar', 'name_en', 'city_id','created_at', 'updated_at'];
 
     public function city()
     {

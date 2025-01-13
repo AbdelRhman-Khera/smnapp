@@ -367,4 +367,39 @@ class CustomerController extends Controller
             'data' => null,
         ], 200);
     }
+
+    public function removeCustomer(Request $request)
+    {
+        $customer = $request->user();
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string|min:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if (!Hash::check($request->password, $customer->password)) {
+            return response()->json([
+                'status' => 401,
+                'response_code' => 'INVALID_PASSWORD',
+                'message' => __('messages.invalid_password'),
+                'data' => null,
+            ], 401);
+        }
+
+        $customer->delete();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'CUSTOMER_REMOVED',
+            'message' => __('messages.customer_removed'),
+            'data' => null,
+        ], 200);
+    }
 }
