@@ -45,6 +45,10 @@ return new class extends Migration
             $table->string('app_store_url')->nullable();
             $table->string('google_play_url')->nullable();
             $table->string('download_image')->nullable();
+
+            $table->json('social')->nullable();
+            $table->string('rights_ar')->nullable();
+            $table->string('rights_en')->nullable();
             $table->timestamps();
         });
     }

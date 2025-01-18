@@ -29,6 +29,12 @@ class LandingPageResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function getNavigationUrl(): string
+    {
+        return static::getUrl('edit', ['record' => 1]);
+    }
+
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -188,6 +194,44 @@ class LandingPageResource extends Resource
                 ->icon('heroicon-o-arrow-down-tray')
                 ->collapsible(),
 
+            Section::make('Footer Section')
+                ->schema([
+                    Repeater::make('social')
+                        ->label('Social Media Links')
+                        ->schema([
+                            TextInput::make('platform')
+                                ->label('Platform Name')
+                                ->placeholder('e.g., Facebook, Twitter')
+                                ->required(),
+                            TextInput::make('url')
+                                ->label('URL')
+                                ->placeholder('e.g., https://facebook.com')
+                                ->required(),
+                        ])
+                        ->collapsible()
+                        ->columns(2), // Display two fields side-by-side
+                    Tabs::make('Rights Text')
+                        ->tabs([
+                            Tab::make('Arabic')
+                                ->schema([
+                                    TextInput::make('rights_ar')
+                                        ->label('Rights Text (Arabic)')
+                                        ->placeholder('جميع الحقوق محفوظة لشركتنا')
+                                        ->required(),
+                                ]),
+                            Tab::make('English')
+                                ->schema([
+                                    TextInput::make('rights_en')
+                                        ->label('Rights Text (English)')
+                                        ->placeholder('All rights reserved to our company')
+                                        ->required(),
+                                ]),
+                        ]),
+                ])
+                ->icon('heroicon-o-cursor-arrow-ripple')
+                ->collapsible(),
+
+
         ]);
     }
 
@@ -207,7 +251,7 @@ class LandingPageResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
@@ -223,7 +267,7 @@ class LandingPageResource extends Resource
     {
         return [
             'index' => Pages\ListLandingPages::route('/'),
-            'create' => Pages\CreateLandingPage::route('/create'),
+            // 'create' => Pages\CreateLandingPage::route('/create'),
             'edit' => Pages\EditLandingPage::route('/{record}/edit'),
         ];
     }

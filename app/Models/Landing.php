@@ -33,11 +33,14 @@ class Landing extends Model
         'app_store_url',
         'google_play_url',
         'download_image',
+        'rights_ar',
+        'rights_en',
     ];
 
     protected $casts = [
         'steps' => 'array',
         'services' => 'array',
+        'social' => 'array',
     ];
 
     protected $appends = [
@@ -57,6 +60,7 @@ class Landing extends Model
         'store_image_url',
         'map_image_url',
         'download_image_url',
+        'translated_rights',
     ];
 
     protected $hidden = [
@@ -83,7 +87,10 @@ class Landing extends Model
         'store_image',
         'map_image',
         'download_image',
+        'rights_ar',
+        'rights_en',
     ];
+
 
     public function getMainTitleAttribute()
     {
@@ -125,6 +132,12 @@ class Landing extends Model
     {
         $locale = app()->getLocale();
         return $locale === 'ar' ? $this->download_title_ar : $this->download_title_en;
+    }
+
+    public function getTranslatedRightsAttribute()
+    {
+        $locale = app()->getLocale();
+        return $locale === 'ar' ? $this->rights_ar : $this->rights_en;
     }
 
     public function getTranslatedStepsAttribute()

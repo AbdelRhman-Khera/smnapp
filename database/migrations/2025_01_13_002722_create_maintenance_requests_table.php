@@ -13,36 +13,24 @@ return new class extends Migration
     {
         Schema::create('maintenance_requests', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('customer_id');
+            $table->unsignedBigInteger('customer_id')->nullable();
             $table->unsignedBigInteger('technician_id')->nullable();
+            $table->unsignedBigInteger('slot_id')->nullable();
             $table->enum('type', ['new_installation', 'regular_maintenance', 'emergency_maintenance']);
-            $table->unsignedBigInteger('product_id')->nullable();
-            $table->unsignedBigInteger('address_id');
-            $table->date('date');
-            $table->json('preferred_times');
-            $table->string('confirmed_time')->nullable();
+            $table->unsignedBigInteger('address_id')->nullable();
             $table->string('sap_order_id')->nullable();
             $table->text('problem_description')->nullable();
             $table->string('invoice_number')->nullable();
             $table->json('photos')->nullable();
             $table->date('last_maintenance_date')->nullable();
-            // $table->enum('status', [
-            //     'pending',
-            //     'technician_assigned',
-            //     'technician_on_the_way',
-            //     'technician_arrived',
-            //     'in_progress',
-            //     'waiting_for_payment',
-            //     'paid',
-            // ])->default('pending');
-            $table->text('admin_notes')->nullable();
+            $table->json('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');
+            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
+            $table->foreign('slot_id')->references('id')->on('slots')->onDelete('set null');
             $table->foreign('technician_id')->references('id')->on('technicians')->onDelete('set null');
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->foreign('address_id')->references('id')->on('addresses')->onDelete('cascade');
+            $table->foreign('address_id')->references('id')->on('addresses')->onDelete('set null');
         });
     }
 
