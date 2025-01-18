@@ -70,7 +70,7 @@ class ProductController extends Controller
     public function getCustomerProducts()
     {
         $customer = Customer::find(auth()->id());
-        dd($customer,auth()->id());
+        // dd($customer,auth()->id());
         $products = $customer->products;
 
         return response()->json([
