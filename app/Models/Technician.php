@@ -55,5 +55,13 @@ class Technician extends Authenticatable
         return $this->belongsToMany(District::class, 'technician_district');
     }
 
+    public function slots()
+    {
+        return $this->hasMany(Slot::class);
+    }
 
+    public function maintenanceRequests()
+    {
+        return $this->hasMany(MaintenanceRequest::class);
+    }
 }

@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Middleware\SetLanguage;
@@ -45,6 +46,16 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/change-password', [TechnicianController::class, 'changePassword']);
         Route::get('/technician', [TechnicianController::class, 'getTechnician']);
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
+
+        ////// maintenance request
+        Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
+        // Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
+        // Route::get('/maintenance-request/{maintenanceRequest}', [MaintenanceRequestController::class, 'show']);
+        // Route::post('/maintenance-request/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel']);
+        // Route::post('/maintenance-request/{maintenanceRequest}/rate', [MaintenanceRequestController::class, 'rate']);
+        // Route::post('/maintenance-request/{maintenanceRequest}/status', [MaintenanceRequestController::class, 'updateStatus']);
+        Route::post('/get-available-slots', [MaintenanceRequestController::class, 'getAvailableSlots']);
+        Route::post('/maintenance-request/assign', [MaintenanceRequestController::class, 'assignSlot']);
     });
 
 

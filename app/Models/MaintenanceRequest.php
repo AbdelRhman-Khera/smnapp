@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class MaintenanceRequest extends Model
 {
@@ -31,6 +32,21 @@ class MaintenanceRequest extends Model
         'photos' => 'array',
         'notes' => 'array',
     ];
+
+    protected $appends = ['current_status'];
+
+    public function getPhotosAttribute($value)
+    {
+        $photos = json_decode($value, true);
+
+        if (!is_array($photos)) {
+            return [];
+        }
+
+        return array_map(function ($path) {
+            return url('public/storage/' . $path);
+        }, $photos);
+    }
 
     public function customer()
     {
@@ -65,5 +81,10 @@ class MaintenanceRequest extends Model
     public function invoice()
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function getCurrentStatusAttribute()
+    {
+        return $this->statuses()->latest()->first();
     }
 }

@@ -17,6 +17,16 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function maintenanceRequests()
+    {
+        return $this->belongsToMany(MaintenanceRequest::class, 'maintenance_request_product');
+    }
+
+    public function invoices()
+    {
+        return $this->belongsToMany(Invoice::class, 'invoice_product')->withPivot('quantity');
+    }
+
     public function getNameAttribute()
     {
         $locale = app()->getLocale();

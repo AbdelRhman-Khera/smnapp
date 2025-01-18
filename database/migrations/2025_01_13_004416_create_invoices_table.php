@@ -15,9 +15,10 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('maintenance_request_id');
             $table->integer('service_cost');
-            $table->json('parts_used');
             $table->enum('payment_method', ['cash', 'online'])->nullable();
             $table->enum('status', ['pending', 'completed'])->default('pending');
+            $table->json('payment_details')->nullable();
+            $table->softDeletes();
             $table->timestamps();
 
             $table->foreign('maintenance_request_id')->references('id')->on('maintenance_requests')->onDelete('cascade');
