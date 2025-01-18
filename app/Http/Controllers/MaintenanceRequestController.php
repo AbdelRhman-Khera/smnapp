@@ -11,6 +11,38 @@ use Illuminate\Support\Facades\Validator;
 
 class MaintenanceRequestController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        $maintenanceRequests = MaintenanceRequest::with(['customer', 'technician', 'address', 'products'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'MAINTENANCE_REQUESTS_FETCHED',
+            'message' => 'Maintenance requests fetched successfully.',
+            'data' => $maintenanceRequests,
+        ], 200);
+    }
+
+    /**
+     * Display the specified maintenance request.
+     */
+    public function show($id)
+    {
+        $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($id);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'MAINTENANCE_REQUEST_FETCHED',
+            'message' => 'Maintenance request fetched successfully.',
+            'data' => $maintenanceRequest,
+        ], 200);
+    }
+
+
+
     public function create(Request $request)
     {
         $customer = $request->user();

@@ -49,8 +49,8 @@ Route::middleware([SetLanguage::class])->group(function () {
 
         ////// maintenance request
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
-        // Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
-        // Route::get('/maintenance-request/{maintenanceRequest}', [MaintenanceRequestController::class, 'show']);
+        Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
+        Route::get('/maintenance-request/{id}', [MaintenanceRequestController::class, 'show']);
         // Route::post('/maintenance-request/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel']);
         // Route::post('/maintenance-request/{maintenanceRequest}/rate', [MaintenanceRequestController::class, 'rate']);
         // Route::post('/maintenance-request/{maintenanceRequest}/status', [MaintenanceRequestController::class, 'updateStatus']);

@@ -43,9 +43,12 @@ class MaintenanceRequest extends Model
             return [];
         }
 
-        return array_map(function ($path) {
-            return url('public/storage/' . $path);
-        }, $photos);
+        return array_filter(array_map(function ($path) {
+            if (is_string($path)) {
+                return url('storage/' . ltrim($path, '/'));
+            }
+            return null; // Ignore non-string elements
+        }, $photos));
     }
 
     public function customer()
