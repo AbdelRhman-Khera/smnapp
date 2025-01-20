@@ -21,7 +21,8 @@ return new class extends Migration
                 'technician_arrived',
                 'in_progress',
                 'waiting_for_payment',
-                'paid',
+                'completed',
+                'canceled',
             ]);
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();

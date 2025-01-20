@@ -14,17 +14,44 @@ class MaintenanceRequestController extends Controller
 
     public function index(Request $request)
     {
-        $maintenanceRequests = MaintenanceRequest::with(['customer', 'technician', 'address', 'products'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $customer = $request->user();
+
+        $query = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])
+            ->where('customer_id', $customer->id);
+
+        // Filter by maintenance types
+        if ($request->has('types') && is_array($request->types)) {
+            $query->whereIn('type', $request->types);
+        }
+
+        // Filter by current status
+        if ($request->has('statuses') && is_array($request->statuses)) {
+            $query->whereHas('statuses', function ($query) use ($request) {
+                $query->latest() // Get the latest status
+                    ->whereIn('status', $request->statuses);
+            });
+        }
+
+        // Filter by date range
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+        }
+
+        $maintenanceRequests = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        // $maintenanceRequests->getCollection()->transform(function ($request) {
+        //     $request->current_status = $request->current_status; // Append current status
+        //     return $request;
+        // });
 
         return response()->json([
             'status' => 200,
             'response_code' => 'MAINTENANCE_REQUESTS_FETCHED',
-            'message' => 'Maintenance requests fetched successfully.',
+            'message' => __('messages.maintenance_requests_fetched'),
             'data' => $maintenanceRequests,
         ], 200);
     }
+
 
     /**
      * Display the specified maintenance request.
@@ -36,7 +63,7 @@ class MaintenanceRequestController extends Controller
         return response()->json([
             'status' => 200,
             'response_code' => 'MAINTENANCE_REQUEST_FETCHED',
-            'message' => 'Maintenance request fetched successfully.',
+            'message' =>  __('messages.maintenance_request_fetched'),
             'data' => $maintenanceRequest,
         ], 200);
     }
@@ -135,7 +162,7 @@ class MaintenanceRequestController extends Controller
         return response()->json([
             'status' => 200,
             'response_code' => 'SLOTS_FETCHED',
-            'message' => 'Available slots fetched successfully.',
+            'message' => __('messages.slots_fetched'),
             'data' => $slots,
         ], 200);
     }
@@ -156,27 +183,36 @@ class MaintenanceRequestController extends Controller
             ], 422);
         }
 
-        $maintenanceRequest = MaintenanceRequest::with('address', 'products')->findOrFail($request->request_id);
-        $slot = Slot::with('technician')->findOrFail($request->slot_id);
+        $maintenanceRequest = MaintenanceRequest::with('statuses')->findOrFail($request->request_id);
+        $newSlot = Slot::with('technician')->findOrFail($request->slot_id);
 
-        if ($slot->is_booked) {
+        // Check if the new slot is already booked
+        if ($newSlot->is_booked) {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'SLOT_ALREADY_BOOKED',
-                'message' => 'The selected slot is already booked.',
+                'message' => __('messages.slot_already_booked'),
             ], 400);
         }
 
-        // Update slot to booked
-        $slot->update(['is_booked' => true]);
+        // If the request already has a slot, mark the old slot as not booked
+        if ($maintenanceRequest->slot_id) {
+            $oldSlot = Slot::find($maintenanceRequest->slot_id);
+            if ($oldSlot) {
+                $oldSlot->update(['is_booked' => false]);
+            }
+        }
 
-        // Assign technician to the request
+        // Update the new slot to booked
+        $newSlot->update(['is_booked' => true]);
+
+        // Assign the new technician and slot to the request
         $maintenanceRequest->update([
-            'technician_id' => $slot->technician_id,
-            'slot_id' => $slot->id,
+            'technician_id' => $newSlot->technician_id,
+            'slot_id' => $newSlot->id,
         ]);
 
-        // update request status
+        // Update the request status
         $maintenanceRequest->statuses()->create([
             'status' => 'technician_assigned',
         ]);
@@ -184,11 +220,46 @@ class MaintenanceRequestController extends Controller
         return response()->json([
             'status' => 200,
             'response_code' => 'SLOT_ASSIGNED',
-            'message' => 'Slot assigned and technician linked to the request successfully.',
+            'message' => __('messages.slot_assigned'),
             'data' => [
                 'maintenance_request' => $maintenanceRequest,
-                'slot' => $slot,
+                'slot' => $newSlot,
             ],
+        ], 200);
+    }
+
+
+    public function cancel(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+        $customer = $request->user();
+        if ($customer->id !== $maintenanceRequest->customer_id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'FORBIDDEN',
+                'message' => __('messages.not_authorized'),
+            ], 403);
+        }
+
+
+        if ($maintenanceRequest->current_status->status === 'completed' || $maintenanceRequest->current_status->status === 'canceled') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'CANNOT_CANCEL',
+                'message' => __('messages.cannot_cancel_request'),
+            ], 400);
+        }
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'canceled',
+        ]);
+
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'REQUEST_CANCELED',
+            'message' => __('messages.request_canceled'),
+            'data' => $maintenanceRequest,
         ], 200);
     }
 }

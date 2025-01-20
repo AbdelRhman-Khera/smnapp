@@ -46,6 +46,13 @@ return [
     'password_changed' => 'تم تغيير كلمة المرور بنجاح.',
     'invalid_password' => 'كلمة المرور المقدمة غير صحيحة.',
     'customer_removed' => 'تم حذف حسابك بنجاح.',
-
-
+    'maintenance_requests_fetched' => 'تم جلب طلبات الصيانة بنجاح.',
+    'maintenance_request_fetched' => 'تم جلب طلب الصيانة بنجاح.',
+    'request_created' => 'تم إنشاء طلب الصيانة بنجاح.',
+    'slots_fetched' => 'تم جلب المواعيد المتاحة بنجاح.',
+    'slot_already_booked' => 'الموعد المحدد محجوز بالفعل.',
+    'slot_assigned' => 'تم حجز الموعد وربط الفني بالطلب بنجاح.',
+    'not_authorized' => 'غير مسموح لك بتنفيذ هذا الإجراء.',
+    'cannot_cancel_request' => 'لا يمكن إلغاء الطلب.',
+    'request_canceled' => 'تم إلغاء طلب الصيانة بنجاح.',
 ];

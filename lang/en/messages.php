@@ -46,8 +46,14 @@ return [
     'password_changed' => 'Password changed successfully.',
     'invalid_password' => 'The provided password is incorrect.',
     'customer_removed' => 'Your account has been successfully removed.',
-
-
-
+    'maintenance_requests_fetched' => 'Maintenance requests fetched successfully.',
+    'maintenance_request_fetched' => 'Maintenance request fetched successfully.',
+    'request_created' => 'Maintenance request created successfully.',
+    'slots_fetched' => 'Available slots fetched successfully.',
+    'slot_already_booked' => 'The selected slot is already booked.',
+    'slot_assigned' => 'Slot assigned and technician linked to the request successfully.',
+    'not_authorized' => 'You are not authorized to perform this action.',
+    'cannot_cancel_request' => 'The request cannot be canceled.',
+    'request_canceled' => 'The maintenance request has been canceled successfully.',
 
 ];

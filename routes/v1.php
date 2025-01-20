@@ -51,7 +51,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::get('/maintenance-request/{id}', [MaintenanceRequestController::class, 'show']);
-        // Route::post('/maintenance-request/{maintenanceRequest}/cancel', [MaintenanceRequestController::class, 'cancel']);
+        Route::post('/maintenance-request/{id}/cancel', [MaintenanceRequestController::class, 'cancel']);
         // Route::post('/maintenance-request/{maintenanceRequest}/rate', [MaintenanceRequestController::class, 'rate']);
         // Route::post('/maintenance-request/{maintenanceRequest}/status', [MaintenanceRequestController::class, 'updateStatus']);
         Route::post('/get-available-slots', [MaintenanceRequestController::class, 'getAvailableSlots']);

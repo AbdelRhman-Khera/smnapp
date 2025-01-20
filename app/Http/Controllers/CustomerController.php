@@ -330,7 +330,6 @@ class CustomerController extends Controller
         $customer = $request->user();
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string|max:15',
-            'otp' => 'required|string|max:4',
             'password' => 'required|string|min:8',
             'confirm_password' => 'required|same:password',
         ]);
