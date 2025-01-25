@@ -55,5 +55,7 @@ return [
     'not_authorized' => 'You are not authorized to perform this action.',
     'cannot_cancel_request' => 'The request cannot be canceled.',
     'request_canceled' => 'The maintenance request has been canceled successfully.',
+    'technician_requests_summary' => 'Technician requests summary fetched successfully.',
+
 
 ];

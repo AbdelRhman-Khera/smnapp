@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MaintenanceRequest;
 use App\Models\Technician;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -114,5 +115,83 @@ class TechnicianController extends Controller
             'message' => __('messages.password_changed'),
             'data' => null,
         ], 200);
+    }
+
+    public function getRequestsSummary(Request $request)
+    {
+        $technician = Technician::with(['districts', 'products'])->find(auth()->user()->id);
+
+        // Count all maintenance requests assigned to the technician
+        $totalRequests = MaintenanceRequest::where('technician_id', $technician->id)->count();
+
+        // Count requests by type
+        $requestsByType = MaintenanceRequest::where('technician_id', $technician->id)
+            ->select('type', \DB::raw('count(*) as count'))
+            ->groupBy('type')
+            ->get();
+
+        // Count requests by current status (latest status only)
+        $requestsByStatus = \DB::table('maintenance_requests')
+            ->join('request_statuses', function ($join) {
+                $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
+                    ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
+            })
+            ->select('request_statuses.status', \DB::raw('count(*) as count'))
+            ->where('maintenance_requests.technician_id', $technician->id)
+            ->groupBy('request_statuses.status')
+            ->get();
+
+        // Get the next request (nearest in time) from slots
+        $nextRequest = MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
+            $query->latest();
+        }, 'slot'])
+            ->where('technician_id', $technician->id)
+            ->whereHas('statuses', function ($query) {
+                $query->where('status', 'pending')
+                    ->orWhere('status', 'technician_assigned')
+                    ->orWhere('status', 'technician_on_the_way');
+            })
+            ->whereHas('slot', function ($query) {
+                $query->where('is_booked', true)
+                    ->whereDate('date', '>=', now())
+                    ->orderBy('date', 'asc')
+                    ->orderBy('time', 'asc');
+            })
+            ->first();
+
+        // Get all requests (history) with slot info
+        $allRequests = MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
+            $query->latest();
+        }, 'slot'])
+            ->where('technician_id', $technician->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        // Count completed and ongoing requests
+        $completedRequests = \DB::table('maintenance_requests')
+            ->join('request_statuses', function ($join) {
+                $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
+                    ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
+            })
+            ->where('maintenance_requests.technician_id', $technician->id)
+            ->where('request_statuses.status', 'paid')
+            ->count();
+
+        $ongoingRequests = $totalRequests - $completedRequests;
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIAN_REQUESTS_SUMMARY',
+            'message' => __('messages.technician_requests_summary'),
+            'data' => [
+                'technician' => $technician,
+                'total_requests' => $totalRequests,
+                'requests_by_type' => $requestsByType,
+                'requests_by_status' => $requestsByStatus,
+                'completed_requests' => $completedRequests,
+                'ongoing_requests' => $ongoingRequests,
+                'next_request' => $nextRequest,
+                'all_requests' => $allRequests,
+            ],
+        ]);
     }
 }

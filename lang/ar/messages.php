@@ -55,4 +55,6 @@ return [
     'not_authorized' => 'غير مسموح لك بتنفيذ هذا الإجراء.',
     'cannot_cancel_request' => 'لا يمكن إلغاء الطلب.',
     'request_canceled' => 'تم إلغاء طلب الصيانة بنجاح.',
+    'technician_requests_summary' => 'تم جلب ملخص الطلبات الخاصة بالفني بنجاح.',
+
 ];

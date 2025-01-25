@@ -46,6 +46,10 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/change-password', [TechnicianController::class, 'changePassword']);
         Route::get('/technician', [TechnicianController::class, 'getTechnician']);
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
+        Route::get('/technician/requests-summary', [TechnicianController::class, 'getRequestsSummary']);
+        // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
+
+
 
         ////// maintenance request
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);

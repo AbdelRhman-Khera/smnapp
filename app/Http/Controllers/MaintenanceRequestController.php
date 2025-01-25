@@ -16,7 +16,7 @@ class MaintenanceRequestController extends Controller
     {
         $customer = $request->user();
 
-        $query = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])
+        $query = MaintenanceRequest::with(['customer', 'technician', 'address','slot', 'products', 'statuses'])
             ->where('customer_id', $customer->id);
 
         // Filter by maintenance types
@@ -58,7 +58,7 @@ class MaintenanceRequestController extends Controller
      */
     public function show($id)
     {
-        $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($id);
+        $maintenanceRequest = MaintenanceRequest::with(['customer','slot', 'technician', 'address', 'products', 'statuses'])->findOrFail($id);
 
         return response()->json([
             'status' => 200,
@@ -183,7 +183,7 @@ class MaintenanceRequestController extends Controller
             ], 422);
         }
 
-        $maintenanceRequest = MaintenanceRequest::with('statuses')->findOrFail($request->request_id);
+        $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($request->request_id);
         $newSlot = Slot::with('technician')->findOrFail($request->slot_id);
 
         // Check if the new slot is already booked
@@ -253,6 +253,13 @@ class MaintenanceRequestController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'canceled',
         ]);
+
+        if ($maintenanceRequest->slot_id) {
+            $oldSlot = Slot::find($maintenanceRequest->slot_id);
+            if ($oldSlot) {
+                $oldSlot->update(['is_booked' => false]);
+            }
+        }
 
 
         return response()->json([
