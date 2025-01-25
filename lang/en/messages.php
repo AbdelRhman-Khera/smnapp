@@ -56,6 +56,8 @@ return [
     'cannot_cancel_request' => 'The request cannot be canceled.',
     'request_canceled' => 'The maintenance request has been canceled successfully.',
     'technician_requests_summary' => 'Technician requests summary fetched successfully.',
+    'sms_failed' => 'Failed to send SMS. Please try again later.',
+    'register_success' => 'Customer registered successfully.',
 
 
 ];

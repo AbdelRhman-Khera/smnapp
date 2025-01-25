@@ -56,5 +56,8 @@ return [
     'cannot_cancel_request' => 'لا يمكن إلغاء الطلب.',
     'request_canceled' => 'تم إلغاء طلب الصيانة بنجاح.',
     'technician_requests_summary' => 'تم جلب ملخص الطلبات الخاصة بالفني بنجاح.',
+    'sms_failed' => 'فشل في إرسال الرسالة. يرجى المحاولة لاحقاً.',
+    'register_success' => 'تم تسجيل العميل بنجاح.',
+
 
 ];
