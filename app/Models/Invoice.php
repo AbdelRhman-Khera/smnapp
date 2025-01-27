@@ -32,6 +32,11 @@ class Invoice extends Model
         return $this->belongsToMany(Product::class, 'invoice_product')->withPivot('quantity');
     }
 
+    public function spareParts()
+    {
+        return $this->belongsToMany(SparePart::class, 'invoice_spare_part')->withPivot('quantity', 'price');
+    }
+
     public function services()
     {
         return $this->belongsToMany(Service::class, 'invoice_service');

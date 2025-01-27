@@ -90,4 +90,9 @@ class MaintenanceRequest extends Model
     {
         return $this->statuses()->latest()->first();
     }
+
+    public function feedback()
+    {
+        return $this->hasOne(Feedback::class);
+    }
 }

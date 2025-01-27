@@ -10,9 +10,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Middleware\SetLanguage;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+// Route::get('/user', function (Request $request) {
+//     return $request->user();
+// })->middleware('auth:sanctum');
 
 Route::middleware([SetLanguage::class])->group(function () {
     Route::post('/customer/register', [CustomerController::class, 'register']);
@@ -47,6 +47,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::get('/technician', [TechnicianController::class, 'getTechnician']);
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
         Route::get('/technician/requests-summary', [TechnicianController::class, 'getRequestsSummary']);
+        Route::get('/technician/requests', [TechnicianController::class, 'getAllRequests']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
 
@@ -60,6 +61,17 @@ Route::middleware([SetLanguage::class])->group(function () {
         // Route::post('/maintenance-request/{maintenanceRequest}/status', [MaintenanceRequestController::class, 'updateStatus']);
         Route::post('/get-available-slots', [MaintenanceRequestController::class, 'getAvailableSlots']);
         Route::post('/maintenance-request/assign', [MaintenanceRequestController::class, 'assignSlot']);
+
+        Route::post('/maintenance-request/{id}/set-on-the-way', [TechnicianController::class, 'setOnTheWay']);
+        Route::post('/maintenance-request/{id}/set-in-progress', [TechnicianController::class, 'setInProgress']);
+        Route::post('/maintenance-request/{id}/set-waiting-for-payment', [TechnicianController::class, 'setWaitingForPayment']);
+        Route::post('/maintenance-request/{id}/confirm-cash-payment', [TechnicianController::class, 'confirmCashPayment']);
+
+        Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
+        Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);
+
+
+        Route::post('/support-form', [LandingController::class, 'storeSupportForm']);
     });
 
 
@@ -71,4 +83,7 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/cities/{city}/districts', [AddressController::class, 'getDistricts']);
     Route::get('/categories', [ProductController::class, 'getAllcategories']);
     Route::get('/products', [ProductController::class, 'getAllProducts']);
+    Route::get('/pages/{slug}', [LandingController::class, 'getPage']);
+    Route::get('/spare-parts', [LandingController::class, 'getSpareParts']);
+    Route::get('/services', [LandingController::class, 'getServices']);
 });

@@ -25,7 +25,7 @@ class Service extends Model
 
     public function getImageUrlAttribute()
     {
-        return asset($this->image);
+        return url('public/storage/' . $this->image);
     }
 
     public function scopeActive($query)

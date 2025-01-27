@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('maintenance_request_id');
-            $table->integer('service_cost');
+            $table->integer('total');
             $table->enum('payment_method', ['cash', 'online'])->nullable();
             $table->enum('status', ['pending', 'completed'])->default('pending');
             $table->json('payment_details')->nullable();

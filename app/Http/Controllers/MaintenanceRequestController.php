@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Feedback;
 use App\Models\MaintenanceRequest;
 use App\Models\Slot;
 use App\Models\Technician;
@@ -16,7 +17,7 @@ class MaintenanceRequestController extends Controller
     {
         $customer = $request->user();
 
-        $query = MaintenanceRequest::with(['customer', 'technician', 'address','slot', 'products', 'statuses'])
+        $query = MaintenanceRequest::with(['customer', 'technician', 'address', 'slot', 'products', 'statuses', 'invoice', 'invoice.services', 'invoice.spareParts'])
             ->where('customer_id', $customer->id);
 
         // Filter by maintenance types
@@ -37,7 +38,13 @@ class MaintenanceRequestController extends Controller
             $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
         }
 
-        $maintenanceRequests = $query->orderBy('created_at', 'desc')->paginate(10);
+        // Retrieve `per_page` and `page` from query parameters with defaults
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+
+        // Paginate the results
+        $maintenanceRequests = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+
 
         // $maintenanceRequests->getCollection()->transform(function ($request) {
         //     $request->current_status = $request->current_status; // Append current status
@@ -58,8 +65,8 @@ class MaintenanceRequestController extends Controller
      */
     public function show($id)
     {
-        $maintenanceRequest = MaintenanceRequest::with(['customer','slot', 'technician', 'address', 'products', 'statuses'])->findOrFail($id);
-
+        $maintenanceRequest = MaintenanceRequest::with(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'invoice.services', 'invoice.spareParts', 'feedback'])->findOrFail($id);
+        // dd($maintenanceRequest->invoice);
         return response()->json([
             'status' => 200,
             'response_code' => 'MAINTENANCE_REQUEST_FETCHED',
@@ -267,6 +274,123 @@ class MaintenanceRequestController extends Controller
             'response_code' => 'REQUEST_CANCELED',
             'message' => __('messages.request_canceled'),
             'data' => $maintenanceRequest,
+        ], 200);
+    }
+
+    public function setPaymentMethod(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->customer_id != $request->user()->id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_CUSTOMER',
+                'message' => 'You are not authorized to update this request.',
+            ], 403);
+        }
+
+        if ($maintenanceRequest->current_status->status != 'waiting_for_payment') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_STATUS',
+                'message' => 'The request is not in waiting_for_payment status.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'payment_method' => 'required|string|in:cash,online',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        $invoice = $maintenanceRequest->invoice;
+        if (!$invoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_NOT_FOUND',
+                'message' => 'Invoice not found for this request.',
+            ], 400);
+        }
+
+        $invoice->update([
+            'payment_method' => $validatedData['payment_method'],
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'PAYMENT_METHOD_UPDATED',
+            'message' => 'Payment method updated successfully.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                'invoice' => $invoice->load('services', 'spareParts'),
+            ],
+        ], 200);
+    }
+    public function submitFeedback(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->customer_id != $request->user()->id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_CUSTOMER',
+                'message' => 'You are not authorized to submit feedback for this request.',
+            ], 403);
+        }
+
+        if ($maintenanceRequest->current_status->status != 'completed') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_REQUEST_STATUS',
+                'message' => 'Feedback can only be submitted for completed requests.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'rating' => 'required|integer|min:1|max:5',
+            'feedback_text' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        $feedback = Feedback::create([
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'rating' => $validatedData['rating'],
+            'feedback_text' => $validatedData['feedback_text'] ?? null,
+        ]);
+
+        $technician = $maintenanceRequest->technician;
+        if ($technician) {
+            $technician->reviews_count += 1;
+            $technician->rating = Feedback::whereHas('maintenanceRequest', function ($query) use ($technician) {
+                $query->where('technician_id', $technician->id);
+            })->avg('rating');
+            $technician->save();
+        }
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'FEEDBACK_SUBMITTED',
+            'message' => 'Feedback submitted successfully.',
+            'data' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
         ], 200);
     }
 }
