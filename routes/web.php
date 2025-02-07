@@ -11,13 +11,12 @@ Route::get('/test', function () {
     // return view('welcome');
 });
 Route::get('/clear-cache', function () {
-    // $exitCode = Artisan::call('config:cache');
-    // $exitCode = Artisan::call('cache:clear');
-    // $exitCode = Artisan::call('storage:link');
+    $exitCode = Artisan::call('config:cache');
+    $exitCode = Artisan::call('cache:clear');
+    $exitCode = Artisan::call('storage:link');
+    $exitCode = Artisan::call('optimize:clear');
 
-    Artisan::call('db:seed', [
-        '--class' => 'SlotSeeder',
-    ]);
+
 
     return 'DONE';
 });
