@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('street');
             $table->string('national_address')->nullable();
             $table->text('details')->nullable();
-            $table->decimal('latitude', 10, 8)->nullable();
-            $table->decimal('longitude', 11, 8)->nullable();
+            $table->double('latitude')->nullable();
+            $table->double('longitude')->nullable();
             $table->timestamps();
 
             $table->foreign('customer_id')->references('id')->on('customers')->onDelete('cascade');

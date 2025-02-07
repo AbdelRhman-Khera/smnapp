@@ -11,7 +11,7 @@ class Slider extends Model
 
     protected $fillable = ['title_ar', 'title_en', 'image', 'link'];
     protected $appends = ['title', 'image_url'];
-    protected $hidden = ['title_ar', 'title_en', 'image'];
+    // protected $hidden = ['title_ar', 'title_en', 'image'];
 
     public function getTitleAttribute()
     {

@@ -24,6 +24,7 @@ class MaintenanceRequest extends Model
         'last_maintenance_date',
         'notes',
         'slot_id',
+        'last_status',
 
 
     ];
@@ -53,7 +54,7 @@ class MaintenanceRequest extends Model
 
     public function customer()
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
     public function technician()

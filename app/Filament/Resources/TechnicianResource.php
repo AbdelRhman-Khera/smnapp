@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TechnicianResource\Pages;
 use App\Filament\Resources\TechnicianResource\RelationManagers;
+use App\Models\Slot;
 use App\Models\Technician;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
@@ -19,12 +21,14 @@ use Filament\Forms\Components\Toggle;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Hash;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 
 class TechnicianResource extends Resource
 {
     protected static ?string $model = Technician::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
     public static function form(Form $form): Form
     {
@@ -77,6 +81,26 @@ class TechnicianResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+
+                Tables\Actions\Action::make('Generate Slots')
+                    ->label('Generate Slots')
+                    ->icon('heroicon-o-clock')
+                    ->form([
+                        Repeater::make('selected_dates')
+                            ->label('Select Date(s)')
+                            ->schema([
+                                DatePicker::make('date')
+                                    ->label('Select Date')
+                                    ->required(),
+                            ])
+                            ->minItems(1) // At least one date required
+                            ->columns(1)
+                            ->addable(true)
+                            ->deletable(true),
+                    ])
+                    ->action(fn($data, $record) => self::generateSlots($record, collect($data['selected_dates'])->pluck('date')->toArray()))
+                    ->modalHeading('Generate Slots for Technician')
+                    ->modalButton('Create Slots'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -91,7 +115,31 @@ class TechnicianResource extends Resource
             //
         ];
     }
+    protected static function generateSlots($technician, $selectedDates)
+    {
+        $fixedTimes = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '16:00:00', '17:00:00', '18:00:00', '19:00:00'];
 
+        foreach ($selectedDates as $date) {
+            foreach ($fixedTimes as $time) {
+                // Check if the slot already exists
+                $existingSlot = Slot::where('technician_id', $technician->id)
+                    ->where('date', $date)
+                    ->where('time', $time)
+                    ->exists();
+
+                if (!$existingSlot) {
+                    Slot::create([
+                        'technician_id' => $technician->id,
+                        'date' => $date,
+                        'time' => $time,
+                        'is_booked' => false,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->with('success', 'Slots created successfully.');
+    }
     public static function getPages(): array
     {
         return [

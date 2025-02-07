@@ -10,7 +10,7 @@ class Category extends Model
     use HasFactory;
     protected $fillable = ['name_ar', 'name_en'];
     protected $appends = ['name'];
-    protected $hidden = ['name_ar', 'name_en'];
+    // protected $hidden = ['name_ar', 'name_en'];
 
     public function products()
     {

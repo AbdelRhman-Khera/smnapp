@@ -24,6 +24,7 @@ return new class extends Migration
             $table->json('photos')->nullable();
             $table->date('last_maintenance_date')->nullable();
             $table->json('notes')->nullable();
+            $table->string('last_status')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

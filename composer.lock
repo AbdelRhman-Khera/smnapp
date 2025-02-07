@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "26b0b1782a5f1df978374f0e60dde15e",
+    "content-hash": "a9db8697150c72a7a21aa632602989d2",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -851,6 +851,83 @@
                 }
             ],
             "time": "2024-02-05T11:56:58+00:00"
+        },
+        {
+            "name": "dotswan/filament-map-picker",
+            "version": "v1.7.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dotswan/filament-map-picker.git",
+                "reference": "be9c68d34696869f6e74d3f27714abf1d0beaaec"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dotswan/filament-map-picker/zipball/be9c68d34696869f6e74d3f27714abf1d0beaaec",
+                "reference": "be9c68d34696869f6e74d3f27714abf1d0beaaec",
+                "shasum": ""
+            },
+            "require": {
+                "filament/filament": "^3.2.130",
+                "illuminate/contracts": "^10.0 || ^11.0",
+                "php": "^8.1",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.0",
+                "nunomaduro/collision": "^7.9",
+                "nunomaduro/larastan": "^2.0.1",
+                "orchestra/testbench": "^8.0",
+                "pestphp/pest": "^2.0",
+                "pestphp/pest-plugin-arch": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0",
+                "phpstan/extension-installer": "^1.1",
+                "phpstan/phpstan-deprecation-rules": "^1.0",
+                "phpstan/phpstan-phpunit": "^1.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "MapPicker": "Dotswan\\MapPicker\\Facades\\MapPicker"
+                    },
+                    "providers": [
+                        "Dotswan\\MapPicker\\MapPickerServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Dotswan\\MapPicker\\": "src/",
+                    "Dotswan\\MapPicker\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dotswan",
+                    "email": "tech@dotswan.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Easily pick and retrieve geo-coordinates using a map-based interface in your Filament applications.",
+            "homepage": "https://github.com/dotswan/filament-map-picker",
+            "keywords": [
+                "dotswan",
+                "filament",
+                "filament-map-picker",
+                "filament-v3",
+                "filamentphp",
+                "laravel",
+                "map-picker"
+            ],
+            "support": {
+                "issues": "https://github.com/dotswan/filament-map-picker/issues",
+                "source": "https://github.com/dotswan/filament-map-picker"
+            },
+            "time": "2024-12-30T09:20:56+00:00"
         },
         {
             "name": "dragonmantank/cron-expression",

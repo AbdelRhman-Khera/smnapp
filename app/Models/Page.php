@@ -24,14 +24,14 @@ class Page extends Model
         'content',
     ];
 
-    protected $hidden = [
-        'created_at',
-        'updated_at',
-        'title_ar',
-        'title_en',
-        'content_ar',
-        'content_en',
-    ];
+    // protected $hidden = [
+    //     'created_at',
+    //     'updated_at',
+    //     'title_ar',
+    //     'title_en',
+    //     'content_ar',
+    //     'content_en',
+    // ];
 
     public function getTitleAttribute()
     {

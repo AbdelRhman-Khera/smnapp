@@ -22,15 +22,15 @@ class SparePart extends Model
         'stock' => 'integer',
     ];
 
-    protected $hidden = [
-        'name_ar',
-        'name_en',
-        'description_ar',
-        'description_en',
-        'image',
-        'created_at',
-        'updated_at',
-    ];
+    // protected $hidden = [
+    //     'name_ar',
+    //     'name_en',
+    //     'description_ar',
+    //     'description_en',
+    //     'image',
+    //     'created_at',
+    //     'updated_at',
+    // ];
 
     protected $appends = [
         'image_url',

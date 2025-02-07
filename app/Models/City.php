@@ -8,7 +8,7 @@ class City extends Model
 {
     protected $fillable = ['name_ar', 'name_en'];
     protected $appends = ['name'];
-    protected $hidden = ['name_ar', 'name_en','created_at', 'updated_at'];
+    // protected $hidden = ['name_ar', 'name_en','created_at', 'updated_at'];
     public function getNameAttribute()
     {
         $locale = app()->getLocale();

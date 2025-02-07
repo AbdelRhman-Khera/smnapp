@@ -287,6 +287,10 @@ class TechnicianController extends Controller
             'notes' => $request->notes,
         ]);
 
+        $maintenanceRequest->update([
+            'status' => 'technician_on_the_way',
+        ]);
+
         return response()->json([
             'status' => 200,
             'response_code' => 'STATUS_UPDATED',
@@ -335,6 +339,10 @@ class TechnicianController extends Controller
             'latitude' => $request->lat,
             'longitude' => $request->long,
             'notes' => $request->notes,
+        ]);
+
+        $maintenanceRequest->update([
+            'status' => 'in_progress',
         ]);
 
         return response()->json([
@@ -418,6 +426,11 @@ class TechnicianController extends Controller
             'notes' => $validatedData['notes'] ?? null,
         ]);
 
+        $maintenanceRequest->update([
+            'status' => 'waiting_for_payment',
+            'invoice_number' => $invoice->id,
+        ]);
+
         $invoice = $invoice->load(['spareParts', 'services']);
 
         return response()->json([
@@ -485,6 +498,10 @@ class TechnicianController extends Controller
             'notes' => $request->input('notes'),
             'latitude' => $request->input('lat'),
             'longitude' => $request->input('long'),
+        ]);
+
+        $maintenanceRequest->update([
+            'status' => 'completed',
         ]);
 
         return response()->json([

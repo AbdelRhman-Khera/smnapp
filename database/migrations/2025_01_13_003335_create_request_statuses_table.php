@@ -21,6 +21,7 @@ return new class extends Migration
                 'technician_arrived',
                 'in_progress',
                 'waiting_for_payment',
+                'waiting_for_technician_confirm_payment',
                 'completed',
                 'canceled',
             ]);

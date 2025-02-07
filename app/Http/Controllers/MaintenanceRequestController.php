@@ -123,6 +123,10 @@ class MaintenanceRequestController extends Controller
             'status' => 'pending',
         ]);
 
+        $maintenanceRequest->last_status = 'pending';
+        $maintenanceRequest->save();
+        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'feedback']);
+
         return response()->json([
             'status' => 200,
             'response_code' => 'REQUEST_CREATED',
@@ -217,6 +221,7 @@ class MaintenanceRequestController extends Controller
         $maintenanceRequest->update([
             'technician_id' => $newSlot->technician_id,
             'slot_id' => $newSlot->id,
+            'last_status' => 'technician_assigned',
         ]);
 
         // Update the request status
@@ -259,6 +264,10 @@ class MaintenanceRequestController extends Controller
 
         $maintenanceRequest->statuses()->create([
             'status' => 'canceled',
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'canceled',
         ]);
 
         if ($maintenanceRequest->slot_id) {
@@ -324,6 +333,15 @@ class MaintenanceRequestController extends Controller
         $invoice->update([
             'payment_method' => $validatedData['payment_method'],
         ]);
+
+        if ($validatedData['payment_method'] == 'cash') {
+            $maintenanceRequest->statuses()->create([
+                'status' => 'waiting_for_technician_confirm_payment',
+            ]);
+            $maintenanceRequest->update([
+                'last_status' => 'waiting_for_technician_confirm_payment',
+            ]);
+        }
 
         return response()->json([
             'status' => 200,

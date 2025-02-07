@@ -11,7 +11,7 @@ class Service extends Model
 
     protected $fillable = ['name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'price', 'is_active'];
     protected $appends = ['name', 'description', 'image_url'];
-    protected $hidden = ['name_ar', 'name_en', 'description_ar', 'description_en'];
+    // protected $hidden = ['name_ar', 'name_en', 'description_ar', 'description_en'];
 
     public function getNameAttribute()
     {
