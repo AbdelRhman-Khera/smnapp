@@ -12,6 +12,12 @@ class TechnicianMaintenanceHistory extends Widget
 {
     protected int|string|array $columnSpan = 'full';
 
+
+    public static function canView(): bool
+    {
+        return request()->routeIs('filament.admin.resources.technicians.view');
+    }
+
     public function table(Table $table): Table
     {
         return $table

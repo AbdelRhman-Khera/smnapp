@@ -66,6 +66,19 @@ class MaintenanceRequestResource extends Resource
                     ->multiple()
                     ->preload(),
 
+                    // Repeater::make('statuses')
+                    // ->label('Statuses')
+                    // ->relationship('statuses') // Uses the statuses() relationship
+                    // ->schema([
+                    //     TextInput::make('status')
+                    //         ->default('pending')  // Default status is 'pending'
+                    //         ->disabled(),         // User cannot change it
+                    // ])
+                    // // ->hidden() // Hide from the user
+                    // ->disableItemCreation() // Prevent adding new statuses manually
+                    // ->disableItemDeletion()
+                    // ->disableItemMovement(),
+
                 TextInput::make('sap_order_id')
                     ->nullable(),
 
@@ -119,7 +132,7 @@ class MaintenanceRequestResource extends Resource
                 TextColumn::make('type')->sortable()->searchable(),
                 TextColumn::make('current_status.status')->sortable(),
                 // TextColumn::make('created_at')->dateTime()->sortable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 Filter::make('New Installation')
                     ->query(fn(Builder $query) => $query->where('type', 'new_installation')),

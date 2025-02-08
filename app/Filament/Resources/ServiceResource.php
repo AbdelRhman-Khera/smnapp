@@ -61,7 +61,7 @@ class ServiceResource extends Resource
                     'danger' => fn ($state) => $state == false,
                 ])
                 ->formatStateUsing(fn ($state) => $state ? 'Active' : 'Inactive'),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

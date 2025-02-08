@@ -74,7 +74,7 @@ class TechnicianResource extends Resource
                 TextColumn::make('email')->sortable()->searchable(),
                 TextColumn::make('phone')->sortable()->searchable(),
                 TextColumn::make('rating')->sortable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

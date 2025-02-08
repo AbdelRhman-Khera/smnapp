@@ -101,7 +101,7 @@ class AddressResource extends Resource
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
                 TextColumn::make('district.name_ar')->label('District (AR)')->sortable(),
                 TextColumn::make('street')->sortable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

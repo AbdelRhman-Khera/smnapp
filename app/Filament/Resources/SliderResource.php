@@ -46,7 +46,7 @@ class SliderResource extends Resource
                 Tables\Columns\ImageColumn::make('image'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

@@ -50,7 +50,7 @@ class ProductResource extends Resource
                 TextColumn::make('name_ar')->label('Name (Arabic)'),
                 TextColumn::make('name_en')->label('Name (English)'),
                 TextColumn::make('category.name_en')->label('Category')->sortable()->searchable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

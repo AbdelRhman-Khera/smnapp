@@ -41,7 +41,7 @@ class CategoryResource extends Resource
                 TextColumn::make('products_count')
                     ->counts('products')
                     ->label('Products Count'),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

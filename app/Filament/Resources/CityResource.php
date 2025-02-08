@@ -47,7 +47,7 @@ class CityResource extends Resource
             ->columns([
                 TextColumn::make('name_ar')->sortable()->searchable(),
                 TextColumn::make('name_en')->sortable()->searchable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

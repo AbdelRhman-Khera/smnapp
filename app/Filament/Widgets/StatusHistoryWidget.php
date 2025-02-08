@@ -8,6 +8,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Actions\Action;
+use Filament\Facades\Filament;
 
 class StatusHistoryWidget extends BaseWidget
 {
@@ -15,6 +16,11 @@ class StatusHistoryWidget extends BaseWidget
 
     public ?int $recordId = null;
 
+    public static function canView(): bool
+    {
+        // dd(request()->routeIs('filament.admin.resources.maintenance-requests.view'), request()->route()->getName());
+        return request()->routeIs('filament.admin.resources.maintenance-requests.view');
+    }
     public function mount($record)
     {
         $this->recordId = $record->id;

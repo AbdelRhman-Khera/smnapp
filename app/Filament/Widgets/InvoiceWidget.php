@@ -17,10 +17,16 @@ class InvoiceWidget extends Widget
     public ?Invoice $invoice = null;
     protected int|string|array $columnSpan = 'full';
 
+    public static function canView(): bool
+    {
+
+        return request()->routeIs('filament.admin.resources.maintenance-requests.view');
+    }
     public function mount($record)
     {
         $this->invoice = Invoice::where('maintenance_request_id', $record->id)->first();
     }
+
 
     // public function mount()
     // {

@@ -139,7 +139,7 @@ class SupportFormResource extends Resource
                         'danger' => 'closed',
                     ]),
                 TextColumn::make('created_at')->sortable()->dateTime(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

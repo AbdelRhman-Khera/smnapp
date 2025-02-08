@@ -51,7 +51,7 @@ class DistrictResource extends Resource
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
                 TextColumn::make('name_ar')->sortable()->searchable(),
                 TextColumn::make('name_en')->sortable()->searchable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

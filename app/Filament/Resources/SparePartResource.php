@@ -57,7 +57,7 @@ class SparePartResource extends Resource
                 TextColumn::make('name_en')->label('Name (EN)')->sortable()->searchable(),
                 TextColumn::make('price')->label('Price')->sortable(),
                 TextColumn::make('stock')->label('Stock Quantity')->sortable(),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 //
             ])

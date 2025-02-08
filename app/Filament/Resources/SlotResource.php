@@ -59,7 +59,7 @@ class SlotResource extends Resource
                 TextColumn::make('date')->label('Date')->sortable(),
                 TextColumn::make('time')->label('Time')->sortable(),
                 BooleanColumn::make('is_booked')->label('Booked'),
-            ])
+            ])->defaultSort('id', 'desc')
             ->filters([
                 Tables\Filters\Filter::make('Available Slots')
                     ->query(fn ($query) => $query->where('is_booked', false)),

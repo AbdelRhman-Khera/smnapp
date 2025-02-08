@@ -14,6 +14,10 @@ class FeedbackWidget extends BaseWidget
 
     public ?int $recordId = null;
 
+    public static function canView(): bool
+    {
+        return request()->routeIs('filament.admin.resources.maintenance-requests.view');
+    }
     public function mount($record)
     {
         $this->recordId = $record->id;
