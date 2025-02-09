@@ -493,6 +493,8 @@ class TechnicianController extends Controller
             'status' => 'completed',
         ]);
 
+
+
         $maintenanceRequest->statuses()->create([
             'status' => 'completed',
             'notes' => $request->input('notes'),
@@ -501,7 +503,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'completed',
+            'last_status' => 'completed',
         ]);
 
         return response()->json([
