@@ -456,11 +456,11 @@ class TechnicianController extends Controller
             ], 403);
         }
 
-        if ($maintenanceRequest->current_status->status != 'waiting_for_payment') {
+        if ($maintenanceRequest->current_status->status != 'waiting_for_technician_confirm_payment') {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVALID_REQUEST_STATUS',
-                'message' => 'The request is not in waiting_for_payment status.',
+                'message' => 'The request is not in waiting_for_technician_confirm_payment status.',
             ], 400);
         }
 
