@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MaintenanceRequestController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Middleware\SetLanguage;
@@ -29,6 +30,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/customer/change-password', [CustomerController::class, 'changePassword']);
         Route::get('/customer', [CustomerController::class, 'getCustomer']);
         Route::delete('/customer/remove', [CustomerController::class, 'removeCustomer']);
+        Route::post('/customer/update-fcm-token', [CustomerController::class, 'updateFcmToken']);
 
         //// address
         Route::get('/addresses', [AddressController::class, 'index']);
@@ -48,8 +50,11 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
         Route::get('/technician/requests-summary', [TechnicianController::class, 'getRequestsSummary']);
         Route::get('/technician/requests', [TechnicianController::class, 'getAllRequests']);
+        Route::post('/technician/update-fcm-token', [TechnicianController::class, 'updateFcmToken']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
+
+        Route::get('/sap-order/{id}', [MaintenanceRequestController::class, 'getSpecificProductByOrder']);
 
 
         ////// maintenance request
@@ -66,12 +71,20 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request/{id}/set-in-progress', [TechnicianController::class, 'setInProgress']);
         Route::post('/maintenance-request/{id}/set-waiting-for-payment', [TechnicianController::class, 'setWaitingForPayment']);
         Route::post('/maintenance-request/{id}/confirm-cash-payment', [TechnicianController::class, 'confirmCashPayment']);
+        Route::post('/maintenance-request/{id}/finish-installation', [TechnicianController::class, 'finishInstallation']);
 
         Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
         Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);
 
 
         Route::post('/support-form', [LandingController::class, 'storeSupportForm']);
+
+        /////notifications
+
+        Route::get('/notifications', [NotificationController::class, 'getNotifications']);
+        Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markNotificationAsRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllNotificationsAsRead']);
     });
 
 

@@ -427,4 +427,34 @@ class CustomerController extends Controller
             'data' => null,
         ], 200);
     }
+
+
+    public function updateFcmToken(Request $request)
+    {
+        $customer = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'fcm_token' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $customer->update([
+            'fcm_token' => $request->fcm_token,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'FCM_TOKEN_UPDATED',
+            'message' => __('messages.fcm_token_updated'),
+            'data' => $customer,
+        ], 200);
+    }
 }

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\MaintenanceRequest;
+use App\Models\Product;
 use App\Models\Slot;
 use App\Models\Technician;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -180,6 +182,7 @@ class MaintenanceRequestController extends Controller
 
     public function assignSlot(Request $request)
     {
+
         $validator = Validator::make($request->all(), [
             'request_id' => 'required|exists:maintenance_requests,id',
             'slot_id' => 'required|exists:slots,id',
@@ -228,6 +231,18 @@ class MaintenanceRequestController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'technician_assigned',
         ]);
+
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.technician_assigned", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
+        NotificationService::notifyTechnician(
+            $newSlot->technician_id,
+            __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
 
         return response()->json([
             'status' => 200,
@@ -409,6 +424,19 @@ class MaintenanceRequestController extends Controller
             'response_code' => 'FEEDBACK_SUBMITTED',
             'message' => 'Feedback submitted successfully.',
             'data' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+        ], 200);
+    }
+
+    public function getSpecificProductByOrder($id)
+    {
+
+        $products = Product::find(1);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'SPECIFIC_PRODUCT_FETCHED',
+            'message' => 'Product with ID 1 fetched successfully for this order.',
+            'data' => $products,
         ], 200);
     }
 }

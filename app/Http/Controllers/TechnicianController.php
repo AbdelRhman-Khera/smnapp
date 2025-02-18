@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use App\Services\NotificationService;
 
 class TechnicianController extends Controller
 {
@@ -291,6 +292,12 @@ class TechnicianController extends Controller
             'status' => 'technician_on_the_way',
         ]);
 
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.technician_on_the_way", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
         return response()->json([
             'status' => 200,
             'response_code' => 'STATUS_UPDATED',
@@ -344,6 +351,12 @@ class TechnicianController extends Controller
         $maintenanceRequest->update([
             'status' => 'in_progress',
         ]);
+
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.in_progress", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
 
         return response()->json([
             'status' => 200,
@@ -431,6 +444,12 @@ class TechnicianController extends Controller
             'invoice_number' => $invoice->id,
         ]);
 
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.waiting_for_payment", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
         $invoice = $invoice->load(['spareParts', 'services']);
 
         return response()->json([
@@ -506,6 +525,12 @@ class TechnicianController extends Controller
             'last_status' => 'completed',
         ]);
 
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.payment_confirmed", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
         return response()->json([
             'status' => 200,
             'response_code' => 'PAYMENT_CONFIRMED',
@@ -513,6 +538,110 @@ class TechnicianController extends Controller
             'data' => [
                 'maintenance_request' => $maintenanceRequest->load(['statuses', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
             ],
+        ], 200);
+    }
+
+
+    public function finishInstallation(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to update this request.',
+            ], 403);
+        }
+
+        if ($maintenanceRequest->type != 'new_installation') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_REQUEST_TYPE',
+                'message' => 'This request is not a new installation.',
+            ], 400);
+        }
+
+        if ($maintenanceRequest->current_status->status != 'in_progress') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_STATUS',
+                'message' => 'The request is not in progress.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'completed',
+            'notes' => $request->notes,
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'completed',
+        ]);
+
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.installation_completed", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'INSTALLATION_COMPLETED',
+            'message' => 'Installation request marked as completed.',
+            'data' => $maintenanceRequest->load([
+                'statuses',
+                'customer',
+                'slot',
+                'technician',
+                'address',
+                'invoice',
+                'invoice.services',
+                'invoice.spareParts',
+                'products'
+            ]),
+        ], 200);
+    }
+
+    public function updateFcmToken(Request $request)
+    {
+        $technician = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'fcm_token' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $technician->update([
+            'fcm_token' => $request->fcm_token,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'FCM_TOKEN_UPDATED',
+            'message' => __('messages.fcm_token_updated'),
+            'data' => $technician,
         ], 200);
     }
 }

@@ -22,6 +22,7 @@ class Customer extends Authenticatable
         'password',
         'authorized',
         'activated',
+        'fcm_token',
     ];
 
     /**
@@ -35,6 +36,11 @@ class Customer extends Authenticatable
         'remember_token',
     ];
 
+
+    public function routeNotificationForFcm()
+    {
+        return $this->fcm_token;
+    }
     public function addresses()
     {
         return $this->hasMany(Address::class);

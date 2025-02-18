@@ -27,6 +27,7 @@ class Technician extends Authenticatable
         'manager_id',
         'rating',
         'reviews_count',
+        'fcm_token',
     ];
 
     /**
@@ -39,6 +40,11 @@ class Technician extends Authenticatable
         'token',
         'remember_token',
     ];
+
+    public function routeNotificationForFcm()
+    {
+        return $this->fcm_token;
+    }
     public function manager()
     {
         return $this->belongsTo(User::class, 'manager_id');

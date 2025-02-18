@@ -23,6 +23,7 @@ return new class extends Migration
             $table->rememberToken();
             $table->boolean('authorized')->default(false)->nullable();
             $table->boolean('activated')->default(false)->nullable();
+            $table->string('fcm_token')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

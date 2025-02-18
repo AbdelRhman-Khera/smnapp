@@ -26,6 +26,7 @@ return new class extends Migration
             $table->float('rating')->default(0.0);
             $table->integer('reviews_count')->default(0);
             $table->foreignId('manager_id')->constrained('users');
+            $table->string('fcm_token')->nullable();
             $table->timestamps();
         });
     }
