@@ -429,13 +429,12 @@ class MaintenanceRequestController extends Controller
 
     public function getSpecificProductByOrder($id)
     {
-
-        $products = Product::find(1);
+        $products = Product::whereIn('id', [1, 2])->get();
 
         return response()->json([
             'status' => 200,
-            'response_code' => 'SPECIFIC_PRODUCT_FETCHED',
-            'message' => 'Product with ID 1 fetched successfully for this order.',
+            'response_code' => 'SPECIFIC_PRODUCTS_FETCHED',
+            'message' => 'Products fetched successfully for this order.',
             'data' => $products,
         ], 200);
     }
