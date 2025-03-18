@@ -4,8 +4,9 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
-use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\FcmChannel;
+use NotificationChannels\Fcm\FcmMessage;
+use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 
 class CustomerNotification extends Notification
 {
@@ -31,20 +32,55 @@ class CustomerNotification extends Notification
         ];
     }
 
-    public function toFcm($notifiable)
+    // public function toFcm($notifiable)
+    // {
+
+    //     return FcmMessage::create()
+    //         ->data([
+    //             'request_id' => $this->requestId // بيانات إضافية
+    //         ])
+    //         ->notification([
+    //             'title' => __('notifications.technician.title'), // عنوان الإشعار
+    //             'body' => $this->message, // نص الإشعار
+    //             'sound' => 'default', // صوت الإشعار
+    //         ]);
+    // }
+
+
+    public function toFcm($notifiable): FcmMessage
     {
-
-        return FcmMessage::create()
-            ->setData([
-                'request_id' => $this->requestId
-            ])
-            ->setNotification([
-                'title' => __('notifications.customer.title'),
-                'body' => $this->message,
-                'sound' => 'default',
-            ]);
+        return new FcmMessage(
+            notification: new FcmNotification(
+                title: __('notifications.technician.title'),
+                body: $this->message,
+                // image: 'http://example.com/url-to-image-here.png'
+            ),
+            data: [
+                'request_id' => $this->requestId,
+            ],
+            custom: [
+                'android' => [
+                    'notification' => [
+                        'color' => '#0A0A0A',
+                        'sound' => 'default',
+                    ],
+                    'fcm_options' => [
+                        'analytics_label' => 'analytics',
+                    ],
+                ],
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default'
+                        ],
+                    ],
+                    'fcm_options' => [
+                        'analytics_label' => 'analytics',
+                    ],
+                ],
+            ]
+        );
     }
-
 
     public function toBroadcast($notifiable)
     {
