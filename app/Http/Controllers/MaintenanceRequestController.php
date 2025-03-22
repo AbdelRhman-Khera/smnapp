@@ -9,8 +9,11 @@ use App\Models\Slot;
 use App\Models\Technician;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Paytabscom\Laravel_paytabs\Facades\paypage;
 
+use function Pest\Laravel\json;
 
 class MaintenanceRequestController extends Controller
 {
@@ -356,18 +359,92 @@ class MaintenanceRequestController extends Controller
             $maintenanceRequest->update([
                 'last_status' => 'waiting_for_technician_confirm_payment',
             ]);
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'PAYMENT_METHOD_UPDATED',
+                'message' => 'Payment method updated successfully.',
+                'data' => [
+                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                    'invoice' => $invoice->load('services', 'spareParts'),
+                ],
+            ], 200);
         }
 
-        return response()->json([
-            'status' => 200,
-            'response_code' => 'PAYMENT_METHOD_UPDATED',
-            'message' => 'Payment method updated successfully.',
-            'data' => [
-                'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
-                'invoice' => $invoice->load('services', 'spareParts'),
-            ],
-        ], 200);
+        ////paytabs
+        if ($validatedData['payment_method'] == 'online') {
+            $cart_id = 'MR-' . $maintenanceRequest->id;
+            $cart_amount = $invoice->total;
+            $cart_description = "Payment for Maintenance Request #{$maintenanceRequest->id}";
+            $name = $maintenanceRequest->customer->first_name . ' ' . $maintenanceRequest->customer->last_name;
+            $email = $maintenanceRequest->customer->email ?? '';
+            $phone = $maintenanceRequest->customer->phone;
+            $street1 = $maintenanceRequest->address->street ?? 'N/A';
+            $city = $maintenanceRequest->address->city->name ?? 'N/A';
+            $state = $maintenanceRequest->address->district->name ?? 'N/A';
+            $country = 'SA';
+            $zip = '00000';
+            $ip = $request->ip();
+            $return = route('payment.success', ['id' => $maintenanceRequest->id]);
+            $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
+            $language = substr(app()->getLocale(), 0, 2);
+            $pay = paypage::sendPaymentCode('all')
+                ->sendTransaction('sale', 'ecom')
+                ->sendCart($cart_id, $cart_amount, $cart_description)
+                ->sendCustomerDetails($name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
+                ->sendShippingDetails($name, $name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
+                ->sendURLs($return, $callback)
+                ->sendLanguage($language)
+                ->create_pay_page();;
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'PAYMENT_LINK_GENERATED',
+                'message' => 'Payment link generated successfully.',
+                'payment_url' => $pay->getTargetUrl(),
+            ], 200);
+        }
     }
+
+    public function paymentCallback(Request $request)
+    {
+        dd($request->all());
+        $capture = Paypage::capture('tran_ref','order_id','amount','capture description');
+
+        dd($capture);
+        $transaction = paypage::verifyPayment($request->tranRef);
+        dd($transaction, $request->all());
+        $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
+
+        if ($transaction->payment_result->response_status == 'A') {
+            $maintenanceRequest->statuses()->create([
+                'status' => 'completed',
+                'notes'  => $transaction,
+            ]);
+            $maintenanceRequest->update([
+                'last_status' => 'completed',
+            ]);
+
+            $maintenanceRequest->invoice->update([
+                'status' => 'completed',
+                'payment_details' => $transaction,
+            ]);
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'PAYMENT_SUCCESSFUL',
+                'message' => 'Payment completed successfully.',
+                'data' => $maintenanceRequest->load(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PAYMENT_FAILED',
+                'message' => 'Payment failed. Please try again.',
+            ], 400);
+        }
+    }
+
     public function submitFeedback(Request $request, $id)
     {
         $maintenanceRequest = MaintenanceRequest::findOrFail($id);
@@ -437,5 +514,38 @@ class MaintenanceRequestController extends Controller
             'message' => 'Products fetched successfully for this order.',
             'data' => $products,
         ], 200);
+    }
+
+    public function testpay()
+    {
+        $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail(15);
+        $cart_id = uniqid('MR-');
+        // $cart_id = 'MR-' . $maintenanceRequest->id;
+        $cart_amount = $maintenanceRequest->invoice->total;
+        $cart_description = "Payment for Maintenance Request #{$maintenanceRequest->id}";
+        $name = $maintenanceRequest->customer->first_name . ' ' . $maintenanceRequest->customer->last_name;
+        $email = $maintenanceRequest->customer->email ?? 'test@test.com';
+        $phone = $maintenanceRequest->customer->phone;
+        $street1 = $maintenanceRequest->address->street ?? 'N/A';
+        $city = $maintenanceRequest->address->city->name ?? 'N/A';
+        $state = $maintenanceRequest->address->district->name ?? 'N/A';
+        $country = 'SA';
+        $zip = '00000';
+        $ip = '127.0.0.1';
+        // $return = route('payment.success', ['id' => $maintenanceRequest->id]);
+        $return = route('payment.callback1');
+        $callback = route('payment.callback1');
+        // $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
+        $language = 'en';
+        $pay = paypage::sendPaymentCode('all')
+            ->sendTransaction('sale', 'ecom')
+            ->sendCart($cart_id, $cart_amount, $cart_description)
+            ->sendCustomerDetails($name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
+            ->shipping_same_billing()
+            ->sendURLs($return, $callback)
+            ->sendLanguage($language)
+            ->create_pay_page();;
+
+        return $pay;
     }
 }

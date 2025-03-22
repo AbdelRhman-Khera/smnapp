@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\SkipCsrfForPayment;
 
 Route::get('/', function () {
     echo'Samnan';
@@ -20,3 +21,8 @@ Route::get('/clear-cache', function () {
 
     return 'DONE';
 });
+
+Route::get('/test2', [\App\Http\Controllers\MaintenanceRequestController::class, 'testpay']);
+// Route::post('/payment/callback1', [\App\Http\Controllers\MaintenanceRequestController::class, 'paymentCallback'])->middleware(SkipCsrfForPayment::class)->name('payment.callback1');
+Route::post('/payment/callback1', [\App\Http\Controllers\MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback1');
+

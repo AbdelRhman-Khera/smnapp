@@ -4,9 +4,13 @@ namespace App\Notifications;
 
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Support\Facades\Log;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 
 class TechnicianNotification extends Notification
 {
@@ -21,7 +25,7 @@ class TechnicianNotification extends Notification
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast', FcmChannel::class];
+        return ['database', FcmChannel::class];
     }
 
     public function toArray($notifiable)
@@ -40,52 +44,51 @@ class TechnicianNotification extends Notification
         ]);
     }
 
+    public function toFcm($notifiable)
+    {
+        return FcmMessage::create()
+            ->data([
+                'request_id' => (string) $this->requestId,
+                'message' => (string) $this->message
+            ])
+            ->notification(FcmNotification::create()
+                ->title(__('notifications.technician.title'))
+                ->body($this->message)
+            );
+    }
+
     // public function toFcm($notifiable)
     // {
-    //     return FcmMessage::create()
-    //         ->data([
-    //             'request_id' => $this->requestId,
-    //         ])
-    //         ->notification(
-    //             FcmNotification::create()
-    //                 ->title(__('notifications.technician.title'))
-    //                 ->body($this->message)
-    //                 ->sound('default')
-    //         );
-    // }
+    //     try {
+    //         $factory = (new Factory)->withServiceAccount(storage_path('app/firebase/firebase_credentials.json'));
+    //         $messaging = $factory->createMessaging();
 
-    public function toFcm($notifiable): FcmMessage
-    {
-        return new FcmMessage(
-            notification: new FcmNotification(
-                title: __('notifications.technician.title'),
-                body: $this->message,
-                // image: 'http://example.com/url-to-image-here.png'
-            ),
-            data: [
-                'request_id' => $this->requestId,
-            ],
-            custom: [
-                'android' => [
-                    'notification' => [
-                        'color' => '#0A0A0A',
-                        'sound' => 'default',
-                    ],
-                    'fcm_options' => [
-                        'analytics_label' => 'analytics',
-                    ],
-                ],
-                'apns' => [
-                    'payload' => [
-                        'aps' => [
-                            'sound' => 'default'
-                        ],
-                    ],
-                    'fcm_options' => [
-                        'analytics_label' => 'analytics',
-                    ],
-                ],
-            ]
-        );
-    }
+    //         $message = CloudMessage::withTarget('token', $notifiable->fcm_token)
+    //             ->withNotification(
+    //                 FirebaseNotification::create(__('notifications.technician.title'), $this->message)
+    //             )
+    //             ->withData([
+    //                 'request_id' => $this->requestId,
+    //             ]);
+
+
+    //         $messaging->send($message);
+
+
+    //         Log::info('✅ FCM Notification sent successfully!', [
+    //             'user_id' => $notifiable->id,
+    //             'fcm_token' => $notifiable->fcm_token,
+    //             'request_id' => $this->requestId,
+    //             'message' => $this->message
+    //         ]);
+    //     } catch (\Exception $e) {
+
+    //         Log::error('❌ FCM Notification failed!', [
+    //             'error' => $e->getMessage(),
+    //             'user_id' => $notifiable->id ?? null,
+    //             'request_id' => $this->requestId,
+    //             'message' => $this->message
+    //         ]);
+    //     }
+    // }
 }

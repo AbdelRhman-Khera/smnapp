@@ -86,7 +86,9 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markNotificationAsRead']);
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllNotificationsAsRead']);
     });
-
+    /////paytabs
+    Route::post('/payment/callback', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback');
+    // Route::post('/payment/success', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.success');
 
     /// Master Data
 
