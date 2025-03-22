@@ -408,10 +408,7 @@ class MaintenanceRequestController extends Controller
 
     public function paymentCallback(Request $request)
     {
-        dd($request->all());
-        $capture = Paypage::capture('tran_ref','order_id','amount','capture description');
 
-        dd($capture);
         $transaction = paypage::verifyPayment($request->tranRef);
         dd($transaction, $request->all());
         $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
