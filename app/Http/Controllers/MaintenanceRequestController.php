@@ -410,7 +410,7 @@ class MaintenanceRequestController extends Controller
     {
 
         $transaction = paypage::verifyPayment($request->tranRef);
-        dd($transaction, $request->all());
+        dd($transaction);
         $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
 
         if ($transaction->payment_result->response_status == 'A') {
