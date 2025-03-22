@@ -408,15 +408,12 @@ class MaintenanceRequestController extends Controller
 
     public function paymentCallback(Request $request, $id)
     {
-dd($request->all(),$id, $request->tranRef, $request);
-        $transaction = paypage::queryTransaction($request->tranRef);
-        dd($transaction);
         $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
 
-        if ($transaction->payment_result->response_status == 'A') {
+        if ($request->respStatus == 'A') {
             $maintenanceRequest->statuses()->create([
                 'status' => 'completed',
-                'notes'  => $transaction,
+                'notes'  => $request->tranRef,
             ]);
             $maintenanceRequest->update([
                 'last_status' => 'completed',
@@ -424,7 +421,7 @@ dd($request->all(),$id, $request->tranRef, $request);
 
             $maintenanceRequest->invoice->update([
                 'status' => 'completed',
-                'payment_details' => $transaction,
+                'payment_details' => $request->tranRef,
             ]);
 
             return response()->json([
@@ -530,8 +527,10 @@ dd($request->all(),$id, $request->tranRef, $request);
         $zip = '00000';
         $ip = '127.0.0.1';
         // $return = route('payment.success', ['id' => $maintenanceRequest->id]);
-        $return = 'https://app.rezeqstore.com/api/v1/payment/success/' . $maintenanceRequest->id;
-        $callback = 'https://app.rezeqstore.com/api/v1/payment/callback/' . $maintenanceRequest->id;
+        $return = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
+        // $return = 'https://app.rezeqstore.com/api/v1/payment/success/' . $maintenanceRequest->id;
+        // $callback = 'https://app.rezeqstore.com/api/v1/payment/callback/' . $maintenanceRequest->id;
+        $callback = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
         // $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
         $language = 'en';
         $pay = paypage::sendPaymentCode('all')
