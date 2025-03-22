@@ -532,10 +532,10 @@ class MaintenanceRequestController extends Controller
         $country = 'SA';
         $zip = '00000';
         $ip = '127.0.0.1';
-        $return = route('payment.success', ['id' => $maintenanceRequest->id]);
-        // $return = 'https://app.rezeqstore.com/public/payment/callback1';
-        // $callback = 'https://app.rezeqstore.com/public/payment/callback1';
-        $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
+        // $return = route('payment.success', ['id' => $maintenanceRequest->id]);
+        $return = 'https://app.rezeqstore.com/api/v1/payment/success/' . $maintenanceRequest->id;
+        $callback = 'https://app.rezeqstore.com/api/v1/payment/callback/' . $maintenanceRequest->id;
+        // $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
         $language = 'en';
         $pay = paypage::sendPaymentCode('all')
             ->sendTransaction('sale', 'ecom')
