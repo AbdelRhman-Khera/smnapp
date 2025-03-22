@@ -409,7 +409,7 @@ class MaintenanceRequestController extends Controller
     public function paymentCallback(Request $request)
     {
 
-        $transaction = paypage::verifyPayment($request->tranRef);
+        $transaction = paypage::queryTransaction($request->tranRef);
         dd($transaction);
         $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
 
