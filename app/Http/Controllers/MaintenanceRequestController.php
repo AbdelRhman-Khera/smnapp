@@ -377,7 +377,7 @@ class MaintenanceRequestController extends Controller
             $cart_amount = $invoice->total;
             $cart_description = "Payment for Maintenance Request #{$maintenanceRequest->id}";
             $name = $maintenanceRequest->customer->first_name . ' ' . $maintenanceRequest->customer->last_name;
-            $email = $maintenanceRequest->customer->email ?? '';
+            $email = $maintenanceRequest->customer->email ?? 'test@samnan.com';
             $phone = $maintenanceRequest->customer->phone;
             $street1 = $maintenanceRequest->address->street ?? 'N/A';
             $city = $maintenanceRequest->address->city->name ?? 'N/A';
@@ -387,12 +387,12 @@ class MaintenanceRequestController extends Controller
             $ip = $request->ip();
             $return = route('payment.success', ['id' => $maintenanceRequest->id]);
             $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
-            $language = substr(app()->getLocale(), 0, 2);
+            $language = 'en';
             $pay = paypage::sendPaymentCode('all')
                 ->sendTransaction('sale', 'ecom')
                 ->sendCart($cart_id, $cart_amount, $cart_description)
                 ->sendCustomerDetails($name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
-                ->sendShippingDetails($name, $name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
+                ->shipping_same_billing()
                 ->sendURLs($return, $callback)
                 ->sendLanguage($language)
                 ->create_pay_page();;
@@ -527,10 +527,10 @@ class MaintenanceRequestController extends Controller
         $zip = '00000';
         $ip = '127.0.0.1';
         // $return = route('payment.success', ['id' => $maintenanceRequest->id]);
-        $return = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
-        // $return = 'https://app.rezeqstore.com/api/v1/payment/success/' . $maintenanceRequest->id;
-        // $callback = 'https://app.rezeqstore.com/api/v1/payment/callback/' . $maintenanceRequest->id;
-        $callback = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
+        // $return = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
+        $return = 'https://app.rezeqstore.com/api/v1/payment/success/' . $maintenanceRequest->id;
+        $callback = 'https://app.rezeqstore.com/api/v1/payment/callback/' . $maintenanceRequest->id;
+        // $callback = 'https://webhook.site/6fd757f3-d75e-4c4b-b8a9-ad5185bcbfdd';
         // $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
         $language = 'en';
         $pay = paypage::sendPaymentCode('all')
