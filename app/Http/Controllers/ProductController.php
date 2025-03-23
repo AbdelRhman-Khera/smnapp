@@ -22,9 +22,21 @@ class ProductController extends Controller
         ], 200);
     }
 
-    public function getAllProducts()
+    public function getAllProducts(Request $request)
     {
-        $products = Product::all();
+        $query = Product::query();
+
+        if ($request->has('search')) {
+            $query->where('name_en', 'like', '%' . $request->search . '%')
+                ->orWhere('name_ar', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('category_id')) {
+            $categoryIds = explode(',', $request->category_id);
+            $query->whereIn('category_id', $categoryIds);
+        }
+
+        $products = $query->get();
 
         return response()->json([
             'status' => 200,
@@ -33,6 +45,7 @@ class ProductController extends Controller
             'data' => $products,
         ], 200);
     }
+
 
     public function addProductToCustomer(Request $request)
     {
