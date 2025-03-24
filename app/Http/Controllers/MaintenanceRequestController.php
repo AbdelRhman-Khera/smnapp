@@ -439,6 +439,55 @@ class MaintenanceRequestController extends Controller
         }
     }
 
+    public function paymentCallbackMobile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'responseStatus' => 'required',
+            'requestId' => 'required|exists:maintenance_requests,id',
+            'transactionReference' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($request->requestId);
+
+        if ($request->responseStatus == 'A') {
+            $maintenanceRequest->statuses()->create([
+                'status' => 'completed',
+                'notes'  => $request->transactionReference,
+            ]);
+            $maintenanceRequest->update([
+                'last_status' => 'completed',
+            ]);
+
+            $maintenanceRequest->invoice->update([
+                'payment_method' => 'online',
+                'status' => 'completed',
+                'payment_details' => $request->transactionReference,
+            ]);
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'PAYMENT_SUCCESSFUL',
+                'message' => 'Payment completed successfully.',
+                'data' => $maintenanceRequest->load(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PAYMENT_FAILED',
+                'message' => 'Payment failed. Please try again.',
+            ], 400);
+        }
+    }
+
     public function submitFeedback(Request $request, $id)
     {
         $maintenanceRequest = MaintenanceRequest::findOrFail($id);

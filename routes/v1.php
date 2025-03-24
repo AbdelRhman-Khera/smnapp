@@ -89,6 +89,7 @@ Route::middleware([SetLanguage::class])->group(function () {
     /////paytabs
     Route::post('/payment/callback/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback');
     Route::post('/payment/success/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.success');
+    Route::post('/payment/mobileCallback', [MaintenanceRequestController::class, 'paymentCallbackMobile'])->name('payment.mobileCallback');
 
     /// Master Data
 
