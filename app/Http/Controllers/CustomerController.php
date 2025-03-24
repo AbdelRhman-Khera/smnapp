@@ -61,7 +61,8 @@ class CustomerController extends Controller
 
         $validatedData = $validator->validated();
         $validatedData['password'] = Hash::make($validatedData['password']);
-        $validatedData['otp'] = rand(1000, 9999);
+        // $validatedData['otp'] = rand(1000, 9999);
+        $validatedData['otp'] = 1111;
         $customer = Customer::create($validatedData);
 
         // Send OTP via SMS using 4jawaly API
