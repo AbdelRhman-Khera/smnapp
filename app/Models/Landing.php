@@ -35,6 +35,7 @@ class Landing extends Model
         'download_image',
         'rights_ar',
         'rights_en',
+        'social',
     ];
 
     protected $casts = [
