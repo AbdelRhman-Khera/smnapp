@@ -16,8 +16,8 @@ class ProductController extends Controller
 
         return response()->json([
             'status' => 200,
-            'response_code' => 'PRODUCTS_FETCHED',
-            'message' => __('messages.products_fetched'),
+            'response_code' => 'CATEGORIES_FETCHED',
+            'message' => __('messages.categories_fetched'),
             'data' => $categories,
         ], 200);
     }

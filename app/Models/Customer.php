@@ -34,6 +34,7 @@ class Customer extends Authenticatable
         'password',
         'token',
         'remember_token',
+        'otp',
     ];
 
 

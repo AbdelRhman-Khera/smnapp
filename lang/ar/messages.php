@@ -58,6 +58,10 @@ return [
     'technician_requests_summary' => 'تم جلب ملخص الطلبات الخاصة بالفني بنجاح.',
     'sms_failed' => 'فشل في إرسال الرسالة. يرجى المحاولة لاحقاً.',
     'register_success' => 'تم تسجيل العميل بنجاح.',
+    'customer_exists' => 'العميل موجود بالفعل.',
+    'categories_fetched' => 'تم جلب الفئات بنجاح.',
+    'addresses_fetched' => 'تم جلب العناوين بنجاح.',
+    'customer_address_not_found' => 'لا يوجد عناوين للعميل.',
 
 
 ];

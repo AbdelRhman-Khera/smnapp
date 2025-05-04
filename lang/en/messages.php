@@ -58,6 +58,10 @@ return [
     'technician_requests_summary' => 'Technician requests summary fetched successfully.',
     'sms_failed' => 'Failed to send SMS. Please try again later.',
     'register_success' => 'Customer registered successfully.',
+    'customer_exists' => 'Customer already exists.',
+    'categories_fetched' => 'Categories fetched successfully.',
+    'addresses_fetched' => 'Addresses fetched successfully.',
+    'customer_address_not_found' => 'Customer address not found.',
 
 
 ];
