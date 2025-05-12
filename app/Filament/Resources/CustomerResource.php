@@ -33,9 +33,7 @@ class CustomerResource extends Resource
                     ->tel()
                     ->required()
                     ->maxLength(15),
-                Forms\Components\TextInput::make('email')
-                    ->email()
-                    ->maxLength(255),
+                Forms\Components\TextInput::make('email')->unique('customers', 'email', ignoreRecord: true)->email()->maxLength(100),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()

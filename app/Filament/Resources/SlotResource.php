@@ -55,7 +55,9 @@ class SlotResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('technician.first_name')->label('Technician')->sortable(),
+                TextColumn::make('technician.first_name')->label('TechnicianFN')->sortable()->searchable(),
+                TextColumn::make('technician.last_name')->label('TechnicianLN')->sortable()->searchable(),
+                TextColumn::make('technician.phone')->label('Phone')->sortable()->searchable(),
                 TextColumn::make('date')->label('Date')->sortable(),
                 TextColumn::make('time')->label('Time')->sortable(),
                 BooleanColumn::make('is_booked')->label('Booked'),

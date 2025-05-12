@@ -4,8 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\SkipCsrfForPayment;
 
 Route::get('/', function () {
-    echo'Samnan';
-    // return view('welcome');
+    return redirect('/admin');
 });
 Route::get('/test', function () {
    echo 'test';

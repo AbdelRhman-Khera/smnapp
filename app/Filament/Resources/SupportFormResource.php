@@ -164,7 +164,7 @@ class SupportFormResource extends Resource
     {
         return [
             'index' => Pages\ListSupportForms::route('/'),
-            'create' => Pages\CreateSupportForm::route('/create'),
+            // 'create' => Pages\CreateSupportForm::route('/create'),
             'edit' => Pages\EditSupportForm::route('/{record}/edit'),
         ];
     }

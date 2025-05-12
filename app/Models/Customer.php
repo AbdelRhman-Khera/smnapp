@@ -52,6 +52,11 @@ class Customer extends Authenticatable
         return $this->belongsToMany(Product::class, 'customer_products', 'customer_id', 'product_id')
                     ->withTimestamps();
     }
+
+    public function getNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
+    }
     /**
      * Automatically hash the password when set.
      *

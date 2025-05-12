@@ -23,6 +23,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 
 class MaintenanceRequestResource extends Resource
 {
@@ -35,22 +36,23 @@ class MaintenanceRequestResource extends Resource
         return $form
             ->schema([
                 Select::make('customer_id')
-                ->relationship('customer', 'first_name')
-                ->searchable()
-                ->required()
-                ->reactive(),
+                    ->relationship('customer', 'first_name')
+                    ->searchable()
+                    ->required()
+                    ->reactive(),
 
-            Select::make('address_id')
-                ->label('Address')
-                ->options(fn ($get) =>
-                    $get('customer_id')
-                        ? \App\Models\Address::where('customer_id', $get('customer_id'))->pluck('name', 'id')
-                        : []
-                )
-                ->searchable()
-                ->reactive()
-                ->required()
-                ->disabled(fn ($get) => !$get('customer_id')),
+                Select::make('address_id')
+                    ->label('Address')
+                    ->options(
+                        fn($get) =>
+                        $get('customer_id')
+                            ? \App\Models\Address::where('customer_id', $get('customer_id'))->pluck('name', 'id')
+                            : []
+                    )
+                    ->searchable()
+                    ->reactive()
+                    ->required()
+                    ->disabled(fn($get) => !$get('customer_id')),
 
 
                 Select::make('type')
@@ -64,23 +66,26 @@ class MaintenanceRequestResource extends Resource
                 Select::make('products')
                     ->relationship('products', 'name_ar')
                     ->multiple()
-                    ->preload(),
+                    ->preload()
+                    ->required(),
 
-                    // Repeater::make('statuses')
-                    // ->label('Statuses')
-                    // ->relationship('statuses') // Uses the statuses() relationship
-                    // ->schema([
-                    //     TextInput::make('status')
-                    //         ->default('pending')  // Default status is 'pending'
-                    //         ->disabled(),         // User cannot change it
-                    // ])
-                    // // ->hidden() // Hide from the user
-                    // ->disableItemCreation() // Prevent adding new statuses manually
-                    // ->disableItemDeletion()
-                    // ->disableItemMovement(),
+                // Repeater::make('statuses')
+                // ->label('Statuses')
+                // ->relationship('statuses') // Uses the statuses() relationship
+                // ->schema([
+                //     TextInput::make('status')
+                //         ->default('pending')  // Default status is 'pending'
+                //         ->disabled(),         // User cannot change it
+                // ])
+                // // ->hidden() // Hide from the user
+                // ->disableItemCreation() // Prevent adding new statuses manually
+                // ->disableItemDeletion()
+                // ->disableItemMovement(),
 
                 TextInput::make('sap_order_id')
-                    ->nullable(),
+                    ->rules([
+                        fn($get) => $get('type') === 'new_installation' ? 'required' : 'nullable',
+                    ]),
 
                 DatePicker::make('last_maintenance_date')
                     ->nullable(),
@@ -128,9 +133,10 @@ class MaintenanceRequestResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->sortable(),
-                TextColumn::make('customer.first_name')->sortable()->searchable()->label('Customer'),
-                TextColumn::make('type')->sortable()->searchable(),
-                TextColumn::make('current_status.status')->sortable(),
+                TextColumn::make('customer.name')->searchable()->label('Customer'),
+                TextColumn::make('customer.phone')->sortable()->searchable()->label('Phone'),
+                TextColumn::make('type')->sortable()->searchable()->label('Type'),
+                TextColumn::make('last_status')->sortable()->searchable()->label('Status'),
                 // TextColumn::make('created_at')->dateTime()->sortable(),
             ])->defaultSort('id', 'desc')
             ->filters([
@@ -147,7 +153,7 @@ class MaintenanceRequestResource extends Resource
                 Tables\Actions\Action::make('Book Appointment')
                     ->label('Book Appointment')
                     ->icon('heroicon-o-calendar')
-                    ->disabled(fn ($record) => !in_array($record->last_status, ['pending', 'technician_assigned']))
+                    ->disabled(fn($record) => !in_array($record->last_status, ['pending', 'technician_assigned']))
                     ->form([
                         DatePicker::make('selected_date')
                             ->label('Select Date')
@@ -156,11 +162,11 @@ class MaintenanceRequestResource extends Resource
 
                         Select::make('slot_id')
                             ->label('Available Slots')
-                            ->options(fn ($get, $record) => self::fetchAvailableSlots($record, $get('selected_date')))
+                            ->options(fn($get, $record) => self::fetchAvailableSlots($record, $get('selected_date')))
                             ->required()
                             ->reactive(),
                     ])
-                    ->action(fn ($data, $record) => self::assignSlot($record, $data['slot_id']))
+                    ->action(fn($data, $record) => self::assignSlot($record, $data['slot_id']))
                     ->modalHeading('Book an Appointment')
                     ->modalButton('Assign Slot'),
             ])
@@ -200,9 +206,9 @@ class MaintenanceRequestResource extends Resource
             'request_id' => $record->id,
             'date' => $selectedDate,
         ]));
-// dd($slots);
+        // dd($slots);
         // Convert the response to an array of options
-        return collect($slots->original['data'] ?? [])->mapWithKeys(fn ($slot) => [
+        return collect($slots->original['data'] ?? [])->mapWithKeys(fn($slot) => [
             $slot['id'] => $slot['technician']['first_name'] . ' ' . $slot['technician']['last_name'] . ' - ' . $slot['time'],
         ])->toArray();
     }

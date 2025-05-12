@@ -36,7 +36,9 @@ class TechnicianResource extends Resource
             ->schema([
                 TextInput::make('first_name')->required(),
                 TextInput::make('last_name')->required(),
-                TextInput::make('phone')->required(),
+                TextInput::make('phone')
+                    ->unique(Technician::class, 'phone', ignoreRecord: true)
+                    ->required(),
                 TextInput::make('email')
                     ->email()
                     ->unique(Technician::class, 'email', ignoreRecord: true)
@@ -51,11 +53,11 @@ class TechnicianResource extends Resource
                     ->relationship('manager', 'email')
                     ->required(),
                 Select::make('districts')
-                    ->relationship('districts', 'name_en')
+                    ->relationship('districts', 'name_ar')
                     ->multiple()
                     ->preload(),
                 Select::make('products')
-                    ->relationship('products', 'name_en')
+                    ->relationship('products', 'name_ar')
                     ->multiple()
                     ->preload(),
                 Toggle::make('authorized'),
@@ -93,7 +95,7 @@ class TechnicianResource extends Resource
                                     ->label('Select Date')
                                     ->required(),
                             ])
-                            ->minItems(1) // At least one date required
+                            ->minItems(1)
                             ->columns(1)
                             ->addable(true)
                             ->deletable(true),
