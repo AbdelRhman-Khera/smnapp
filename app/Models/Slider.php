@@ -21,7 +21,7 @@ class Slider extends Model
 
     public function getImageUrlAttribute()
     {
-        return url('public/storage/' . $this->image);
+        return url('storage/' . $this->image);
     }
 
 }

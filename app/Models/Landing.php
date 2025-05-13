@@ -165,37 +165,37 @@ class Landing extends Model
     }
     public function getMainImageUrlAttribute()
     {
-        return url('public/storage/' . $this->main_image);
+        return url('storage/' . $this->main_image);
     }
 
     public function getLogoUrlAttribute()
     {
-        return url('public/storage/' . $this->logo);
+        return url('storage/' . $this->logo);
     }
 
     public function getFeatureImageUrlAttribute()
     {
-        return url('public/storage/' . $this->feature_image);
+        return url('storage/' . $this->feature_image);
     }
 
     public function getServicesImageUrlAttribute()
     {
-        return url('public/storage/' . $this->services_image);
+        return url('storage/' . $this->services_image);
     }
 
     public function getStoreImageUrlAttribute()
     {
-        return url('public/storage/' . $this->store_image);
+        return url('storage/' . $this->store_image);
     }
 
     public function getMapImageUrlAttribute()
     {
-        return url('public/storage/' . $this->map_image);
+        return url('storage/' . $this->map_image);
     }
 
     public function getDownloadImageUrlAttribute()
     {
-        return url('public/storage/' . $this->download_image);
+        return url('storage/' . $this->download_image);
     }
 }
 
