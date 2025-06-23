@@ -1,15 +1,11 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\CustomerResource\RelationManagers;
 
-use App\Filament\Resources\AddressResource\Pages;
-use App\Filament\Resources\AddressResource\RelationManagers;
-use App\Models\Address;
 use App\Models\District;
 use Filament\Forms;
-use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,26 +22,24 @@ use Dotswan\MapPicker\Facades\MapPicker as FacadesMapPicker;
 use Dotswan\MapPicker\Fields\Map;
 use Filament\Forms\Set;
 
-class AddressResource extends Resource
+class AddressesRelationManager extends RelationManager
 {
-    protected static ?string $model = Address::class;
+    protected static string $relationship = 'addresses';
 
-    protected static ?string $navigationGroup = 'Geographical Locations';
-    protected static ?string $navigationIcon = 'heroicon-o-home';
-    protected static ?int $navigationSort = 3;
-
-    public static function form(Form $form): Form
+    public function form(Form $form): Form
     {
-        return $form->schema([
+       return $form->schema([
             Select::make('customer_id')
                 ->relationship('customer', 'phone')
-                ->required(),
+                ->required()
+                ->default(fn ($livewire) => $livewire->ownerRecord->id)
+                ->disabled(),
             TextInput::make('name')->required(),
             Select::make('city_id')
                 ->relationship('city', 'name_ar')
                 ->required()
                 ->reactive()
-                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)), // إعادة تعيين حقل الأحياء عند تغيير المدينة
+                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)),
             Select::make('district_id')
                 ->label('District')
                 ->required()
@@ -92,9 +86,11 @@ class AddressResource extends Resource
         ]);
     }
 
-    public static function table(Table $table): Table
+
+    public function table(Table $table): Table
     {
         return $table
+            ->recordTitleAttribute('name')
             ->columns([
                 TextColumn::make('customer.first_name')->label('Customer')->sortable(),
                 TextColumn::make('name')->sortable()->searchable(),
@@ -105,29 +101,17 @@ class AddressResource extends Resource
             ->filters([
                 //
             ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListAddresses::route('/'),
-            'create' => Pages\CreateAddress::route('/create'),
-            'edit' => Pages\EditAddress::route('/{record}/edit'),
-        ];
     }
 }

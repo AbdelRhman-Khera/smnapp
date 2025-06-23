@@ -50,7 +50,12 @@ class Customer extends Authenticatable
     public function products()
     {
         return $this->belongsToMany(Product::class, 'customer_products', 'customer_id', 'product_id')
-                    ->withTimestamps();
+            ->withTimestamps();
+    }
+
+    public function maintenance_requests()
+    {
+        return $this->hasMany(MaintenanceRequest::class);
     }
 
     public function getNameAttribute()

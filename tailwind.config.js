@@ -8,6 +8,7 @@ export default {
         './resources/**/*.blade.php',
         './resources/**/*.js',
         './resources/**/*.vue',
+        './awcodes/overlook/resources/**/*.blade.php',
     ],
     theme: {
         extend: {
