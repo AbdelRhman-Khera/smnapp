@@ -39,7 +39,9 @@ class AddressResource extends Resource
         return $form->schema([
             Select::make('customer_id')
                 ->relationship('customer', 'phone')
-                ->required(),
+                ->searchable()
+                ->required()
+                ->reactive(),
             TextInput::make('name')->required(),
             Select::make('city_id')
                 ->relationship('city', 'name_ar')
@@ -96,11 +98,23 @@ class AddressResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('customer.first_name')->label('Customer')->sortable(),
+                TextColumn::make('id')->sortable(),
+                TextColumn::make('customer_full_name')
+                    ->label('Customer')
+                    ->getStateUsing(function ($record) {
+                        return $record->customer ? ($record->customer->first_name . ' ' . $record->customer->last_name) : '';
+                    })
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('customer', function (Builder $customerQuery) use ($search) {
+                            $customerQuery->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%");
+                        });
+                    }),
+                TextColumn::make('customer.phone')->searchable()->label('Phone'),
                 TextColumn::make('name')->sortable()->searchable(),
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
                 TextColumn::make('district.name_ar')->label('District (AR)')->sortable(),
-                TextColumn::make('street')->sortable(),
+                TextColumn::make('street')->searchable(),
             ])->defaultSort('id', 'desc')
             ->filters([
                 //
