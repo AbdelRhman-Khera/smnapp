@@ -47,7 +47,7 @@ class AddressResource extends Resource
                 ->relationship('city', 'name_ar')
                 ->required()
                 ->reactive()
-                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)), // إعادة تعيين حقل الأحياء عند تغيير المدينة
+                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)), 
             Select::make('district_id')
                 ->label('District')
                 ->required()

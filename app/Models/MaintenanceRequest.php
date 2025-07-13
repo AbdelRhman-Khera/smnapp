@@ -96,4 +96,17 @@ class MaintenanceRequest extends Model
     {
         return $this->hasOne(Feedback::class);
     }
+
+    public function maintenanceRequests()
+{
+    return $this->hasManyThrough(
+        \App\Models\MaintenanceRequest::class,
+        \App\Models\Address::class,
+        'district_id',
+        'address_id',
+        'id',
+        'id'
+    );
+}
+
 }

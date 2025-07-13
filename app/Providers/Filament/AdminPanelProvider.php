@@ -22,6 +22,7 @@ use Filament\Navigation\MenuItem;
 use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 use Awcodes\Overlook\OverlookPlugin;
 use Awcodes\Overlook\Widgets\OverlookWidget;
+use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -45,9 +46,30 @@ class AdminPanelProvider extends PanelProvider
                 // OverlookWidget::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
+                \App\Filament\Widgets\DailyMaintenanceRequestsChart::class,
+                \App\Filament\Widgets\RequestsByCityChart::class,
+                \App\Filament\Widgets\RequestsByDistrictChart::class,
+                \App\Filament\Widgets\MaintenanceRequestTypesChart::class,
+                \App\Filament\Widgets\CompletedPendingRequestsChart::class,
+                \App\Filament\Widgets\MonthlyInvoicesChart::class,
+                \App\Filament\Widgets\MonthlyRevenueChart::class,
+                \App\Filament\Widgets\TopProductsChart::class,
+                \App\Filament\Widgets\TopServicesChart::class,
+                \App\Filament\Widgets\SparePartUsageChart::class,
+                \App\Filament\Widgets\AvgCompletionTimeChart::class,
+                \App\Filament\Widgets\TechnicianRequestCountChart::class,
+                \App\Filament\Widgets\FeedbackRatingChart::class,
+                \App\Filament\Widgets\ServiceFrequencyChart::class,
+                \App\Filament\Widgets\NewCustomersChart::class,
+                \App\Filament\Widgets\RequestsPerSlotChart::class,
+                \App\Filament\Widgets\MostActiveDistrictsChart::class,
+                \App\Filament\Widgets\MostActiveCitiesChart::class,
+                \App\Filament\Widgets\SupportFormsPlatformChart::class,
+                \App\Filament\Widgets\CompletedRequestsMonthlyChart::class,
             ])
             ->plugins([
                 \FilipFonal\FilamentLogManager\FilamentLogManager::make(),
+                FilamentApexChartsPlugin::make(),
                 FilamentEditProfilePlugin::make()
                     ->slug('my-profile')
                     ->setTitle('My Profile')
@@ -62,15 +84,15 @@ class AdminPanelProvider extends PanelProvider
                     ->shouldShowBrowserSessionsForm()
                     ->shouldShowAvatarForm(),
                 OverlookPlugin::make()
-                ->sort(1)
-                ->columns([
-                    'default' => 1,
-                    'sm' => 2,
-                    'md' => 3,
-                    'lg' => 4,
-                    'xl' => 4,
-                    '2xl' => null,
-                ]),
+                    ->sort(1)
+                    ->columns([
+                        'default' => 1,
+                        'sm' => 2,
+                        'md' => 3,
+                        'lg' => 4,
+                        'xl' => 4,
+                        '2xl' => null,
+                    ]),
 
             ])
             ->middleware([

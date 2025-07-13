@@ -11,6 +11,7 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging;
 
 
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
         Livewire::setScriptRoute(function ($handle) {
             return Route::get('/vendor/livewire/livewire.js', $handle)->middleware('web');
         });
@@ -44,6 +46,6 @@ class AppServiceProvider extends ServiceProvider
             ->withServiceAccount(storage_path('app/firebase/firebase_credentials.json'))
             ->withProjectId(env('FIREBASE_PROJECT_ID', 'smnapp-20ba2'));
 
-            $this->app->instance(Messaging::class, $factory->createMessaging());
-        }
+        $this->app->instance(Messaging::class, $factory->createMessaging());
+    }
 }

@@ -26,4 +26,9 @@ class District extends Model
         $locale = app()->getLocale();
         return $locale === 'ar' ? $this->city->name_ar : $this->city->name_en;
     }
+
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
+    }
 }
