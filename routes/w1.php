@@ -11,18 +11,20 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Middleware\SetLanguage;
+use App\Http\Middleware\BasicAuthMiddleware;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
 Route::middleware([SetLanguage::class])->group(function () {
-    Route::post('/customer/register', [CustomerController::class, 'register']);
-    Route::get('/customer/addresses/{customer_id}', [CustomerController::class, 'getAddresses']);
-    Route::post('/customer/addresses', [CustomerController::class, 'addAddress']);
-    Route::post('/maintenance-request', [MaintenanceController::class, 'create']);
-    Route::post('/get-available-slots', [MaintenanceController::class, 'getAvailableSlots']);
-    Route::post('/maintenance-request/assign', [MaintenanceController::class, 'assignSlot']);
+    Route::post('/customer/register', [CustomerController::class, 'register'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/customer/addresses/{customer_id}', [CustomerController::class, 'getAddresses'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/customer/addresses', [CustomerController::class, 'addAddress'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/maintenance-request', [MaintenanceController::class, 'create'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/get-available-slots', [MaintenanceController::class, 'getAvailableSlots'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/maintenance-request/assign', [MaintenanceController::class, 'assignSlot'])->middleware(BasicAuthMiddleware::class);
     // Route::middleware('auth:sanctum')->group(function () {
     //     Route::post('/customer/logout', [CustomerController::class, 'logout']);
     //     Route::put('/customer/update-profile', [CustomerController::class, 'updateProfile']);
@@ -94,10 +96,10 @@ Route::middleware([SetLanguage::class])->group(function () {
     /// Master Data
 
 
-    Route::get('/cities', [AddressController::class, 'cities']);
-    Route::get('/cities/{city}/districts', [AddressController::class, 'getDistricts']);
-    Route::get('/categories', [ProductController::class, 'getAllcategories']);
-    Route::get('/products', [ProductController::class, 'getAllProducts']);
-    Route::get('/spare-parts', [LandingController::class, 'getSpareParts']);
-    Route::get('/services', [LandingController::class, 'getServices']);
+    Route::get('/cities', [AddressController::class, 'cities'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/cities/{city}/districts', [AddressController::class, 'getDistricts'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/categories', [ProductController::class, 'getAllcategories'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/products', [ProductController::class, 'getAllProducts'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/spare-parts', [LandingController::class, 'getSpareParts'])->middleware(BasicAuthMiddleware::class);
+    Route::get('/services', [LandingController::class, 'getServices'])->middleware(BasicAuthMiddleware::class);
 });
