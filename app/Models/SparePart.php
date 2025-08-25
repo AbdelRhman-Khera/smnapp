@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class SparePart extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'name_ar',
         'name_en',
@@ -53,6 +56,12 @@ class SparePart extends Model
     public function getImageUrlAttribute()
     {
         return url('storage/' . $this->image);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 
 }

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Address extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'customer_id',
         'name',
@@ -31,5 +34,10 @@ class Address extends Model
     public function district()
     {
         return $this->belongsTo(District::class);
+    }
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 }

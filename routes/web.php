@@ -15,6 +15,8 @@ Route::get('/clear-cache', function () {
     $exitCode = Artisan::call('cache:clear');
     $exitCode = Artisan::call('storage:link');
     $exitCode = Artisan::call('optimize:clear');
+    $exitCode = Artisan::call('migrate');
+
 
 
 

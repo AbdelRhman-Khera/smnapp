@@ -14,6 +14,8 @@ class SupportForm extends Model
         'status',
         'notes',
         'user_id',
+        'name',
+        'phone',
 
     ];
 }

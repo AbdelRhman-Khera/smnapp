@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Category extends Model
 {
-    use HasFactory;
+    use HasFactory , LogsActivity;
     protected $fillable = ['name_ar', 'name_en'];
     protected $appends = ['name'];
     // protected $hidden = ['name_ar', 'name_en'];
@@ -21,5 +23,11 @@ class Category extends Model
     {
         $locale = app()->getLocale();
         return $locale === 'ar' ? $this->name_ar : $this->name_en;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 }

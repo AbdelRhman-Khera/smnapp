@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Service extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = ['name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'price', 'is_active'];
     protected $appends = ['name', 'description', 'image_url'];
@@ -36,6 +38,12 @@ class Service extends Model
     public function invoices()
     {
         return $this->belongsToMany(Invoice::class, 'invoice_service');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 
 

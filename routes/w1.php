@@ -102,4 +102,6 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/products', [ProductController::class, 'getAllProducts'])->middleware(BasicAuthMiddleware::class);
     Route::get('/spare-parts', [LandingController::class, 'getSpareParts'])->middleware(BasicAuthMiddleware::class);
     Route::get('/services', [LandingController::class, 'getServices'])->middleware(BasicAuthMiddleware::class);
+
+    Route::post('/support-form', [CustomerController::class, 'storeSupportForm'])->middleware(BasicAuthMiddleware::class);
 });

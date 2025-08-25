@@ -23,6 +23,7 @@ use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 use Awcodes\Overlook\OverlookPlugin;
 use Awcodes\Overlook\Widgets\OverlookWidget;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
+use Rmsramos\Activitylog\ActivitylogPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -93,6 +94,8 @@ class AdminPanelProvider extends PanelProvider
                         'xl' => 4,
                         '2xl' => null,
                     ]),
+                ActivitylogPlugin::make()
+                 ->navigationGroup('System'),
 
             ])
             ->middleware([

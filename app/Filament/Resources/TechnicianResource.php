@@ -102,11 +102,36 @@ class TechnicianResource extends Resource
                     ])
                     ->action(fn($data, $record) => self::generateSlots($record, collect($data['selected_dates'])->pluck('date')->toArray()))
                     ->modalHeading('Generate Slots for Technician')
+                    ->successNotificationTitle('Slots generated successfully')
                     ->modalButton('Create Slots'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('generate_slots')
+                        ->label('Generate Slots')
+                        ->icon('heroicon-o-clock')
+                        ->form([
+                            Repeater::make('selected_dates')
+                                ->label('Select Date(s)')
+                                ->schema([
+                                    DatePicker::make('date')
+                                        ->label('Select Date')
+                                        ->required(),
+                                ])
+                                ->minItems(1)
+                                ->columns(1)
+                                ->addable(true)
+                                ->deletable(true),
+                        ])
+                        ->action(function ($data, $records) {
+                            foreach ($records as $technician) {
+                                self::generateSlots($technician, collect($data['selected_dates'])->pluck('date')->toArray());
+                            }
+                        })
+                        ->modalHeading('Generate Slots for Selected Technicians')
+                        ->successNotificationTitle('Slots generated successfully')
+                        ->modalButton('Create Slots'),
                 ]),
             ]);
     }

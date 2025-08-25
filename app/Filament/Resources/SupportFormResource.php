@@ -7,6 +7,7 @@ use App\Filament\Resources\SupportFormResource\RelationManagers;
 use App\Models\Customer;
 use App\Models\SupportForm;
 use App\Models\Technician;
+use Dom\Text;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -53,7 +54,12 @@ class SupportFormResource extends Resource
                 )
                 ->disabled()
                 ->required(),
-
+            TextInput::make('name')
+                ->label('Name')
+                ->disabled(),
+            TextInput::make('phone')
+                ->label('Phone')
+                ->disabled(),
             TextInput::make('subject')
                 ->label('Subject')
                 ->disabled()
@@ -64,6 +70,7 @@ class SupportFormResource extends Resource
                 ->options([
                     'app' => 'App',
                     'web' => 'Web',
+                    'chatbot' => 'Chatbot',
                 ])
                 ->disabled()
                 ->required(),
@@ -130,8 +137,9 @@ class SupportFormResource extends Resource
                     ),
                 BadgeColumn::make('platform')
                     ->colors([
-                        'primary' => 'app',
+                        'success' => 'app',
                         'secondary' => 'web',
+                        'info' => 'chatbot',
                     ]),
                 BadgeColumn::make('status')
                     ->colors([

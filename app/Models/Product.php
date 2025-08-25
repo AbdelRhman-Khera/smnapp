@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory , LogsActivity;
     protected $fillable = ['sap_id', 'name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'category_id'];
     protected $appends = ['name', 'description', 'category_name', 'image_url'];
     // protected $hidden = ['name_ar', 'name_en', 'image', 'description_ar', 'description_en', 'category_id'];
@@ -46,5 +48,10 @@ class Product extends Model
     public function getImageUrlAttribute()
     {
         return url('storage/' . $this->image);
+    }
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 }

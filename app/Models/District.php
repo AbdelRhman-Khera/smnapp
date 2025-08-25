@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class District extends Model
 {
+    use LogsActivity;
     protected $fillable = ['name_ar', 'name_en', 'city_id'];
     protected $appends = ['name', 'city_name'];
     // protected $hidden = ['name_ar', 'name_en', 'city_id','created_at', 'updated_at'];
@@ -30,5 +33,10 @@ class District extends Model
     public function addresses()
     {
         return $this->hasMany(Address::class);
+    }
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 }

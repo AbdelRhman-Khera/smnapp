@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Helpers\ValidationHelper;
+use App\Models\SupportForm;
 
 class CustomerController extends Controller
 {
@@ -142,5 +143,38 @@ class CustomerController extends Controller
             'message' => __('messages.address_added'),
             'data' => $address,
         ], 200);
+    }
+
+    public function storeSupportForm(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:15',
+            'details' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        $validatedData['user_type'] = 'customer';
+        $validatedData['platform'] = 'chatbot';
+
+        $supportForm = SupportForm::create($validatedData);
+
+        return response()->json([
+            'status' => 201,
+            'response_code' => 'SUPPORT_FORM_CREATED',
+            'message' => 'Support form created successfully.',
+            'data' => $supportForm,
+        ], 201);
     }
 }

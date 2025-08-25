@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Landing extends Model
 {
+    use LogsActivity;
     protected $fillable = [
         'main_title_ar',
         'main_title_en',
@@ -196,6 +199,12 @@ class Landing extends Model
     public function getDownloadImageUrlAttribute()
     {
         return url('storage/' . $this->download_image);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
+
     }
 }
 
