@@ -43,6 +43,8 @@ class AdminPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->widgets([
                 // OverlookWidget::class,
                 // Widgets\AccountWidget::class,

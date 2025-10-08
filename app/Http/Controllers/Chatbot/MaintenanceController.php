@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Services\NotificationService;
+use Mockery\Matcher\Not;
 
 class MaintenanceController extends Controller
 {
@@ -189,6 +190,11 @@ class MaintenanceController extends Controller
             $maintenanceRequest->id
         );
 
+        NotificationService::notifyAdmins(
+            __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
         return response()->json([
             'status' => 200,
             'response_code' => 'SLOT_ASSIGNED',
@@ -196,6 +202,113 @@ class MaintenanceController extends Controller
             'data' => [
                 'maintenance_request' => $maintenanceRequest,
                 'slot' => $newSlot,
+            ],
+        ], 200);
+    }
+
+    function newInstallation(Request $request)
+    {
+        $customer = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'customer_id' => 'required|exists:customers,id',
+            'address_id' => 'required|exists:addresses,id',
+            'order_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if ($request->order_id == 100) {
+            $products = [2];
+            $maintenanceRequest = MaintenanceRequest::create([
+                'customer_id' => $request->customer_id,
+                'type' => 'new_installation',
+                'address_id' => $request->address_id,
+                'sap_order_id' => $request->order_id,
+            ]);
+
+            $maintenanceRequest->products()->attach($products);
+
+            $maintenanceRequest->statuses()->create([
+                'status' => 'pending',
+                'notes' => 'تم انشاء الطلب عن طريق واتساب شات بوت',
+            ]);
+
+            $maintenanceRequest->last_status = 'pending';
+            $maintenanceRequest->save();
+            $maintenanceRequest->load(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'feedback']);
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'REQUEST_CREATED',
+                'message' => __('messages.request_created'),
+                'data' => $maintenanceRequest,
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_ORDER_ID',
+                'message' => __('messages.invalid_order_id'),
+            ], 400);
+        }
+    }
+
+    public function noSlot(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), [
+            'customer_id' => 'required|exists:customers,id',
+            'request_id' => 'required|exists:maintenance_requests,id',
+            'no_slot' => 'required|in:am,pm',
+            'date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($request->request_id);
+        if ($maintenanceRequest->customer_id != $request->customer_id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'NOT_AUTHORIZED',
+                'message' => __('messages.not_authorized'),
+            ], 403);
+        }
+        $note = $request->no_slot == 'am' ? 'العميل اختار الفترة الصباحية' : 'العميل اختار الفترة المسائية';
+        $note .= ' - التاريخ ' . $request->date;
+        // Update the request status
+        $maintenanceRequest->statuses()->create([
+            'status' => 'pending',
+            'notes' => $note,
+        ]);
+
+        $maintenanceRequest->last_status = 'pending';
+        $maintenanceRequest->save();
+
+        NotificationService::notifyAdmins(
+            __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'NO_SLOT_NOTED',
+            'message' => __('messages.request_created'),
+            'data' => [
+                'maintenance_request' => $maintenanceRequest,
             ],
         ], 200);
     }

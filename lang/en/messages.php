@@ -62,6 +62,7 @@ return [
     'categories_fetched' => 'Categories fetched successfully.',
     'addresses_fetched' => 'Addresses fetched successfully.',
     'customer_address_not_found' => 'Customer address not found.',
+    'invalid_order_id' => 'The provided order ID is invalid or served.',
 
 
 ];

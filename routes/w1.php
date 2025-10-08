@@ -23,8 +23,10 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/customer/addresses/{customer_id}', [CustomerController::class, 'getAddresses'])->middleware(BasicAuthMiddleware::class);
     Route::post('/customer/addresses', [CustomerController::class, 'addAddress'])->middleware(BasicAuthMiddleware::class);
     Route::post('/maintenance-request', [MaintenanceController::class, 'create'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/new-installation', [MaintenanceController::class, 'newInstallation'])->middleware(BasicAuthMiddleware::class);
     Route::post('/get-available-slots', [MaintenanceController::class, 'getAvailableSlots'])->middleware(BasicAuthMiddleware::class);
     Route::post('/maintenance-request/assign', [MaintenanceController::class, 'assignSlot'])->middleware(BasicAuthMiddleware::class);
+    Route::post('/maintenance-request/no-slot', [MaintenanceController::class, 'noSlot'])->middleware(BasicAuthMiddleware::class);
     // Route::middleware('auth:sanctum')->group(function () {
     //     Route::post('/customer/logout', [CustomerController::class, 'logout']);
     //     Route::put('/customer/update-profile', [CustomerController::class, 'updateProfile']);

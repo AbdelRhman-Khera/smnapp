@@ -14,6 +14,7 @@ use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 
 class CustomerNotification extends Notification
 {
+
     protected $message;
     protected $requestId;
 

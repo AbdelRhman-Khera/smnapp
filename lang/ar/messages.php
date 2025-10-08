@@ -62,6 +62,7 @@ return [
     'categories_fetched' => 'تم جلب الفئات بنجاح.',
     'addresses_fetched' => 'تم جلب العناوين بنجاح.',
     'customer_address_not_found' => 'لا يوجد عناوين للعميل.',
+    'invalid_order_id' => 'رقم الطلب غير صحيح او مخدوم سابقا.',
 
 
 ];
