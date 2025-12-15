@@ -91,9 +91,9 @@ Route::middleware([SetLanguage::class])->group(function () {
     //     Route::post('/notifications/read-all', [NotificationController::class, 'markAllNotificationsAsRead']);
     // });
     /////paytabs
-    Route::post('/payment/callback/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback');
-    Route::post('/payment/success/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.success');
-    Route::post('/payment/mobileCallback', [MaintenanceRequestController::class, 'paymentCallbackMobile'])->name('payment.mobileCallback');
+    // Route::post('/payment/callback/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback');
+    // Route::post('/payment/success/{id}', [MaintenanceRequestController::class, 'paymentCallback'])->name('payment.success');
+    // Route::post('/payment/mobileCallback', [MaintenanceRequestController::class, 'paymentCallbackMobile'])->name('payment.mobileCallback');
 
     /// Master Data
 
