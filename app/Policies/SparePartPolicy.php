@@ -12,50 +12,50 @@ class SparePartPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_spare_part');
+        return $user->can('view_any_spare::part');
     }
     public function view(User $user, SparePart $sparePart): bool
     {
-        return $user->can('view_spare_part');
+        return $user->can('view_spare::part');
     }
     public function create(User $user): bool
     {
-        return $user->can('create_spare_part');
+        return $user->can('create_spare::part');
     }
     public function update(User $user, SparePart $sparePart): bool
     {
-        return $user->can('update_spare_part');
+        return $user->can('update_spare::part');
     }
     public function delete(User $user, SparePart $sparePart): bool
     {
-        return $user->can('delete_spare_part');
+        return $user->can('delete_spare::part');
     }
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_spare_part');
+        return $user->can('delete_any_spare::part');
     }
     public function forceDelete(User $user, SparePart $sparePart): bool
     {
-        return $user->can('force_delete_spare_part');
+        return $user->can('force_delete_spare::part');
     }
     public function forceDeleteAny(User $user): bool
     {
-        return $user->can('force_delete_any_spare_part');
+        return $user->can('force_delete_any_spare::part');
     }
     public function restore(User $user, SparePart $sparePart): bool
     {
-        return $user->can('restore_spare_part');
+        return $user->can('restore_spare::part');
     }
     public function restoreAny(User $user): bool
     {
-        return $user->can('restore_any_spare_part');
+        return $user->can('restore_any_spare::part');
     }
     public function replicate(User $user, SparePart $sparePart): bool
     {
-        return $user->can('replicate_spare_part');
+        return $user->can('replicate_spare::part');
     }
     public function reorder(User $user): bool
     {
-        return $user->can('reorder_spare_part');
+        return $user->can('reorder_spare::part');
     }
 }
