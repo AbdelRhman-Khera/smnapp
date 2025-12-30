@@ -63,6 +63,9 @@ return [
     'addresses_fetched' => 'Addresses fetched successfully.',
     'customer_address_not_found' => 'Customer address not found.',
     'invalid_order_id' => 'The provided order ID is invalid or served.',
+    'no_products_found' => 'No products found for this order.',
+    'products_fetched' => 'Products fetched successfully.',
+    'internal_server_error' => 'An error occurred while processing the request.',
 
 
 ];

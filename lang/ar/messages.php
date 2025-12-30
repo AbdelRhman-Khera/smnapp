@@ -63,6 +63,9 @@ return [
     'addresses_fetched' => 'تم جلب العناوين بنجاح.',
     'customer_address_not_found' => 'لا يوجد عناوين للعميل.',
     'invalid_order_id' => 'رقم الطلب غير صحيح او مخدوم سابقا.',
+    'no_products_found' => 'لا توجد منتجات لهذا الطلب.',
+    'products_fetched' => 'تم جلب المنتجات بنجاح.',
+    'internal_server_error' => 'حدث خطأ أثناء معالجة الطلب.',
 
 
 ];

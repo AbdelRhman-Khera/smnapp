@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Paytabscom\Laravel_paytabs\Facades\paypage;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\json;
 
@@ -549,14 +550,59 @@ class MaintenanceRequestController extends Controller
 
     public function getSpecificProductByOrder($id)
     {
-        $products = Product::whereIn('id', [1, 2])->get();
+        try {
 
-        return response()->json([
-            'status' => 200,
-            'response_code' => 'SPECIFIC_PRODUCTS_FETCHED',
-            'message' => 'Products fetched successfully for this order.',
-            'data' => $products,
-        ], 200);
+            // Call SAP API
+            $response = Http::withBasicAuth('Test', '@lexandria@Rise12345')
+                // ->withoutVerifying()   // local for testing only
+                ->acceptJson()
+                ->get('https://dev.samnan.com.sa/sap/bc/zrestful_sales', [
+                    'sap-client' => 300,
+                    'Action'     => 'GET_INVOICE_LINE',
+                ], [
+                    'json' => [
+                        'VBELN' => $id
+                    ]
+                ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'INVALID_ORDER',
+                    'message' => __('messages.invalid_order_id'),
+                ], 400);
+            }
+
+            $sapItems = $response->json();
+
+            if (empty($sapItems) || !is_array($sapItems)) {
+                return response()->json([
+                    'status' => 404,
+                    'response_code' => 'NO_PRODUCTS_FOUND',
+                    'message' => __('messages.no_products_found'),
+                ], 404);
+            }
+
+            $sapIds = collect($sapItems)->pluck('MATNR')->toArray();
+
+            $products = Product::whereIn('sap_id', $sapIds)->get();
+
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'ORDER_PRODUCTS_FETCHED',
+                'message' => __('messages.products_fetched'),
+                'data' => $products,
+            ], 200);
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'status' => 500,
+                'response_code' => 'INTERNAL_SERVER_ERROR',
+                'message' => __('messages.internal_server_error'),
+                'debug' => app()->environment('local') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     public function testpay()
