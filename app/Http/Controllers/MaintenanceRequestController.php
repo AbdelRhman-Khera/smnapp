@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Paytabscom\Laravel_paytabs\Facades\paypage;
 use Illuminate\Support\Facades\Http;
-
+use Carbon\Carbon;
 use function Pest\Laravel\json;
 
 class MaintenanceRequestController extends Controller
@@ -159,11 +159,24 @@ class MaintenanceRequestController extends Controller
 
         $maintenanceRequest = MaintenanceRequest::with('address', 'products')->findOrFail($request->request_id);
 
-        $district = $maintenanceRequest->address->district['name_en'];
+        $district = $maintenanceRequest->address->district;
         $products = $maintenanceRequest->products->pluck('id')->toArray();
 
+        $availableDays = $district->available_days ?? [];
+        $date = Carbon::parse($request->date);
+        $dayOfWeek = $date->englishDayOfWeek;
+
+        if (!empty($availableDays) && !in_array($dayOfWeek, $availableDays)) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'No slots available on this day for the selected district.',
+                'data' => [],
+            ], 200);
+        }
+
         $technicians = Technician::whereHas('districts', function ($query) use ($district) {
-            $query->where('name_en', $district);
+            $query->where('name_en', $district->name_en);
         })->whereHas('products', function ($query) use ($products) {
             $query->whereIn('products.id', $products);
         })->get();

@@ -9,8 +9,11 @@ use Spatie\Activitylog\LogOptions;
 class District extends Model
 {
     use LogsActivity;
-    protected $fillable = ['name_ar', 'name_en', 'city_id'];
+    protected $fillable = ['name_ar', 'name_en', 'city_id','available_days'];
     protected $appends = ['name', 'city_name'];
+    protected $casts = [
+        'available_days' => 'array',
+    ];
     // protected $hidden = ['name_ar', 'name_en', 'city_id','created_at', 'updated_at'];
 
     public function city()

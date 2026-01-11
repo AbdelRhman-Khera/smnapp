@@ -17,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\CheckboxList;
 
 class DistrictResource extends Resource
 {
@@ -41,6 +42,23 @@ class DistrictResource extends Resource
                         TextInput::make('name_en')->required(),
                     ]),
                 ]),
+                Forms\Components\Section::make('Availability Days')
+                ->description('حدد الأيام المتاحة للتوافر في هذا الحي')
+                ->schema([
+                    CheckboxList::make('available_days')
+                        ->options([
+                            'Saturday' => 'Saturday',
+                            'Sunday' => 'Sunday',
+                            'Monday' => 'Monday',
+                            'Tuesday' => 'Tuesday',
+                            'Wednesday' => 'Wednesday',
+                            'Thursday' => 'Thursday',
+                            'Friday' => 'Friday',
+                        ])
+                        ->columns(4)
+                        ->label('Available Days')
+                        ->helperText('اختر الأيام اللي الفنيين متاحين فيها لهذا الحي.'),
+                ]),
         ]);
     }
 
@@ -51,6 +69,7 @@ class DistrictResource extends Resource
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
                 TextColumn::make('name_ar')->sortable()->searchable(),
                 TextColumn::make('name_en')->sortable()->searchable(),
+
             ])->defaultSort('id', 'desc')
             ->filters([
                 //

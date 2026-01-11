@@ -24,6 +24,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
 
 class MaintenanceRequestResource extends Resource
 {
@@ -54,6 +56,43 @@ class MaintenanceRequestResource extends Resource
                     ->required()
                     ->disabled(fn($get) => !$get('customer_id')),
 
+                Section::make('Address Details')
+                    ->schema([
+                        Placeholder::make('address_name')
+                            ->label('Address Name')
+                            ->content(fn ($record) => $record?->address?->name ?? 'N/A'),
+
+                        Placeholder::make('city')
+                            ->label('City')
+                            ->content(fn ($record) => $record?->address?->city?->name_ar ?? 'N/A'),
+
+                        Placeholder::make('district')
+                            ->label('District')
+                            ->content(fn ($record) => $record?->address?->district?->name_ar ?? 'N/A'),
+
+                        Placeholder::make('street')
+                            ->label('Street')
+                            ->content(fn ($record) => $record?->address?->street ?? 'N/A'),
+
+                        Placeholder::make('national_address')
+                            ->label('National Address')
+                            ->content(fn ($record) => $record?->address?->national_address ?? 'N/A'),
+
+                        Placeholder::make('details')
+                            ->label('Details')
+                            ->content(fn ($record) => $record?->address?->details ?? 'N/A'),
+
+                        Placeholder::make('latitude')
+                            ->label('Latitude')
+                            ->content(fn ($record) => $record?->address?->latitude ?? 'N/A'),
+
+                        Placeholder::make('longitude')
+                            ->label('Longitude')
+                            ->content(fn ($record) => $record?->address?->longitude ?? 'N/A'),
+                    ])
+                    ->columns(2)
+                    ->collapsible()
+                    ->visible(fn ($operation) => in_array($operation, ['view', 'edit'])),
 
                 Select::make('type')
                     ->options([
