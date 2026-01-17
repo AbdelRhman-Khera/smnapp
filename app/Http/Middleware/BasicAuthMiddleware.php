@@ -15,7 +15,7 @@ class BasicAuthMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-         $AUTH_USER = 'SamnanW';
+        $AUTH_USER = 'SamnanW';
         $AUTH_PASS = 'Smnn@2025!';
 
         header('Cache-Control: no-cache, must-revalidate, max-age=0');
