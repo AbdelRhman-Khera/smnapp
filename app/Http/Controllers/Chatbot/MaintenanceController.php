@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Chatbot;
 
 use App\Http\Controllers\Controller;
 use App\Models\MaintenanceRequest;
+use App\Models\Product;
 use App\Models\Slot;
 use App\Models\Technician;
 use Illuminate\Http\Request;
@@ -22,12 +23,23 @@ class MaintenanceController extends Controller
         $validator = Validator::make($request->all(), [
             'customer_id' => 'required|exists:customers,id',
             // 'type' => 'required|in:new_installation,regular_maintenance,emergency_maintenance',
-            'products' => 'required|array',
+            // Accept either:
+            // 1) products: [1,2,3]
+            // 2) products: [{product_id: 1, quantity: 2}, ...]
+            'products' => 'required|array|min:1',
             'address_id' => 'required|exists:addresses,id',
             'problem_description' => 'nullable|string',
             'last_maintenance_date' => 'nullable|date',
             'photos' => 'nullable|array',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            try {
+                $this->normalizeProductsForAttach($request->input('products', []));
+            } catch (\InvalidArgumentException $e) {
+                $validator->errors()->add('products', $e->getMessage());
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -56,7 +68,9 @@ class MaintenanceController extends Controller
             'photos' => $photoPaths ?? [],
         ]);
 
-        $maintenanceRequest->products()->attach($request->products);
+        $maintenanceRequest->products()->attach(
+            $this->normalizeProductsForAttach($request->products)
+        );
 
         $maintenanceRequest->statuses()->create([
             'status' => 'pending',
@@ -73,6 +87,63 @@ class MaintenanceController extends Controller
             'message' => __('messages.request_created'),
             'data' => $maintenanceRequest,
         ], 200);
+    }
+
+    /**
+     * Normalize the incoming products payload into an attach/sync array.
+     *
+     * Supported payloads:
+     * - [1,2,3]
+     * - [['product_id' => 1, 'quantity' => 2], ...]
+     *
+     * Output (for attach/sync):
+     * - [1 => ['quantity' => 2], 2 => ['quantity' => 1]]
+     */
+    private function normalizeProductsForAttach(array $products): array
+    {
+        $attach = [];
+
+        foreach ($products as $item) {
+            // Backwards compatible: numeric IDs
+            if (is_numeric($item)) {
+                $productId = (int) $item;
+                if ($productId <= 0) {
+                    throw new \InvalidArgumentException('Invalid product id.');
+                }
+                $attach[$productId] = ['quantity' => 1];
+                continue;
+            }
+
+            if (!is_array($item)) {
+                throw new \InvalidArgumentException('Products must be an array of ids or objects with product_id and quantity.');
+            }
+
+            $productId = isset($item['product_id']) ? (int) $item['product_id'] : 0;
+            $quantity = isset($item['quantity']) ? (int) $item['quantity'] : 0;
+
+            if ($productId <= 0) {
+                throw new \InvalidArgumentException('Each product must have a valid product_id.');
+            }
+
+            if ($quantity <= 0) {
+                throw new \InvalidArgumentException('Each product must have a quantity of at least 1.');
+            }
+
+            $attach[$productId] = ['quantity' => $quantity];
+        }
+
+        if (empty($attach)) {
+            throw new \InvalidArgumentException('At least one product is required.');
+        }
+
+        // Ensure all product ids exist.
+        $found = Product::whereIn('id', array_keys($attach))->pluck('id')->all();
+        $missing = array_diff(array_keys($attach), $found);
+        if (!empty($missing)) {
+            throw new \InvalidArgumentException('Some selected products do not exist.');
+        }
+
+        return $attach;
     }
 
     public function getAvailableSlots(Request $request)
@@ -234,7 +305,9 @@ class MaintenanceController extends Controller
                 'sap_order_id' => $request->order_id,
             ]);
 
-            $maintenanceRequest->products()->attach($products);
+            $maintenanceRequest->products()->attach(
+                $this->normalizeProductsForAttach($products)
+            );
 
             $maintenanceRequest->statuses()->create([
                 'status' => 'pending',

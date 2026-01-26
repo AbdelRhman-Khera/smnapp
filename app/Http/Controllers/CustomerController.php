@@ -61,41 +61,25 @@ class CustomerController extends Controller
 
         $validatedData = $validator->validated();
         $validatedData['password'] = Hash::make($validatedData['password']);
-        // $validatedData['otp'] = rand(1000, 9999);
-        $validatedData['otp'] = 1111;
+        $validatedData['otp'] = rand(1000, 9999);
+        // $validatedData['otp'] = 1111;
         $customer = Customer::create($validatedData);
 
         // Send OTP via SMS using 4jawaly API
-        // try {
-        //     $smsResponse = Http::withBasicAuth(
-        //         '1D28Ps65RmtoZ8jUCkiJkp4cEPuUmyLpuaieywCg',
-        //         's6YnwNekVdyhAdp2lVfiPv5Vo5QBBr1bzl66wruUTtpUBlVz9GQyslv9mjPzr7w0DOZoch2pfgpzLJe7CaJghOJS7xx3E3Ch70d2'
-        //     )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
-        //         'messages' => [
-        //             [
-        //                 'text' => "Your OTP is: " . $customer->otp,
-        //                 'numbers' => [$customer->phone],
-        //                 'sender' => 'SamnanCo',
-        //             ],
-        //         ],
-        //     ]);
 
-        //     if ($smsResponse->failed()) {
-        //         return response()->json([
-        //             'status' => 500,
-        //             'response_code' => 'SMS_ERROR',
-        //             'message' => __('messages.sms_failed'),
-        //             'data' => null,
-        //         ], 500);
-        //     }
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         'status' => 500,
-        //         'response_code' => 'SMS_EXCEPTION',
-        //         'message' => __('messages.sms_failed'),
-        //         'error' => $e->getMessage(),
-        //     ], 500);
-        // }
+        $smsResponse = Http::withBasicAuth(
+            '1D28Ps65RmtoZ8jUCkiJkp4cEPuUmyLpuaieywCg',
+            's6YnwNekVdyhAdp2lVfiPv5Vo5QBBr1bzl66wruUTtpUBlVz9GQyslv9mjPzr7w0DOZoch2pfgpzLJe7CaJghOJS7xx3E3Ch70d2'
+        )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
+            'messages' => [
+                [
+                    'text' => "Your OTP is: " . $customer->otp,
+                    'numbers' => [$customer->phone],
+                    'sender' => 'SamnanCo',
+                ],
+            ],
+        ]);
+
 
         return response()->json([
             'status' => 201,

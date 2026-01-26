@@ -76,7 +76,9 @@ class MaintenanceRequest extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'maintenance_request_product');
+        return $this->belongsToMany(Product::class, 'maintenance_request_product')
+            ->withPivot(['quantity'])
+            ->withTimestamps();
     }
 
     public function statuses()

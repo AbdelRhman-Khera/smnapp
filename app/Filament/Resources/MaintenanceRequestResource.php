@@ -6,6 +6,7 @@ use App\Filament\Resources\MaintenanceRequestResource\Pages;
 use App\Filament\Resources\MaintenanceRequestResource\RelationManagers;
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Models\MaintenanceRequest;
+use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -60,39 +61,39 @@ class MaintenanceRequestResource extends Resource
                     ->schema([
                         Placeholder::make('address_name')
                             ->label('Address Name')
-                            ->content(fn ($record) => $record?->address?->name ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->name ?? 'N/A'),
 
                         Placeholder::make('city')
                             ->label('City')
-                            ->content(fn ($record) => $record?->address?->city?->name_ar ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->city?->name_ar ?? 'N/A'),
 
                         Placeholder::make('district')
                             ->label('District')
-                            ->content(fn ($record) => $record?->address?->district?->name_ar ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->district?->name_ar ?? 'N/A'),
 
                         Placeholder::make('street')
                             ->label('Street')
-                            ->content(fn ($record) => $record?->address?->street ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->street ?? 'N/A'),
 
                         Placeholder::make('national_address')
                             ->label('National Address')
-                            ->content(fn ($record) => $record?->address?->national_address ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->national_address ?? 'N/A'),
 
                         Placeholder::make('details')
                             ->label('Details')
-                            ->content(fn ($record) => $record?->address?->details ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->details ?? 'N/A'),
 
                         Placeholder::make('latitude')
                             ->label('Latitude')
-                            ->content(fn ($record) => $record?->address?->latitude ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->latitude ?? 'N/A'),
 
                         Placeholder::make('longitude')
                             ->label('Longitude')
-                            ->content(fn ($record) => $record?->address?->longitude ?? 'N/A'),
+                            ->content(fn($record) => $record?->address?->longitude ?? 'N/A'),
                     ])
                     ->columns(2)
                     ->collapsible()
-                    ->visible(fn ($operation) => in_array($operation, ['view', 'edit'])),
+                    ->visible(fn($operation) => in_array($operation, ['view', 'edit'])),
 
                 Select::make('type')
                     ->options([
@@ -102,24 +103,27 @@ class MaintenanceRequestResource extends Resource
                     ])
                     ->required(),
 
-                Select::make('products')
-                    ->relationship('products', 'name_ar')
-                    ->multiple()
-                    ->preload()
-                    ->required(),
+                Repeater::make('products_items')
+                    ->label('Products')
+                    ->schema([
+                        Select::make('product_id')
+                            ->label('Product')
+                            ->options(fn() => Product::query()->pluck('name_ar', 'id')->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
 
-                // Repeater::make('statuses')
-                // ->label('Statuses')
-                // ->relationship('statuses') // Uses the statuses() relationship
-                // ->schema([
-                //     TextInput::make('status')
-                //         ->default('pending')  // Default status is 'pending'
-                //         ->disabled(),         // User cannot change it
-                // ])
-                // // ->hidden() // Hide from the user
-                // ->disableItemCreation() // Prevent adding new statuses manually
-                // ->disableItemDeletion()
-                // ->disableItemMovement(),
+                        TextInput::make('quantity')
+                            ->label('Qty')
+                            ->numeric()
+                            ->minValue(1)
+                            ->default(1)
+                            ->required(),
+                    ])
+                    ->columns(2)
+                    ->minItems(1)
+                    ->defaultItems(1)
+                    ->dehydrated(true),
 
                 TextInput::make('sap_order_id')
                     ->rules([

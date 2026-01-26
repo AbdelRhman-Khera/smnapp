@@ -8,7 +8,7 @@
                     <strong>Invoice ID:</strong> {{ $this->invoice->id }}
                 </div>
                 <div>
-                    <strong>Total Amount:</strong> {{ number_format($this->invoice->total, 2) }} $
+                    <strong>Total Amount:</strong> {{ number_format($this->invoice->total, 2) }} SAR
                 </div>
                 <div>
                     <strong>Payment Method:</strong> {{ ucfirst($this->invoice->payment_method) }}

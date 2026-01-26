@@ -71,12 +71,38 @@ class MaintenanceRequestController extends Controller
      */
     public function show($id)
     {
-        $maintenanceRequest = MaintenanceRequest::with(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'invoice.services', 'invoice.spareParts', 'feedback'])->findOrFail($id);
-        // dd($maintenanceRequest->invoice);
+        $maintenanceRequest = MaintenanceRequest::with([
+            'customer',
+            'slot',
+            'technician',
+            'address',
+            'products',
+            'statuses',
+            'invoice',
+            'invoice.services',
+            'invoice.spareParts',
+            'feedback'
+        ])->findOrFail($id);
+
+        // hide technician phone before the appointment day
+        $mask = '#########';
+
+        $slotDate = optional($maintenanceRequest->slot)->date;
+        if ($slotDate && $maintenanceRequest->technician) {
+
+            // Compare by date only (ignore time)
+            $today = Carbon::now()->startOfDay();
+            $appointmentDay = Carbon::parse($slotDate)->startOfDay();
+
+            if ($today->lt($appointmentDay)) {
+                $maintenanceRequest->technician->phone = $mask;
+            }
+        }
+
         return response()->json([
             'status' => 200,
             'response_code' => 'MAINTENANCE_REQUEST_FETCHED',
-            'message' =>  __('messages.maintenance_request_fetched'),
+            'message' => __('messages.maintenance_request_fetched'),
             'data' => $maintenanceRequest,
         ], 200);
     }
@@ -89,12 +115,23 @@ class MaintenanceRequestController extends Controller
 
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:new_installation,regular_maintenance,emergency_maintenance',
-            'products' => 'required|array',
+            // Accept either:
+            // 1) products: [1,2,3]
+            // 2) products: [{product_id: 1, quantity: 2}, ...]
+            'products' => 'required|array|min:1',
             'address_id' => 'required|exists:addresses,id',
             'problem_description' => 'nullable|string',
             'last_maintenance_date' => 'nullable|date',
             'photos' => 'nullable|array',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            try {
+                $this->normalizeProductsForAttach($request->input('products', []));
+            } catch (\InvalidArgumentException $e) {
+                $validator->errors()->add('products', $e->getMessage());
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -123,7 +160,9 @@ class MaintenanceRequestController extends Controller
             'photos' => $photoPaths ?? [],
         ]);
 
-        $maintenanceRequest->products()->attach($request->products);
+        $maintenanceRequest->products()->attach(
+            $this->normalizeProductsForAttach($request->products)
+        );
 
         $maintenanceRequest->statuses()->create([
             'status' => 'pending',
@@ -139,6 +178,54 @@ class MaintenanceRequestController extends Controller
             'message' => __('messages.request_created'),
             'data' => $maintenanceRequest,
         ], 200);
+    }
+
+
+    private function normalizeProductsForAttach(array $products): array
+    {
+        $attach = [];
+
+        foreach ($products as $item) {
+            // Backwards compatible: numeric IDs
+            if (is_numeric($item)) {
+                $productId = (int) $item;
+                if ($productId <= 0) {
+                    throw new \InvalidArgumentException('Invalid product id.');
+                }
+                $attach[$productId] = ['quantity' => 1];
+                continue;
+            }
+
+            if (!is_array($item)) {
+                throw new \InvalidArgumentException('Products must be an array of ids or objects with product_id and quantity.');
+            }
+
+            $productId = isset($item['product_id']) ? (int) $item['product_id'] : 0;
+            $quantity = isset($item['quantity']) ? (int) $item['quantity'] : 0;
+
+            if ($productId <= 0) {
+                throw new \InvalidArgumentException('Each product must have a valid product_id.');
+            }
+
+            if ($quantity <= 0) {
+                throw new \InvalidArgumentException('Each product must have a quantity of at least 1.');
+            }
+
+            $attach[$productId] = ['quantity' => $quantity];
+        }
+
+        if (empty($attach)) {
+            throw new \InvalidArgumentException('At least one product is required.');
+        }
+
+        // Ensure all product ids exist.
+        $found = Product::whereIn('id', array_keys($attach))->pluck('id')->all();
+        $missing = array_diff(array_keys($attach), $found);
+        if (!empty($missing)) {
+            throw new \InvalidArgumentException('Some selected products do not exist.');
+        }
+
+        return $attach;
     }
 
     public function getAvailableSlots(Request $request)
@@ -563,19 +650,23 @@ class MaintenanceRequestController extends Controller
 
     public function getSpecificProductByOrder($id)
     {
+        $mRequest = MaintenanceRequest::where('sap_order_id', $id)
+            ->where('last_status', '!=', 'canceled')
+            ->first();
+        if ($mRequest) {
+            return response()->json([
+                'message' => __('messages.invalid_order_id'),
+                'maintenance_request_id' => $mRequest->id,
+            ], 409);
+        }
         try {
 
             // Call SAP API
             $response = Http::withBasicAuth('Test', '@lexandria@Rise12345')
                 // ->withoutVerifying()   // local for testing only
                 ->acceptJson()
-                ->get('https://dev.samnan.com.sa/sap/bc/zrestful_sales', [
-                    'sap-client' => 300,
-                    'Action'     => 'GET_INVOICE_LINE',
-                ], [
-                    'json' => [
-                        'VBELN' => $id
-                    ]
+                ->post('https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=GET_INVOICE_LINE', [
+                    'VBELN' => $id
                 ]);
 
             if (!$response->successful()) {
@@ -587,7 +678,6 @@ class MaintenanceRequestController extends Controller
             }
 
             $sapItems = $response->json();
-
             if (empty($sapItems) || !is_array($sapItems)) {
                 return response()->json([
                     'status' => 404,
@@ -596,16 +686,31 @@ class MaintenanceRequestController extends Controller
                 ], 404);
             }
 
-            $sapIds = collect($sapItems)->pluck('MATNR')->toArray();
+            $sapItems = collect($sapItems)
+                ->filter(fn($row) => !empty($row['MATNR']))
+                ->map(fn($row) => [
+                    'sap_id' => (string) $row['MATNR'],
+                    'qty'    => (float) ($row['QTY'] ?? 0),
+                ]);
 
-            $products = Product::whereIn('sap_id', $sapIds)->get();
+            $qtyBySapId = $sapItems
+                ->groupBy('sap_id')
+                ->map(fn($rows) => $rows->sum('qty')); // [sap_id => total_qty]
 
+            $products = Product::whereIn('sap_id', $qtyBySapId->keys()->all())->get();
+
+            $data = $products->map(function ($product) use ($qtyBySapId) {
+                return [
+                    'product' => $product,
+                    'qty'     => $qtyBySapId->get((string) $product->sap_id, 0),
+                ];
+            })->values();
 
             return response()->json([
                 'status' => 200,
                 'response_code' => 'ORDER_PRODUCTS_FETCHED',
                 'message' => __('messages.products_fetched'),
-                'data' => $products,
+                'data' => $data,
             ], 200);
         } catch (\Exception $e) {
 

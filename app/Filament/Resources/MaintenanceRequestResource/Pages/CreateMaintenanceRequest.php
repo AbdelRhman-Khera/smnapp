@@ -12,10 +12,19 @@ class CreateMaintenanceRequest extends CreateRecord
 {
     protected static string $resource = MaintenanceRequestResource::class;
 
+    /**
+     * @var array<int, array{product_id:int|string|null, quantity:int|string|null}>
+     */
+    protected array $productsToSync = [];
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Set default status to 'pending'
         $data['last_status'] = 'pending';
+
+        // Products are stored on the pivot table (maintenance_request_product)
+        $this->productsToSync = $data['products'] ?? [];
+        unset($data['products']);
 
 
         return $data;
@@ -25,6 +34,23 @@ class CreateMaintenanceRequest extends CreateRecord
     {
 
         $maintenanceRequest = $this->getRecord();
+
+        // Sync products with quantity on pivot
+        if (!empty($this->productsToSync)) {
+            $sync = [];
+            foreach ($this->productsToSync as $item) {
+                $productId = (int) ($item['product_id'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+
+                if ($productId > 0) {
+                    $sync[$productId] = ['quantity' => max(1, $quantity)];
+                }
+            }
+
+            if (!empty($sync)) {
+                $maintenanceRequest->products()->sync($sync);
+            }
+        }
 
 
         $maintenanceRequest->statuses()->create([
