@@ -23,43 +23,82 @@ class MaintenanceRequestController extends Controller
     {
         $customer = $request->user();
 
-        $query = MaintenanceRequest::with(['customer', 'technician', 'address', 'slot', 'products', 'statuses', 'invoice', 'invoice.services', 'invoice.spareParts'])
-            ->where('customer_id', $customer->id);
+        $query = MaintenanceRequest::with([
+            'customer',
+            'technician',
+            'address',
+            'slot',
+            'products',
+            'statuses',
+            'invoice',
+            'invoice.services',
+            'invoice.spareParts',
+        ])
+            ->leftJoin('slots', 'maintenance_requests.slot_id', '=', 'slots.id')
+            ->select('maintenance_requests.*')
+            ->where('maintenance_requests.customer_id', $customer->id);
 
-        // Filter by maintenance types
-        if ($request->has('types') && is_array($request->types)) {
-            $query->whereIn('type', $request->types);
+
+        if ($request->filled('types') && is_array($request->types)) {
+            $query->whereIn('maintenance_requests.type', $request->types);
         }
 
-        // Filter by current status
-        if ($request->has('statuses') && is_array($request->statuses)) {
-            $query->whereHas('statuses', function ($query) use ($request) {
-                $query->latest() // Get the latest status
-                    ->whereIn('status', $request->statuses);
-            });
+
+        if ($request->filled('statuses') && is_array($request->statuses)) {
+            $query->whereIn('maintenance_requests.last_status', $request->statuses);
         }
 
-        // Filter by date range
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('slots.date', [
+                $request->start_date,
+                $request->end_date,
+            ]);
         }
 
-        // Retrieve `per_page` and `page` from query parameters with defaults
-        $perPage = $request->input('per_page', 10);
-        $page = $request->input('page', 1);
+        if ($request->filled('start_date') && !$request->filled('end_date')) {
+            $query->whereDate('slots.date', '>=', $request->start_date);
+        }
 
-        // Paginate the results
-        $maintenanceRequests = $query->orderBy('created_at', 'desc')->paginate($perPage, ['*'], 'page', $page);
+        if ($request->filled('end_date') && !$request->filled('start_date')) {
+            $query->whereDate('slots.date', '<=', $request->end_date);
+        }
+
+        $query
+            // upcoming first, then past, then null slots
+            ->orderByRaw("
+            CASE
+                WHEN slots.date IS NULL THEN 2
+                WHEN TIMESTAMP(slots.date, slots.time) >= NOW() THEN 0
+                ELSE 1
+            END
+        ")
+            // upcoming → nearest first
+            ->orderByRaw("
+            CASE
+                WHEN slots.date IS NOT NULL
+                 AND TIMESTAMP(slots.date, slots.time) >= NOW()
+                THEN TIMESTAMP(slots.date, slots.time)
+            END ASC
+        ")
+            // past → latest first
+            ->orderByRaw("
+            CASE
+                WHEN slots.date IS NOT NULL
+                 AND TIMESTAMP(slots.date, slots.time) < NOW()
+                THEN TIMESTAMP(slots.date, slots.time)
+            END DESC
+        ")
+            ->orderBy('maintenance_requests.id', 'desc');
 
 
-        // $maintenanceRequests->getCollection()->transform(function ($request) {
-        //     $request->current_status = $request->current_status; // Append current status
-        //     return $request;
-        // });
+        $perPage = (int) $request->input('per_page', 10);
+        $page = (int) $request->input('page', 1);
+
+        $maintenanceRequests = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'status' => 200,
-            'response_code' => 'MAINTENANCE_REQUESTS_FETCHED',
+            'response_code' => 'TECHNICIAN_MAINTENANCE_REQUESTS_FETCHED',
             'message' => __('messages.maintenance_requests_fetched'),
             'data' => $maintenanceRequests,
         ], 200);
