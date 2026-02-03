@@ -162,6 +162,7 @@ class MaintenanceRequestController extends Controller
             'problem_description' => 'nullable|string',
             'last_maintenance_date' => 'nullable|date',
             'photos' => 'nullable|array',
+            'sap_order_id' => 'nullable|integer',
         ]);
 
         $validator->after(function ($validator) use ($request) {
@@ -197,6 +198,7 @@ class MaintenanceRequestController extends Controller
             'problem_description' => $request->problem_description ?? null,
             'last_maintenance_date' => $request->last_maintenance_date ?? null,
             'photos' => $photoPaths ?? [],
+            'sap_order_id' => $request->sap_order_id ?? null,
         ]);
 
         $maintenanceRequest->products()->attach(
