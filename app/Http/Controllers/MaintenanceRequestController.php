@@ -750,20 +750,19 @@ class MaintenanceRequestController extends Controller
 
             // Handle statuses: S / N / F
             if ($status === 'S') {
-                if (!$response->successful()) {
+
                 return response()->json([
                     'status' => 400,
                     'response_code' => 'INVALID_ORDER',
                     'message' => __('messages.invalid_order_id'),
                 ], 400);
-            }
+
 
                 return response()->json([
                     'status' => 409,
                     'response_code' => 'BILLING_ALREADY_SERVICED',
                     'message' => __('messages.billing_already_serviced'),
-                    'details' => $desc,
-                    'start_date' => $startDate,
+
                 ], 409);
 
             }
@@ -773,7 +772,7 @@ class MaintenanceRequestController extends Controller
                     'status' => 404,
                     'response_code' => 'BILLING_NOT_FOUND',
                     'message' => __('messages.invalid_order_id'),
-                    'details' => $desc,
+
                 ], 404);
             }
 
@@ -782,7 +781,7 @@ class MaintenanceRequestController extends Controller
                     'status' => 500,
                     'response_code' => 'UNKNOWN_SAP_STATUS',
                     'message' => __('messages.internal_server_error'),
-                    'details' => $desc,
+
                 ], 500);
             }
 
