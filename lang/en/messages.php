@@ -66,6 +66,8 @@ return [
     'no_products_found' => 'No products found for this order.',
     'products_fetched' => 'Products fetched successfully.',
     'internal_server_error' => 'An error occurred while processing the request.',
+    'billing_already_serviced' => 'The billing has already been serviced.',
+    'invoice_products_not_installable' => 'The invoice products are not installable.',
 
 
 ];
