@@ -750,6 +750,14 @@ class MaintenanceRequestController extends Controller
 
             // Handle statuses: S / N / F
             if ($status === 'S') {
+                if (!$response->successful()) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'INVALID_ORDER',
+                    'message' => __('messages.invalid_order_id'),
+                ], 400);
+            }
+
                 return response()->json([
                     'status' => 409,
                     'response_code' => 'BILLING_ALREADY_SERVICED',
@@ -757,6 +765,7 @@ class MaintenanceRequestController extends Controller
                     'details' => $desc,
                     'start_date' => $startDate,
                 ], 409);
+
             }
 
             if ($status === 'N') {
