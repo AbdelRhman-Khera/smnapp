@@ -93,6 +93,7 @@ class MaintenanceRequestResource extends Resource
                     ])
                     ->columns(2)
                     ->collapsible()
+                    ->collapsed()
                     ->visible(fn($operation) => in_array($operation, ['view', 'edit'])),
 
                 Select::make('type')
@@ -104,26 +105,26 @@ class MaintenanceRequestResource extends Resource
                     ->required(),
 
                 Repeater::make('products_items')
-                    ->label('Products')
-                    ->schema([
-                        Select::make('product_id')
-                            ->label('Product')
-                            ->options(fn() => Product::query()->pluck('name_ar', 'id')->toArray())
-                            ->searchable()
-                            ->preload()
-                            ->required(),
+                ->label('Products')
+                ->schema([
+                    Select::make('product_id')
+                        ->label('Product')
+                        ->options(Product::pluck('name_ar', 'id'))
+                        ->searchable()
 
-                        TextInput::make('quantity')
-                            ->label('Qty')
-                            ->numeric()
-                            ->minValue(1)
-                            ->default(1)
-                            ->required(),
-                    ])
-                    ->columns(2)
-                    ->minItems(1)
-                    ->defaultItems(1)
-                    ->dehydrated(true),
+                        ->required(),
+
+                    TextInput::make('quantity')
+                        ->label('Qty')
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(1)
+                        ->required(),
+                ])
+                ->columns(2)
+                ->minItems(1)
+                ->defaultItems(1)
+                ->dehydrated(true),
 
                 TextInput::make('sap_order_id')
                     ->rules([

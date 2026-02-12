@@ -752,13 +752,6 @@ class MaintenanceRequestController extends Controller
             if ($status === 'S') {
 
                 return response()->json([
-                    'status' => 400,
-                    'response_code' => 'INVALID_ORDER',
-                    'message' => __('messages.invalid_order_id'),
-                ], 400);
-
-
-                return response()->json([
                     'status' => 409,
                     'response_code' => 'BILLING_ALREADY_SERVICED',
                     'message' => __('messages.billing_already_serviced'),

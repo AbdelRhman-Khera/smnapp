@@ -15,37 +15,37 @@ class EditMaintenanceRequest extends EditRecord
      */
     protected array $productsToSync = [];
 
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        // Products are stored on the pivot table (maintenance_request_product)
-        $this->productsToSync = $data['products'] ?? [];
-        unset($data['products']);
+    // protected function mutateFormDataBeforeSave(array $data): array
+    // {
+    //     // Products are stored on the pivot table (maintenance_request_product)
+    //     $this->productsToSync = $data['products'] ?? [];
+    //     unset($data['products']);
 
-        return $data;
-    }
+    //     return $data;
+    // }
 
-    protected function afterSave(): void
-    {
-        $maintenanceRequest = $this->getRecord();
+    // protected function afterSave(): void
+    // {
+    //     $maintenanceRequest = $this->getRecord();
 
-        // Sync products with quantity on pivot
-        $sync = [];
-        foreach ($this->productsToSync as $item) {
-            $productId = (int) ($item['product_id'] ?? 0);
-            $quantity = (int) ($item['quantity'] ?? 1);
+    //     // Sync products with quantity on pivot
+    //     $sync = [];
+    //     foreach ($this->productsToSync as $item) {
+    //         $productId = (int) ($item['product_id'] ?? 0);
+    //         $quantity = (int) ($item['quantity'] ?? 1);
 
-            if ($productId > 0) {
-                $sync[$productId] = ['quantity' => max(1, $quantity)];
-            }
-        }
+    //         if ($productId > 0) {
+    //             $sync[$productId] = ['quantity' => max(1, $quantity)];
+    //         }
+    //     }
 
-        if (!empty($sync)) {
-            $maintenanceRequest->products()->sync($sync);
-        } else {
-            // If user removed all products, detach.
-            $maintenanceRequest->products()->detach();
-        }
-    }
+    //     if (!empty($sync)) {
+    //         $maintenanceRequest->products()->sync($sync);
+    //     } else {
+    //         // If user removed all products, detach.
+    //         $maintenanceRequest->products()->detach();
+    //     }
+    // }
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $this->record->loadMissing('products');
@@ -64,7 +64,7 @@ class EditMaintenanceRequest extends EditRecord
     protected function handleRecordUpdate($record, array $data): \Illuminate\Database\Eloquent\Model
     {
         $items = $data['products_items'] ?? [];
-        unset($data['products_items']); // عشان مش column في الجدول
+        unset($data['products_items']);
 
         $record->update($data);
 

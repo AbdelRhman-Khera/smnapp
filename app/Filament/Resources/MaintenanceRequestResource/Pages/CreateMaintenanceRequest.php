@@ -23,8 +23,8 @@ class CreateMaintenanceRequest extends CreateRecord
         $data['last_status'] = 'pending';
 
         // Products are stored on the pivot table (maintenance_request_product)
-        $this->productsToSync = $data['products'] ?? [];
-        unset($data['products']);
+        $this->productsToSync = $data['products_items'] ?? [];
+        unset($data['products_items']);
 
 
         return $data;
