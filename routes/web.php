@@ -11,11 +11,15 @@ Route::get('/test', function () {
     // return view('welcome');
 });
 Route::get('/clear-cache', function () {
-    $exitCode = Artisan::call('config:cache');
-    $exitCode = Artisan::call('cache:clear');
-    $exitCode = Artisan::call('storage:link');
     $exitCode = Artisan::call('optimize:clear');
-    $exitCode = Artisan::call('migrate');
+    $exitCode = Artisan::call('cache:clear');
+    $exitCode = Artisan::call('view:clear');
+    $exitCode = Artisan::call('route:clear');
+    $exitCode = Artisan::call('config:clear');
+    $exitCode = Artisan::call('config:cache');
+    $exitCode = Artisan::call('view:cache');
+    // $exitCode = Artisan::call('storage:link');
+    // $exitCode = Artisan::call('migrate');
 
 
 
