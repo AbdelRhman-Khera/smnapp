@@ -702,8 +702,8 @@ class MaintenanceRequestController extends Controller
         }
         try {
 
-            $username = env('SAP_USERNAME');
-            $password = env('SAP_PASSWORD');
+            $username = 'Test';
+            $password = '@lexandria@Rise12345';
 
             $startDate = '20260201';
             $baseUrl = 'https://portal.samnan.com.sa:443';
