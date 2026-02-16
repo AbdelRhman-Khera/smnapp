@@ -67,15 +67,16 @@ class CustomerController extends Controller
 
         // Send OTP via SMS using 4jawaly API
 
+
         $smsResponse = Http::withBasicAuth(
-            '1D28Ps65RmtoZ8jUCkiJkp4cEPuUmyLpuaieywCg',
-            's6YnwNekVdyhAdp2lVfiPv5Vo5QBBr1bzl66wruUTtpUBlVz9GQyslv9mjPzr7w0DOZoch2pfgpzLJe7CaJghOJS7xx3E3Ch70d2'
+            (string) config('services.4jawaly.key'),
+            (string) config('services.4jawaly.secret')
         )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
             'messages' => [
                 [
                     'text' => "Your OTP is: " . $customer->otp,
                     'numbers' => [$customer->phone],
-                    'sender' => 'SamnanCo',
+                    'sender' => (string) config('services.4jawaly.sender', 'SamnanCo'),
                 ],
             ],
         ]);
@@ -235,9 +236,18 @@ class CustomerController extends Controller
         ]);
 
         // Send OTP logic
-        // Mail::raw("Your OTP is: " . $customer->otp, function ($message) use ($customer) {
-        //     $message->to($customer->email)->subject('Verify New Phone Number');
-        // });
+        $smsResponse = Http::withBasicAuth(
+            (string) config('services.4jawaly.key'),
+            (string) config('services.4jawaly.secret')
+        )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
+            'messages' => [
+                [
+                    'text' => "Your OTP is: " . $customer->otp,
+                    'numbers' => [$customer->phone],
+                    'sender' => (string) config('services.4jawaly.sender', 'SamnanCo'),
+                ],
+            ],
+        ]);
 
         return response()->json([
             'status' => 200,
@@ -281,9 +291,18 @@ class CustomerController extends Controller
         $customer->update(['otp' => rand(1000, 9999)]);
 
         // Send OTP logic
-        // Mail::raw("Your OTP for password reset is: " . $customer->otp, function ($message) use ($customer) {
-        //     $message->to($customer->email)->subject('Password Reset OTP');
-        // });
+        $smsResponse = Http::withBasicAuth(
+            (string) config('services.4jawaly.key'),
+            (string) config('services.4jawaly.secret')
+        )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
+            'messages' => [
+                [
+                    'text' => "Your OTP is: " . $customer->otp,
+                    'numbers' => [$customer->phone],
+                    'sender' => (string) config('services.4jawaly.sender', 'SamnanCo'),
+                ],
+            ],
+        ]);
 
         return response()->json([
             'status' => 200,

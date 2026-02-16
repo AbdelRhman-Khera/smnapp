@@ -702,8 +702,6 @@ class MaintenanceRequestController extends Controller
         }
         try {
 
-            // $username = 'Test';
-            // $password = '@lexandria@Rise12345';
             $username= (string) config('services.sap.user');
             $password= (string) config('services.sap.pass');
             $startDate = '20260201';

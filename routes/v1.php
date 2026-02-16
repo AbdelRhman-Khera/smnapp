@@ -8,7 +8,9 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SapController;
 use App\Http\Controllers\TechnicianController;
+use App\Http\Middleware\SapBasicAuth;
 use App\Http\Middleware\SetLanguage;
 
 // Route::get('/user', function (Request $request) {
@@ -102,4 +104,8 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/pages/{slug}', [LandingController::class, 'getPage']);
     Route::get('/spare-parts', [LandingController::class, 'getSpareParts']);
     Route::get('/services', [LandingController::class, 'getServices']);
+
+    Route::middleware([SapBasicAuth::class])->group(function () {
+        Route::post('/sap/customer-sync', [SapController::class, 'customerSync']);
+    });
 });
