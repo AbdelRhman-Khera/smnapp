@@ -123,4 +123,7 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'app_download_link' => env('APP_DOWNLOAD_LINK'),
+
+
 ];

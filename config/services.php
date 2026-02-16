@@ -39,4 +39,19 @@ return [
         'credentials' => env('FIREBASE_CREDENTIALS', storage_path('app/firebase/firebase_credentials.json')),
         'project_id' => env('FIREBASE_PROJECT_ID', 'smnapp-20ba2'),
     ],
+
+    'sap_basic' => [
+        'user' => env('SAP_BASIC_USER'),
+        'pass' => env('SAP_BASIC_PASS'),
+    ],
+    '4jawaly' => [
+        'key' => env('FOURJAWALY_KEY'),
+        'secret' => env('FOURJAWALY_SECRET'),
+        'sender' => env('FOURJAWALY_SENDER', 'SamnanCo'),
+    ],
+
+    'sap' => [
+        'user' => env('SAP_USERNAME'),
+        'pass' => env('SAP_PASSWORD'),
+    ],
 ];
