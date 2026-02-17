@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use App\Models\MaintenanceRequest;
+use Carbon\Carbon;
+
 
 class SapController extends Controller
 {
@@ -99,5 +102,39 @@ class SapController extends Controller
                 'sms_http_status' => $smsResp->status(),
             ],
         ], 201);
+    }
+
+    public function getMaintenanceRequestFull($id)
+    {
+        $maintenanceRequest = MaintenanceRequest::with([
+            'customer',
+            'slot',
+            'technician',
+            'address',
+            'address.city',
+            'address.district',
+            'products',
+            'statuses',
+            'invoice',
+            'invoice.services',
+            'invoice.spareParts',
+            'feedback',
+        ])->find($id);
+
+        if (!$maintenanceRequest) {
+            return response()->json([
+                'status' => 404,
+                'response_code' => 'MAINTENANCE_REQUEST_NOT_FOUND',
+                'message' => 'Maintenance request not found',
+                'data' => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'MAINTENANCE_REQUEST_FETCHED',
+            'message' => 'Maintenance request fetched successfully',
+            'data' => $maintenanceRequest,
+        ], 200);
     }
 }
