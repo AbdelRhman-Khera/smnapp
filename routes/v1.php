@@ -107,6 +107,6 @@ Route::middleware([SetLanguage::class])->group(function () {
 
     Route::middleware([SapBasicAuth::class])->group(function () {
         Route::post('/sap/customer-sync', [SapController::class, 'customerSync']);
-        Route::post('/sap/maintenance-request/{id}', [SapController::class, 'getMaintenanceRequestFull']);
+        Route::get('/sap/maintenance-request/{id}', [SapController::class, 'getMaintenanceRequestFull']);
     });
 });
