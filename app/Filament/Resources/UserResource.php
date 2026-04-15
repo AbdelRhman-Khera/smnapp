@@ -37,6 +37,9 @@ class UserResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->required(),
 
+                    Forms\Components\TextInput::make('sap_id')
+                        ->required(),
+
                     Forms\Components\TextInput::make('title')
                         ->label('Job Title')
                         ->nullable(),
@@ -84,6 +87,9 @@ class UserResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('sap_id')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('title')
                     ->label('Job Title')
                     ->sortable(),

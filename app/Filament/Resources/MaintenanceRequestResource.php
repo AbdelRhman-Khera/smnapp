@@ -38,6 +38,11 @@ class MaintenanceRequestResource extends Resource
     {
         return $form
             ->schema([
+                TextInput::make('entry_sap_id')
+                    ->default(fn() => auth()->user()?->sap_id)
+                    ->disabled()
+                    ->hidden()
+                    ->dehydrated(false),
                 Select::make('customer_id')
                     ->relationship('customer', 'phone')
                     ->searchable()
@@ -105,26 +110,26 @@ class MaintenanceRequestResource extends Resource
                     ->required(),
 
                 Repeater::make('products_items')
-                ->label('Products')
-                ->schema([
-                    Select::make('product_id')
-                        ->label('Product')
-                        ->options(Product::pluck('name_ar', 'id'))
-                        ->searchable()
+                    ->label('Products')
+                    ->schema([
+                        Select::make('product_id')
+                            ->label('Product')
+                            ->options(Product::pluck('name_ar', 'id'))
+                            ->searchable()
 
-                        ->required(),
+                            ->required(),
 
-                    TextInput::make('quantity')
-                        ->label('Qty')
-                        ->numeric()
-                        ->minValue(1)
-                        ->default(1)
-                        ->required(),
-                ])
-                ->columns(2)
-                ->minItems(1)
-                ->defaultItems(1)
-                ->dehydrated(true),
+                        TextInput::make('quantity')
+                            ->label('Qty')
+                            ->numeric()
+                            ->minValue(1)
+                            ->default(1)
+                            ->required(),
+                    ])
+                    ->columns(2)
+                    ->minItems(1)
+                    ->defaultItems(1)
+                    ->dehydrated(true),
 
                 TextInput::make('sap_order_id')
                     ->rules([
@@ -278,10 +283,54 @@ class MaintenanceRequestResource extends Resource
                     ->action(fn($data, $record) => self::assignSlot($record, $data['slot_id']))
                     ->modalHeading('Book an Appointment')
                     ->modalButton('Assign Slot'),
+                Tables\Actions\Action::make('cancel_request')
+                    ->label('Cancel')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+
+                    ->visible(fn($record) => !in_array($record->last_status, ['completed', 'canceled']))
+
+                    ->form([
+                        Forms\Components\Textarea::make('note')
+                            ->label('Cancellation Reason')
+                            ->required()
+                            ->rows(3),
+                    ])
+
+                    ->action(function ($data, $record) {
+
+                        $employeeName = auth()->user()->name;
+
+                        $noteWithUser = "Canceled by: {$employeeName} | Reason: {$data['note']}";
+
+                        $record->statuses()->create([
+                            'status' => 'canceled',
+                            'notes'   => $noteWithUser,
+                        ]);
+
+                        $record->update([
+                            'last_status' => 'canceled',
+                        ]);
+
+                        if ($record->slot_id) {
+                            $record->slot?->update([
+                                'is_booked' => false,
+                            ]);
+                        }
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Request canceled successfully')
+                            ->success()
+                            ->send();
+                    })
+
+                    ->modalHeading('Cancel Request')
+                    ->modalSubmitActionLabel('Confirm Cancellation')
+                    ->requiresConfirmation(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

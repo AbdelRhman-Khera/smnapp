@@ -199,6 +199,7 @@ class MaintenanceRequestController extends Controller
             'last_maintenance_date' => $request->last_maintenance_date ?? null,
             'photos' => $photoPaths ?? [],
             'sap_order_id' => $request->sap_order_id ?? null,
+            'entry_sap_order_id' => '18002W03',
         ]);
 
         $maintenanceRequest->products()->attach(

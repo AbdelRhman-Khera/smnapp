@@ -6,6 +6,7 @@ use App\Filament\Resources\TechnicianResource\Pages;
 use App\Filament\Resources\TechnicianResource\RelationManagers;
 use App\Models\Slot;
 use App\Models\Technician;
+use Dom\Text;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
@@ -43,6 +44,8 @@ class TechnicianResource extends Resource
                     ->email()
                     ->unique(Technician::class, 'email', ignoreRecord: true)
                     ->required(),
+                TextInput::make('sap_id')->required(),
+                TextInput::make('site_id')->required(),
                 TextInput::make('password')
                     ->password()
                     ->required(fn($context) => $context === 'create')
@@ -73,7 +76,8 @@ class TechnicianResource extends Resource
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('first_name')->sortable()->searchable(),
                 TextColumn::make('last_name')->sortable()->searchable(),
-                TextColumn::make('email')->sortable()->searchable(),
+                TextColumn::make('sap_id')->sortable()->searchable(),
+                // TextColumn::make('email')->sortable()->searchable(),
                 TextColumn::make('phone')->sortable()->searchable(),
                 TextColumn::make('rating')->sortable(),
             ])->defaultSort('id', 'desc')

@@ -29,6 +29,8 @@ class Technician extends Authenticatable
         'rating',
         'reviews_count',
         'fcm_token',
+        'sap_id',
+        'site_id',
     ];
 
     /**

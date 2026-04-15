@@ -27,6 +27,7 @@ class MaintenanceRequest extends Model
         'notes',
         'slot_id',
         'last_status',
+        'entry_sap_id',
 
 
     ];
