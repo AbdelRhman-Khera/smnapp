@@ -53,6 +53,7 @@ class ServiceResource extends Resource
                 TextColumn::make('name_ar')->label('Name (AR)')->sortable()->searchable(),
                 TextColumn::make('name_en')->label('Name (EN)')->sortable()->searchable(),
                 TextColumn::make('price')->label('Price')->sortable(),
+                TextColumn::make('sap_id')->label('SAP ID')->sortable()->searchable(),
                 TextColumn::make('is_active')
                 ->label('Active')
                 ->badge()
