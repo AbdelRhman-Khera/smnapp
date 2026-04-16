@@ -42,6 +42,7 @@ class ServiceResource extends Resource
             ])->columnSpanFull(),
             FileUpload::make('image')->label('Image')->image()->nullable(),
             TextInput::make('price')->label('Price')->numeric()->required(),
+            TextInput::make('sap_id')->label('SAP ID')->required()->unique(),
             Toggle::make('is_active')->label('Active')->default(true),
         ]);
     }
