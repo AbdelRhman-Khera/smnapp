@@ -27,6 +27,11 @@ return new class extends Migration
             $table->string('entry_sap_id')->nullable()->default('18002W03')->after('type');
         });
 
+        // Update services table
+        Schema::table('services', function (Blueprint $table) {
+            $table->string('sap_id')->nullable()->after('id');
+        });
+
     }
 
     /**

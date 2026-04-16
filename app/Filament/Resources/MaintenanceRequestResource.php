@@ -349,6 +349,7 @@ class MaintenanceRequestResource extends Resource
             'create' => Pages\CreateMaintenanceRequest::route('/create'),
             'view' => Pages\ViewMaintenanceRequest::route('/{record}'),
             'edit' => Pages\EditMaintenanceRequest::route('/{record}/edit'),
+            'technician-appointments' => Pages\TechnicianAppointments::route('/appointments/{technician}'),
         ];
     }
 

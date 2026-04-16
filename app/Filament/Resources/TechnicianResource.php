@@ -24,6 +24,7 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Hash;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
+use App\Filament\Resources\MaintenanceRequestResource;
 
 class TechnicianResource extends Resource
 {
@@ -108,6 +109,13 @@ class TechnicianResource extends Resource
                     ->modalHeading('Generate Slots for Technician')
                     ->successNotificationTitle('Slots generated successfully')
                     ->modalButton('Create Slots'),
+                Tables\Actions\Action::make('appointments')
+                    ->label('Appointments')
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('info')
+                    ->url(fn($record) => MaintenanceRequestResource::getUrl('technician-appointments', [
+                        'technician' => $record->id,
+                    ])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
