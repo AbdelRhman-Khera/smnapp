@@ -35,6 +35,7 @@ class ProductResource extends Resource
             Textarea::make('description_ar')->label('Description (Arabic)'),
             Textarea::make('description_en')->label('Description (English)'),
             FileUpload::make('image')->label('Image'),
+            TextInput::make('hours')->label('Hours')->numeric()->required(),
             Select::make('category_id')
                 ->label('Category')
                 ->relationship('category', 'name_en')

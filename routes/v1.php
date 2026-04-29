@@ -67,6 +67,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         // Route::post('/maintenance-request/{maintenanceRequest}/rate', [MaintenanceRequestController::class, 'rate']);
         // Route::post('/maintenance-request/{maintenanceRequest}/status', [MaintenanceRequestController::class, 'updateStatus']);
         Route::post('/get-available-slots', [MaintenanceRequestController::class, 'getAvailableSlots']);
+        Route::post('/maintenance-requests/nearest-slot', [MaintenanceRequestController::class, 'getNearestAvailableSlot']);
         Route::post('/maintenance-request/assign', [MaintenanceRequestController::class, 'assignSlot']);
 
         Route::post('/maintenance-request/{id}/set-on-the-way', [TechnicianController::class, 'setOnTheWay']);

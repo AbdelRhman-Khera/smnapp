@@ -11,7 +11,7 @@ use Spatie\Activitylog\LogOptions;
 
 class MaintenanceRequest extends Model
 {
-    use HasFactory, SoftDeletes , LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'customer_id',
@@ -28,6 +28,11 @@ class MaintenanceRequest extends Model
         'slot_id',
         'last_status',
         'entry_sap_id',
+        'sap_sync_status',
+        'sap_sales_order_no',
+        'sap_last_error',
+        'hours',
+        'extra_slot_id',
 
 
     ];
@@ -35,6 +40,7 @@ class MaintenanceRequest extends Model
     protected $casts = [
         'photos' => 'array',
         'notes' => 'array',
+        'extra_slot_id' => 'array',
     ];
 
     protected $appends = ['current_status'];
@@ -103,20 +109,43 @@ class MaintenanceRequest extends Model
     }
 
     public function maintenanceRequests()
-{
-    return $this->hasManyThrough(
-        \App\Models\MaintenanceRequest::class,
-        \App\Models\Address::class,
-        'district_id',
-        'address_id',
-        'id',
-        'id'
-    );
-}
+    {
+        return $this->hasManyThrough(
+            \App\Models\MaintenanceRequest::class,
+            \App\Models\Address::class,
+            'district_id',
+            'address_id',
+            'id',
+            'id'
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logAll();
+    }
 
+    public function sapLogs()
+    {
+        return $this->hasMany(\App\Models\SapRequestLog::class);
+    }
+
+    public function calculateHoursFromProducts(): float
+    {
+        $this->loadMissing('products');
+
+        return $this->products->sum(function ($product) {
+            $quantity = (float) ($product->pivot->quantity ?? 1);
+            $productHours = (float) ($product->hours ?? 0);
+
+            return $productHours * $quantity;
+        });
+    }
+
+    public function recalculateHours(): void
+    {
+        $this->updateQuietly([
+            'hours' => $this->calculateHoursFromProducts(),
+        ]);
     }
 }

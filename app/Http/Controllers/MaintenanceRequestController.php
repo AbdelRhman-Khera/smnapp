@@ -326,6 +326,117 @@ class MaintenanceRequestController extends Controller
         ], 200);
     }
 
+    public function getNearestAvailableSlot(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'request_id' => 'required|exists:maintenance_requests,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest = MaintenanceRequest::with([
+            'address.district',
+            'products',
+        ])->findOrFail($request->request_id);
+
+        if (! $maintenanceRequest->address || ! $maintenanceRequest->address->district) {
+            return response()->json([
+                'status' => 404,
+                'response_code' => 'DISTRICT_NOT_FOUND',
+                'message' => 'District not found for this request.',
+                'data' => null,
+            ], 404);
+        }
+
+        $district = $maintenanceRequest->address->district;
+        $products = $maintenanceRequest->products->pluck('id')->toArray();
+
+        if (empty($products)) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_PRODUCTS_FOUND',
+                'message' => 'No products found for this request.',
+                'data' => null,
+            ], 200);
+        }
+
+        $availableDays = $district->available_days ?? [];
+
+        $technicians = Technician::whereHas('districts', function ($query) use ($district) {
+            $query->where('districts.id', $district->id);
+        })
+            ->whereHas('products', function ($query) use ($products) {
+                $query->whereIn('products.id', $products);
+            })
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($technicians)) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_TECHNICIANS_AVAILABLE',
+                'message' => 'No technicians available for this request.',
+                'data' => null,
+            ], 200);
+        }
+
+        $slotsQuery = Slot::query()
+            ->whereIn('technician_id', $technicians)
+            ->whereDate('date', '>=', now()->toDateString())
+            ->where('is_booked', false)
+            ->with('technician')
+            ->orderBy('date')
+            ->orderBy('time');
+
+        if (!empty($availableDays)) {
+            $dates = collect();
+
+            for ($i = 0; $i < 30; $i++) {
+                $date = now()->copy()->addDays($i);
+
+                if (in_array($date->englishDayOfWeek, $availableDays)) {
+                    $dates->push($date->toDateString());
+                }
+            }
+
+            if ($dates->isEmpty()) {
+                return response()->json([
+                    'status' => 200,
+                    'response_code' => 'NO_SLOTS_AVAILABLE',
+                    'message' => 'No available days found for this district.',
+                    'data' => null,
+                ], 200);
+            }
+
+            $slotsQuery->whereIn('date', $dates->toArray());
+        }
+
+        $nearestSlot = $slotsQuery->first();
+
+        if (! $nearestSlot) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'No nearest available slot found.',
+                'data' => null,
+            ], 200);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'NEAREST_SLOT_FETCHED',
+            'message' => 'Nearest available slot fetched successfully.',
+            'data' => $nearestSlot,
+        ], 200);
+    }
+
     public function assignSlot(Request $request)
     {
 
@@ -703,8 +814,8 @@ class MaintenanceRequestController extends Controller
         }
         try {
 
-            $username= (string) config('services.sap.user');
-            $password= (string) config('services.sap.pass');
+            $username = (string) config('services.sap.user');
+            $password = (string) config('services.sap.pass');
             $startDate = '20260201';
             $baseUrl = 'https://portal.samnan.com.sa:443';
             // $baseUrl = 'https://dev.samnan.com.sa';
@@ -757,7 +868,6 @@ class MaintenanceRequestController extends Controller
                     'message' => __('messages.billing_already_serviced'),
 
                 ], 409);
-
             }
 
             if ($status === 'N') {
