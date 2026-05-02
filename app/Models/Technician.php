@@ -31,6 +31,7 @@ class Technician extends Authenticatable
         'fcm_token',
         'sap_id',
         'site_id',
+        'is_freelancer',
     ];
 
     /**

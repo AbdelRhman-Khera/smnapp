@@ -66,6 +66,8 @@ class TechnicianResource extends Resource
                     ->preload(),
                 Toggle::make('authorized'),
                 Toggle::make('activated'),
+                Toggle::make('is_freelancer')
+                    ->label('Freelancer Technician'),
             ]);
     }
 
@@ -81,6 +83,11 @@ class TechnicianResource extends Resource
                 // TextColumn::make('email')->sortable()->searchable(),
                 TextColumn::make('phone')->sortable()->searchable(),
                 TextColumn::make('rating')->sortable(),
+                TextColumn::make('is_freelancer')
+                    ->label('Type')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => $state ? 'Freelancer' : 'Employee')
+                    ->color(fn($state) => $state ? 'warning' : 'success'),
             ])->defaultSort('id', 'desc')
             ->filters([
                 //

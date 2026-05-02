@@ -33,6 +33,9 @@ class MaintenanceRequest extends Model
         'sap_last_error',
         'hours',
         'extra_slot_id',
+        'is_open_for_freelancers',
+        'opened_for_freelancers_at',
+        'freelancer_assigned_at',
 
 
     ];

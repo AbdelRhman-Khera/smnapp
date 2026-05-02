@@ -55,6 +55,10 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/update-fcm-token', [TechnicianController::class, 'updateFcmToken']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
+        Route::get('/technician/freelancer-open-requests', [TechnicianController::class, 'getFreelancerOpenRequests']);
+
+        Route::post('/technician/freelancer-requests/{id}/claim', [TechnicianController::class, 'claimFreelancerRequest']);
+
 
         Route::get('/sap-order/{id}', [MaintenanceRequestController::class, 'getSpecificProductByOrder']);
 
@@ -69,6 +73,8 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/get-available-slots', [MaintenanceRequestController::class, 'getAvailableSlots']);
         Route::post('/maintenance-requests/nearest-slot', [MaintenanceRequestController::class, 'getNearestAvailableSlot']);
         Route::post('/maintenance-request/assign', [MaintenanceRequestController::class, 'assignSlot']);
+
+        Route::post('/maintenance-request/{id}/open-for-freelancers', [MaintenanceRequestController::class, 'openForFreelancers']);
 
         Route::post('/maintenance-request/{id}/set-on-the-way', [TechnicianController::class, 'setOnTheWay']);
         Route::post('/maintenance-request/{id}/set-in-progress', [TechnicianController::class, 'setInProgress']);

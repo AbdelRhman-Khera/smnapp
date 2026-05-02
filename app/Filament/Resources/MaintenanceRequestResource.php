@@ -224,6 +224,11 @@ class MaintenanceRequestResource extends Resource
                         };
                     }),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('is_open_for_freelancers')
+                    ->label('Freelancer Open')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => $state ? 'Open' : 'Closed')
+                    ->color(fn($state) => $state ? 'warning' : 'gray'),
             ])->defaultSort('id', 'desc')
             ->filters([
                 Filter::make('new_installation')

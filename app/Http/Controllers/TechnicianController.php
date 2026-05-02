@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
+use App\Models\Slot;
 use App\Models\Technician;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -681,5 +682,211 @@ class TechnicianController extends Controller
             'message' => __('messages.fcm_token_updated'),
             'data' => $technician,
         ], 200);
+    }
+
+    //freelancer technicians methods
+    public function getFreelancerOpenRequests(Request $request)
+    {
+        $technician = $request->user();
+
+        if (! $technician->is_freelancer) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'NOT_FREELANCER',
+                'message' => 'Only freelancer technicians can access this list.',
+            ], 403);
+        }
+
+        $districtIds = $technician->districts()->pluck('districts.id')->toArray();
+        $productIds = $technician->products()->pluck('products.id')->toArray();
+    // $requests = MaintenanceRequest::where('is_open_for_freelancers', true)->get();
+    //     dd($requests);
+        $requests = MaintenanceRequest::with([
+            'customer',
+            'address.district',
+            'products',
+            'statuses',
+        ])
+            ->where('is_open_for_freelancers', true)
+            ->whereNull('technician_id')
+            ->whereNull('slot_id')
+            ->whereIn('last_status', ['pending'])
+            ->whereHas('address', function ($query) use ($districtIds) {
+                $query->whereIn('district_id', $districtIds);
+            })
+            ->whereHas('products', function ($query) use ($productIds) {
+                $query->whereIn('products.id', $productIds);
+            })
+            ->latest()
+            ->paginate((int) $request->input('per_page', 10));
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'FREELANCER_OPEN_REQUESTS_FETCHED',
+            'message' => 'Open freelancer requests fetched successfully.',
+            'data' => $requests,
+        ], 200);
+    }
+
+    public function claimFreelancerRequest(Request $request, $id)
+    {
+        $technician = $request->user();
+
+        if (! $technician->is_freelancer) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'NOT_FREELANCER',
+                'message' => 'Only freelancer technicians can claim urgent requests.',
+            ], 403);
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $id, $technician) {
+            $maintenanceRequest = MaintenanceRequest::with([
+                'customer',
+                'address.district',
+                'products',
+                'statuses',
+            ])
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if (! $maintenanceRequest->is_open_for_freelancers) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'REQUEST_NOT_OPEN_FOR_FREELANCERS',
+                    'message' => 'This request is not open for freelancer technicians.',
+                ], 400);
+            }
+
+            if ($maintenanceRequest->technician_id || $maintenanceRequest->slot_id) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'REQUEST_ALREADY_ASSIGNED',
+                    'message' => 'This request has already been assigned.',
+                ], 400);
+            }
+
+            if ($maintenanceRequest->last_status !== 'pending') {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'INVALID_STATUS',
+                    'message' => 'Only pending requests can be claimed.',
+                ], 400);
+            }
+
+            $district = $maintenanceRequest->address?->district;
+            $requestProductIds = $maintenanceRequest->products->pluck('id')->toArray();
+
+            $canServeDistrict = $district && $technician->districts()
+                ->where('districts.id', $district->id)
+                ->exists();
+
+            $canServeProducts = $technician->products()
+                ->whereIn('products.id', $requestProductIds)
+                ->exists();
+
+            if (! $canServeDistrict || ! $canServeProducts) {
+                return response()->json([
+                    'status' => 403,
+                    'response_code' => 'TECHNICIAN_NOT_ELIGIBLE',
+                    'message' => 'Technician is not eligible for this request district or products.',
+                ], 403);
+            }
+
+            $requiredSlots = max(1, (int) ceil((float) ($maintenanceRequest->hours ?? 1)));
+
+            $start = now()->copy()->minute(0)->second(0);
+
+            $slotIds = [];
+
+            for ($i = 0; $i < $requiredSlots; $i++) {
+                $slotTime = $start->copy()->addHours($i);
+
+                $existingBookedSlot = Slot::query()
+                    ->where('technician_id', $technician->id)
+                    ->whereDate('date', $slotTime->toDateString())
+                    ->whereTime('time', $slotTime->format('H:i:s'))
+                    ->where('is_booked', true)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingBookedSlot) {
+                    return response()->json([
+                        'status' => 400,
+                        'response_code' => 'TECHNICIAN_HAS_BOOKED_SLOT',
+                        'message' => 'Technician already has a booked slot in the required time range.',
+                    ], 400);
+                }
+
+                $slot = Slot::query()
+                    ->where('technician_id', $technician->id)
+                    ->whereDate('date', $slotTime->toDateString())
+                    ->whereTime('time', $slotTime->format('H:i:s'))
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $slot) {
+                    $slot = Slot::create([
+                        'technician_id' => $technician->id,
+                        'date' => $slotTime->toDateString(),
+                        'time' => $slotTime->format('H:i:s'),
+                        'is_booked' => true,
+                    ]);
+                } else {
+                    $slot->update([
+                        'is_booked' => true,
+                    ]);
+                }
+
+                $slotIds[] = $slot->id;
+            }
+
+            $mainSlotId = $slotIds[0];
+            $extraSlotIds = array_slice($slotIds, 1);
+
+            $maintenanceRequest->update([
+                'technician_id' => $technician->id,
+                'slot_id' => $mainSlotId,
+                'extra_slot_id' => $extraSlotIds,
+                'is_open_for_freelancers' => false,
+                'freelancer_assigned_at' => now(),
+                'last_status' => 'technician_assigned',
+            ]);
+
+            $maintenanceRequest->statuses()->create([
+                'status' => 'technician_assigned',
+                'notes' => 'Freelancer technician claimed the urgent request.',
+            ]);
+
+            NotificationService::notifyCustomer(
+                $maintenanceRequest->customer_id,
+                __("notifications.customer.technician_assigned", ['id' => $maintenanceRequest->id]),
+                $maintenanceRequest->id
+            );
+
+            NotificationService::notifyTechnician(
+                $technician->id,
+                __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+                $maintenanceRequest->id
+            );
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'FREELANCER_REQUEST_CLAIMED',
+                'message' => 'Request assigned to freelancer technician successfully.',
+                'data' => [
+                    'maintenance_request' => $maintenanceRequest->fresh([
+                        'customer',
+                        'technician',
+                        'address',
+                        'slot',
+                        'products',
+                        'statuses',
+                    ]),
+                    'slot_id' => $mainSlotId,
+                    'extra_slot_ids' => $extraSlotIds,
+                ],
+            ], 200);
+        });
     }
 }

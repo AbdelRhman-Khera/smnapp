@@ -1167,4 +1167,62 @@ class MaintenanceRequestController extends Controller
 
         return $pay;
     }
+
+    //freelaner
+    public function openForFreelancers(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::with([
+            'customer',
+            'address.district',
+            'products',
+        ])->findOrFail($id);
+
+        $customer = $request->user();
+
+        if ($customer->id !== $maintenanceRequest->customer_id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'FORBIDDEN',
+                'message' => __('messages.not_authorized'),
+            ], 403);
+        }
+
+        if ($maintenanceRequest->last_status !== 'pending') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_STATUS',
+                'message' => 'Only pending requests can be opened for freelancers.',
+            ], 400);
+        }
+
+        if ($maintenanceRequest->technician_id || $maintenanceRequest->slot_id) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'ALREADY_ASSIGNED',
+                'message' => 'This request already has an assigned technician or slot.',
+            ], 400);
+        }
+
+        $maintenanceRequest->update([
+            'is_open_for_freelancers' => true,
+            'opened_for_freelancers_at' => now(),
+        ]);
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'pending',
+            'notes' => 'Customer opened this request for freelancer technicians.',
+        ]);
+
+        NotificationService::notifyFreelancersForRequest(
+            $maintenanceRequest,
+            __("notifications.technician.freelancer_request_available", ['id' => $maintenanceRequest->id])
+        );
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'REQUEST_OPENED_FOR_FREELANCERS',
+            'message' => 'Request opened for freelancer technicians successfully.',
+            'data' => $maintenanceRequest->fresh(['customer', 'address', 'products']),
+        ], 200);
+    }
 }

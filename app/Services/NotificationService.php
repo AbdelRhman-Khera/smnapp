@@ -34,4 +34,35 @@ class NotificationService
             $admin->notify(new UserNotification($message, $requestId));
         }
     }
+
+    public static function notifyFreelancersForRequest($maintenanceRequest, $message)
+    {
+        $maintenanceRequest->loadMissing([
+            'address.district',
+            'products',
+        ]);
+
+        $district = $maintenanceRequest->address?->district;
+        $productIds = $maintenanceRequest->products->pluck('id')->toArray();
+
+        if (! $district || empty($productIds)) {
+            return;
+        }
+
+        $technicians = Technician::query()
+            ->where('is_freelancer', true)
+            ->where('activated', true)
+            ->where('authorized', true)
+            ->whereHas('districts', function ($query) use ($district) {
+                $query->where('districts.id', $district->id);
+            })
+            ->whereHas('products', function ($query) use ($productIds) {
+                $query->whereIn('products.id', $productIds);
+            })
+            ->get();
+
+        foreach ($technicians as $technician) {
+            $technician->notify(new TechnicianNotification($message, $maintenanceRequest->id));
+        }
+    }
 }
