@@ -270,6 +270,49 @@ class MaintenanceRequestController extends Controller
         return $attach;
     }
 
+    /// new logic for available slots and assignment
+
+    private function requiredSlotsCount(MaintenanceRequest $maintenanceRequest): int
+    {
+        return max(1, (int) ceil((float) ($maintenanceRequest->hours ?? 1)));
+    }
+
+    private function getConsecutiveAvailableSlotGroup(Slot $startSlot, int $requiredSlots): ?\Illuminate\Support\Collection
+    {
+        $slots = Slot::query()
+            ->where('technician_id', $startSlot->technician_id)
+            ->whereDate('date', $startSlot->date)
+            ->where('is_booked', false)
+            ->whereTime('time', '>=', $startSlot->time)
+            ->orderBy('time')
+            ->limit($requiredSlots)
+            ->get();
+
+        if ($slots->count() < $requiredSlots) {
+            return null;
+        }
+
+        for ($i = 0; $i < $requiredSlots; $i++) {
+            $expectedTime = \Carbon\Carbon::parse($startSlot->time)
+                ->addHours($i)
+                ->format('H:i:s');
+
+            $actualTime = \Carbon\Carbon::parse($slots[$i]->time)->format('H:i:s');
+
+            if ($actualTime !== $expectedTime) {
+                return null;
+            }
+        }
+
+        return $slots;
+    }
+
+    private function filterSlotsByRequiredConsecutiveHours($slots, int $requiredSlots)
+    {
+        return $slots->filter(function ($slot) use ($requiredSlots) {
+            return $this->getConsecutiveAvailableSlotGroup($slot, $requiredSlots) !== null;
+        })->values();
+    }
     public function getAvailableSlots(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -312,11 +355,25 @@ class MaintenanceRequestController extends Controller
 
         $technicianIds = $technicians->pluck('id')->toArray();
 
+        // $slots = Slot::whereIn('technician_id', $technicianIds)
+        //     ->whereDate('date', $request->date)
+        //     ->where('is_booked', false)
+        //     ->with('technician')
+        //     ->get();
+
+        // new logic
+
+        $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
         $slots = Slot::whereIn('technician_id', $technicianIds)
             ->whereDate('date', $request->date)
             ->where('is_booked', false)
             ->with('technician')
+            ->orderBy('technician_id')
+            ->orderBy('time')
             ->get();
+
+        $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
 
         return response()->json([
             'status' => 200,
@@ -418,7 +475,17 @@ class MaintenanceRequestController extends Controller
             $slotsQuery->whereIn('date', $dates->toArray());
         }
 
-        $nearestSlot = $slotsQuery->first();
+        // $nearestSlot = $slotsQuery->first();
+
+        // new logic
+
+        $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
+        $nearestSlot = $slotsQuery
+            ->get()
+            ->first(function ($slot) use ($requiredSlots) {
+                return $this->getConsecutiveAvailableSlotGroup($slot, $requiredSlots) !== null;
+            });
 
         if (! $nearestSlot) {
             return response()->json([
@@ -437,9 +504,86 @@ class MaintenanceRequestController extends Controller
         ], 200);
     }
 
+    // public function assignSlot(Request $request)
+    // {
+
+    //     $validator = Validator::make($request->all(), [
+    //         'request_id' => 'required|exists:maintenance_requests,id',
+    //         'slot_id' => 'required|exists:slots,id',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => 422,
+    //             'response_code' => 'VALIDATION_ERROR',
+    //             'message' => $validator->errors()->first(),
+    //             'errors' => $validator->errors(),
+    //         ], 422);
+    //     }
+
+    //     $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($request->request_id);
+    //     $newSlot = Slot::with('technician')->findOrFail($request->slot_id);
+
+    //     // Check if the new slot is already booked
+    //     if ($newSlot->is_booked) {
+    //         return response()->json([
+    //             'status' => 400,
+    //             'response_code' => 'SLOT_ALREADY_BOOKED',
+    //             'message' => __('messages.slot_already_booked'),
+    //         ], 400);
+    //     }
+
+    //     // If the request already has a slot, mark the old slot as not booked
+    //     if ($maintenanceRequest->slot_id) {
+    //         $oldSlot = Slot::find($maintenanceRequest->slot_id);
+    //         if ($oldSlot) {
+    //             $oldSlot->update(['is_booked' => false]);
+    //         }
+    //     }
+
+    //     // Update the new slot to booked
+    //     $newSlot->update(['is_booked' => true]);
+
+    //     // Assign the new technician and slot to the request
+    //     $maintenanceRequest->update([
+    //         'technician_id' => $newSlot->technician_id,
+    //         'slot_id' => $newSlot->id,
+    //         'last_status' => 'technician_assigned',
+    //     ]);
+
+    //     // Update the request status
+    //     $maintenanceRequest->statuses()->create([
+    //         'status' => 'technician_assigned',
+    //     ]);
+
+    //     NotificationService::notifyCustomer(
+    //         $maintenanceRequest->customer_id,
+    //         __("notifications.customer.technician_assigned", ['id' => $maintenanceRequest->id]),
+    //         $maintenanceRequest->id
+    //     );
+
+    //     NotificationService::notifyTechnician(
+    //         $newSlot->technician_id,
+    //         __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+    //         $maintenanceRequest->id
+    //     );
+
+    //     return response()->json([
+    //         'status' => 200,
+    //         'response_code' => 'SLOT_ASSIGNED',
+    //         'message' => __('messages.slot_assigned'),
+    //         'data' => [
+    //             'maintenance_request' => $maintenanceRequest,
+    //             'slot' => $newSlot,
+    //         ],
+    //     ], 200);
+    // }
+
+
+    // new logic
+
     public function assignSlot(Request $request)
     {
-
         $validator = Validator::make($request->all(), [
             'request_id' => 'required|exists:maintenance_requests,id',
             'slot_id' => 'required|exists:slots,id',
@@ -454,64 +598,92 @@ class MaintenanceRequestController extends Controller
             ], 422);
         }
 
-        $maintenanceRequest = MaintenanceRequest::with(['customer', 'technician', 'address', 'products', 'statuses'])->findOrFail($request->request_id);
-        $newSlot = Slot::with('technician')->findOrFail($request->slot_id);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            $maintenanceRequest = MaintenanceRequest::with([
+                'customer',
+                'technician',
+                'address',
+                'products',
+                'statuses',
+            ])->lockForUpdate()->findOrFail($request->request_id);
 
-        // Check if the new slot is already booked
-        if ($newSlot->is_booked) {
-            return response()->json([
-                'status' => 400,
-                'response_code' => 'SLOT_ALREADY_BOOKED',
-                'message' => __('messages.slot_already_booked'),
-            ], 400);
-        }
+            $newSlot = Slot::with('technician')
+                ->lockForUpdate()
+                ->findOrFail($request->slot_id);
 
-        // If the request already has a slot, mark the old slot as not booked
-        if ($maintenanceRequest->slot_id) {
-            $oldSlot = Slot::find($maintenanceRequest->slot_id);
-            if ($oldSlot) {
-                $oldSlot->update(['is_booked' => false]);
+            $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
+            $slotGroup = $this->getConsecutiveAvailableSlotGroup($newSlot, $requiredSlots);
+
+            if (! $slotGroup) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'NOT_ENOUGH_CONSECUTIVE_SLOTS',
+                    'message' => 'Not enough consecutive available slots for this request duration.',
+                ], 400);
             }
-        }
 
-        // Update the new slot to booked
-        $newSlot->update(['is_booked' => true]);
+            $oldSlotIds = collect([$maintenanceRequest->slot_id])
+                ->merge($maintenanceRequest->extra_slot_id ?? [])
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
 
-        // Assign the new technician and slot to the request
-        $maintenanceRequest->update([
-            'technician_id' => $newSlot->technician_id,
-            'slot_id' => $newSlot->id,
-            'last_status' => 'technician_assigned',
-        ]);
+            if (!empty($oldSlotIds)) {
+                Slot::whereIn('id', $oldSlotIds)->update([
+                    'is_booked' => false,
+                ]);
+            }
 
-        // Update the request status
-        $maintenanceRequest->statuses()->create([
-            'status' => 'technician_assigned',
-        ]);
+            $slotIds = $slotGroup->pluck('id')->toArray();
 
-        NotificationService::notifyCustomer(
-            $maintenanceRequest->customer_id,
-            __("notifications.customer.technician_assigned", ['id' => $maintenanceRequest->id]),
-            $maintenanceRequest->id
-        );
+            Slot::whereIn('id', $slotIds)->update([
+                'is_booked' => true,
+            ]);
 
-        NotificationService::notifyTechnician(
-            $newSlot->technician_id,
-            __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
-            $maintenanceRequest->id
-        );
+            $extraSlotIds = $slotGroup
+                ->pluck('id')
+                ->slice(1)
+                ->values()
+                ->toArray();
 
-        return response()->json([
-            'status' => 200,
-            'response_code' => 'SLOT_ASSIGNED',
-            'message' => __('messages.slot_assigned'),
-            'data' => [
-                'maintenance_request' => $maintenanceRequest,
-                'slot' => $newSlot,
-            ],
-        ], 200);
+            $maintenanceRequest->update([
+                'technician_id' => $newSlot->technician_id,
+                'slot_id' => $newSlot->id,
+                'extra_slot_id' => $extraSlotIds,
+                'last_status' => 'technician_assigned',
+            ]);
+
+            $maintenanceRequest->statuses()->create([
+                'status' => 'technician_assigned',
+            ]);
+
+            NotificationService::notifyCustomer(
+                $maintenanceRequest->customer_id,
+                __("notifications.customer.technician_assigned", ['id' => $maintenanceRequest->id]),
+                $maintenanceRequest->id
+            );
+
+            NotificationService::notifyTechnician(
+                $newSlot->technician_id,
+                __("notifications.technician.new_request", ['id' => $maintenanceRequest->id]),
+                $maintenanceRequest->id
+            );
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'SLOT_ASSIGNED',
+                'message' => __('messages.slot_assigned'),
+                'data' => [
+                    'maintenance_request' => $maintenanceRequest->fresh(['slot', 'technician']),
+                    'slot' => $newSlot,
+                    'extra_slot_ids' => $extraSlotIds,
+                    'reserved_slots' => $slotGroup->values(),
+                ],
+            ], 200);
+        });
     }
-
 
     public function cancel(Request $request, $id)
     {
@@ -547,6 +719,15 @@ class MaintenanceRequestController extends Controller
             if ($oldSlot) {
                 $oldSlot->update(['is_booked' => false]);
             }
+            $slotIds = collect([$maintenanceRequest->slot_id])
+                ->merge($maintenanceRequest->extra_slot_id ?? [])
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            Slot::whereIn('id', $slotIds)->update([
+                'is_booked' => false,
+            ]);
         }
 
 
