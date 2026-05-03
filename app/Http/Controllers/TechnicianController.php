@@ -564,11 +564,15 @@ class TechnicianController extends Controller
             'last_status' => 'completed',
         ]);
 
+        $sapResponse = app(\App\Http\Controllers\SapController::class)
+            ->createSalesOrder($maintenanceRequest->fresh(), 'Cash');
+
         NotificationService::notifyCustomer(
             $maintenanceRequest->customer_id,
             __("notifications.customer.payment_confirmed", ['id' => $maintenanceRequest->id]),
             $maintenanceRequest->id
         );
+
 
         return response()->json([
             'status' => 200,
@@ -637,6 +641,9 @@ class TechnicianController extends Controller
             $maintenanceRequest->id
         );
 
+        $sapResponse = app(\App\Http\Controllers\SapController::class)
+            ->createSalesOrder($maintenanceRequest->fresh(), 'Cash');
+
         return response()->json([
             'status' => 200,
             'response_code' => 'INSTALLATION_COMPLETED',
@@ -699,8 +706,8 @@ class TechnicianController extends Controller
 
         $districtIds = $technician->districts()->pluck('districts.id')->toArray();
         $productIds = $technician->products()->pluck('products.id')->toArray();
-    // $requests = MaintenanceRequest::where('is_open_for_freelancers', true)->get();
-    //     dd($requests);
+        // $requests = MaintenanceRequest::where('is_open_for_freelancers', true)->get();
+        //     dd($requests);
         $requests = MaintenanceRequest::with([
             'customer',
             'address.district',

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\MaintenanceRequest;
+use App\Models\Product;
+use App\Models\SapRequestLog;
 use Carbon\Carbon;
 
 
@@ -136,5 +138,145 @@ class SapController extends Controller
             'message' => 'Maintenance request fetched successfully',
             'data' => $maintenanceRequest,
         ], 200);
+    }
+
+    public function createSalesOrder(MaintenanceRequest $maintenanceRequest, string $paymentMethod = 'Cash'): array
+    {
+        $maintenanceRequest->loadMissing([
+            'customer',
+            'technician',
+            'address.city',
+            'products',
+            'invoice',
+            'invoice.services',
+            'invoice.spareParts',
+        ]);
+
+        if ($maintenanceRequest->sap_sync_status === 'success') {
+            return [
+                'success' => true,
+                'message' => 'Already synced with SAP.',
+            ];
+        }
+
+        $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
+
+        $serviceItems = collect($maintenanceRequest->invoice?->services ?? [])
+            ->map(function ($service) {
+                return array_filter([
+                    'MATNR' => (string) ($service->sap_id ?? ''),
+                    'QTY'   => '1',
+                    'PRICE' => isset($service->price) ? (string) $service->price : null,
+                ]);
+            });
+
+        $sparePartItems = collect($maintenanceRequest->invoice?->spareParts ?? [])
+            ->map(function ($sparePart) {
+                return array_filter([
+                    'MATNR' => (string) ($sparePart->sap_id ?? ''),
+                    'QTY'   => (string) ($sparePart->pivot->quantity ?? 1),
+                    'PRICE' => isset($sparePart->pivot->price)
+                        ? (string) $sparePart->pivot->price
+                        : (isset($sparePart->price) ? (string) $sparePart->price : null),
+                ]);
+            });
+
+        $items = $serviceItems
+            ->merge($sparePartItems)
+            // ->filter(fn($item) => !empty($item['MATNR']))
+            ->values()
+            ->toArray();
+
+        $payload = [
+            'CUSTOMER_ID' => (string) (
+                $maintenanceRequest->entry_sap_id
+                ?? '18002W03'
+            ),
+
+            'TECHNICIAN_ID' => (string) (
+                $maintenanceRequest->technician->sap_id
+                ?? ''
+            ),
+
+            'ORDER_NO' => (string) ($maintenanceRequest->id),
+
+            'PAYMENT_METHOD' => $paymentMethod,
+
+            'PHONE' => (string) ($maintenanceRequest->customer->phone ?? ''),
+
+            'NAME' => trim(
+                ($maintenanceRequest->customer->first_name ?? '') . ' ' .
+                    ($maintenanceRequest->customer->last_name ?? '')
+            ),
+
+            'STREET' => (string) ($maintenanceRequest->address->street ?? ''),
+
+            'CITY' => (string) (
+                $maintenanceRequest->address->city->name_en
+                ?? $maintenanceRequest->address->city->name_ar
+                ?? ''
+            ),
+
+            'SITE' => (string) ($maintenanceRequest->technician->site_id ?? ''),
+
+            'ITEMS' => $items,
+        ];
+
+        try {
+            $response = Http::withBasicAuth('test', 'EASTER@Egypt@2026')
+                ->acceptJson()
+                ->post($url, $payload);
+
+            $body = $response->json();
+
+            $firstRow = is_array($body) && isset($body[0]) ? $body[0] : [];
+
+            $sapStatus = $firstRow['STATUS'] ?? null;
+            $sapDesc = $firstRow['DESC'] ?? null;
+
+            $isSuccess = $response->successful() && $sapStatus === 'S';
+
+            SapRequestLog::create([
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'payment_method' => $paymentMethod,
+                'http_status' => $response->status(),
+                'sap_status' => $sapStatus,
+                'sap_desc' => $sapDesc,
+                'request_payload' => $payload,
+                'response_body' => $body,
+                'is_success' => $isSuccess,
+            ]);
+
+            $maintenanceRequest->update([
+                'sap_sync_status' => $isSuccess ? 'success' : 'failed',
+                'sap_sales_order_no' => $isSuccess ? $sapDesc : null,
+                'sap_last_error' => $isSuccess ? null : ($sapDesc ?? 'SAP request failed'),
+            ]);
+
+            return [
+                'success' => $isSuccess,
+                'sap_status' => $sapStatus,
+                'sap_desc' => $sapDesc,
+                'response' => $body,
+            ];
+        } catch (\Throwable $e) {
+            SapRequestLog::create([
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'payment_method' => $paymentMethod,
+                'request_payload' => $payload,
+                'error_message' => $e->getMessage(),
+                'is_success' => false,
+            ]);
+
+            $maintenanceRequest->update([
+                'sap_sync_status' => 'failed',
+                'sap_last_error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 }

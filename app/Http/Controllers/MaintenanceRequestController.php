@@ -859,6 +859,9 @@ class MaintenanceRequestController extends Controller
                 'payment_details' => $request->tranRef,
             ]);
 
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+
             return response()->json([
                 'status' => 200,
                 'response_code' => 'PAYMENT_SUCCESSFUL',
@@ -907,6 +910,9 @@ class MaintenanceRequestController extends Controller
                 'status' => 'completed',
                 'payment_details' => $request->transactionReference,
             ]);
+
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
 
             return response()->json([
                 'status' => 200,
