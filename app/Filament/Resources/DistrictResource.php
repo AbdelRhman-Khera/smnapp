@@ -18,6 +18,7 @@ use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Tables\Filters\SelectFilter;
 
 class DistrictResource extends Resource
 {
@@ -42,7 +43,7 @@ class DistrictResource extends Resource
                         TextInput::make('name_en')->required(),
                     ]),
                 ]),
-                Forms\Components\Section::make('Availability Days')
+            Forms\Components\Section::make('Availability Days')
                 ->description('حدد الأيام المتاحة للتوافر في هذا الحي')
                 ->schema([
                     CheckboxList::make('available_days')
@@ -72,8 +73,13 @@ class DistrictResource extends Resource
 
             ])->defaultSort('id', 'desc')
             ->filters([
-                //
+                SelectFilter::make('city_id')
+                    ->label('City')
+                    ->relationship('city', 'name_ar')
+                    ->searchable()
+                    ->preload(),
             ])
+
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
