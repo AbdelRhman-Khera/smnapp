@@ -61,6 +61,7 @@ class TechnicianAppointments extends ListRecords
                 'customer:id,first_name,last_name,phone',
                 'slot:id,technician_id,date,time,is_booked',
                 'technician:id,first_name,last_name',
+                'address:id,city_id,district_id',
             ])
             ->where('technician_id', $this->technician->id)
             ->whereNotNull('slot_id');
@@ -80,6 +81,9 @@ class TechnicianAppointments extends ListRecords
                         : '-'),
 
                 TextColumn::make('customer.phone')->label('Phone'),
+
+                TextColumn::make('address->city->name_ar')->label('city'),
+                TextColumn::make('address->district->name_ar')->label('District'),
 
                 TextColumn::make('slot.date')
                     ->label('Appointment Date')
