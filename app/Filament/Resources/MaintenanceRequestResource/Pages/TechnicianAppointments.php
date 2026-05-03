@@ -82,8 +82,8 @@ class TechnicianAppointments extends ListRecords
 
                 TextColumn::make('customer.phone')->label('Phone'),
 
-                TextColumn::make('address->city->name_ar')->label('city'),
-                TextColumn::make('address->district->name_ar')->label('District'),
+                TextColumn::make('address?->city?->name_ar')->label('City'),
+                TextColumn::make('address?->district?->name_ar')->label('District'),
 
                 TextColumn::make('slot.date')
                     ->label('Appointment Date')
