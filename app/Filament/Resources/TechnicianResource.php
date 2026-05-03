@@ -104,8 +104,8 @@ class TechnicianResource extends Resource
                 SelectFilter::make('type')
                     ->label('Type')
                     ->options([
-                        'employee' => 'Employee',
-                        'freelancer' => 'Freelancer',
+                        '1' => 'Employee',
+                        '2' => 'Freelancer',
                     ]),
             ])
             ->actions([
