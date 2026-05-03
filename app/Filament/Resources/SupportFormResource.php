@@ -56,10 +56,37 @@ class SupportFormResource extends Resource
                 ->required(),
             TextInput::make('name')
                 ->label('Name')
-                ->disabled(),
+                ->disabled()
+                ->dehydrated(false)
+                ->formatStateUsing(function ($record) {
+                    if (! $record) {
+                        return null;
+                    }
+
+                    $user = $record->user_type === 'technician'
+                        ? Technician::find($record->user_id)
+                        : Customer::find($record->user_id);
+
+                    return $user
+                        ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))
+                        : null;
+                }),
+
             TextInput::make('phone')
                 ->label('Phone')
-                ->disabled(),
+                ->disabled()
+                ->dehydrated(false)
+                ->formatStateUsing(function ($record) {
+                    if (! $record) {
+                        return null;
+                    }
+
+                    $user = $record->user_type === 'technician'
+                        ? Technician::find($record->user_id)
+                        : Customer::find($record->user_id);
+
+                    return $user?->phone;
+                }),
             TextInput::make('subject')
                 ->label('Subject')
                 ->disabled()
