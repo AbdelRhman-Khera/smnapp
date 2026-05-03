@@ -101,12 +101,12 @@ class TechnicianResource extends Resource
                         5 => '5 Stars',
                     ]),
 
-                // SelectFilter::make('type')
-                //     ->label('Type')
-                //     ->options([
-                //         '1' => 'Employee',
-                //         '2' => 'Freelancer',
-                //     ]),
+                SelectFilter::make('is_freelancer')
+                    ->label('Type')
+                    ->options([
+                        0 => 'Employee',
+                        1 => 'Freelancer',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
