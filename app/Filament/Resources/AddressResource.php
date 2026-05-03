@@ -47,11 +47,13 @@ class AddressResource extends Resource
                 ->relationship('city', 'name_ar')
                 ->required()
                 ->reactive()
-                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)), 
+                ->searchable()
+                ->afterStateUpdated(fn(Set $set) => $set('district_id', null)),
             Select::make('district_id')
                 ->label('District')
                 ->required()
                 ->reactive()
+                ->searchable()
                 ->options(
                     fn(Set $set, callable $get) =>
                     $get('city_id')
