@@ -104,9 +104,8 @@ class TechnicianResource extends Resource
                 SelectFilter::make('type')
                     ->label('Type')
                     ->options([
-                        'complaint' => 'Complaint',
-                        'suggestion' => 'Suggestion',
-                        'inquiry' => 'Inquiry',
+                        'employee' => 'Employee',
+                        'freelancer' => 'Freelancer',
                     ]),
             ])
             ->actions([
