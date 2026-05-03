@@ -15,6 +15,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TimePicker;
 use Filament\Tables\Columns\BooleanColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 
 class SlotResource extends Resource
 {
@@ -47,7 +48,7 @@ class SlotResource extends Resource
                 Toggle::make('is_booked')
                     ->label('Is Booked')
                     ->default(false)
-                    ->disabled(fn ($get) => $get('is_booked')),
+                    ->disabled(fn($get) => $get('is_booked')),
             ]);
     }
 
@@ -61,10 +62,19 @@ class SlotResource extends Resource
                 TextColumn::make('date')->label('Date')->sortable(),
                 TextColumn::make('time')->label('Time')->sortable(),
                 BooleanColumn::make('is_booked')->label('Booked'),
-            ])->defaultSort('id', 'desc')
+            ])
+            ->defaultSort('id', 'desc')
+            ->paginated([10, 25, 50, 100])
             ->filters([
+                SelectFilter::make('technician_id')
+                    ->label('Technician')
+                    ->relationship('technician', 'first_name')
+                    ->searchable()
+                    ->preload()
+                    ->getOptionLabelFromRecordUsing(fn($record) => trim($record->first_name . ' ' . $record->last_name)),
+
                 Tables\Filters\Filter::make('Available Slots')
-                    ->query(fn ($query) => $query->where('is_booked', false)),
+                    ->query(fn($query) => $query->where('is_booked', false)),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
