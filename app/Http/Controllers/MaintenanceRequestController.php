@@ -363,17 +363,48 @@ class MaintenanceRequestController extends Controller
 
         // new logic
 
+        // $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
+        // $slots = Slot::whereIn('technician_id', $technicianIds)
+        //     ->whereDate('date', $request->date)
+        //     ->where('is_booked', false)
+        //     ->with('technician')
+        //     ->orderBy('technician_id')
+        //     ->orderBy('time')
+        //     ->get();
+
+        // $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
+
         $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
 
-        $slots = Slot::whereIn('technician_id', $technicianIds)
-            ->whereDate('date', $request->date)
+        $selectedDate = Carbon::parse($request->date)->toDateString();
+
+        $nowSaudi = Carbon::now('Asia/Riyadh');
+
+        $slotsQuery = Slot::whereIn('technician_id', $technicianIds)
+            ->whereDate('date', $selectedDate)
             ->where('is_booked', false)
             ->with('technician')
-            ->orderBy('technician_id')
             ->orderBy('time')
-            ->get();
+            ->orderBy('technician_id');
+
+        if ($selectedDate === $nowSaudi->toDateString()) {
+            $nextHour = $nowSaudi->copy()
+                ->addHour()
+                ->minute(0)
+                ->second(0)
+                ->format('H:i:s');
+
+            $slotsQuery->whereTime('time', '>=', $nextHour);
+        }
+
+        $slots = $slotsQuery->get();
 
         $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
+
+        $slots = $slots
+            ->unique(fn($slot) => Carbon::parse($slot->time)->format('H:i'))
+            ->values();
 
         return response()->json([
             'status' => 200,
