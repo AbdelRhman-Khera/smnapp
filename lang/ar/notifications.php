@@ -15,5 +15,6 @@ return [
         'title' => 'مهمة صيانة جديدة',
         'new_request' => 'تم تعيين طلب صيانة جديد #:id لك.',
         'request_updated' => 'تم تحديث طلب الصيانة #:id.',
+        'freelancer_request_available' => 'طلب صيانة جديد #:id متاح لك.',
     ],
 ];

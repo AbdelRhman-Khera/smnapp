@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Hash;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use App\Filament\Resources\MaintenanceRequestResource;
+use Filament\Tables\Filters\SelectFilter;
 
 class TechnicianResource extends Resource
 {
@@ -90,7 +91,23 @@ class TechnicianResource extends Resource
                     ->color(fn($state) => $state ? 'warning' : 'success'),
             ])->defaultSort('id', 'desc')
             ->filters([
-                //
+                SelectFilter::make('rating')
+                    ->label('Rating')
+                    ->options([
+                        1 => '1 Star',
+                        2 => '2 Stars',
+                        3 => '3 Stars',
+                        4 => '4 Stars',
+                        5 => '5 Stars',
+                    ]),
+
+                SelectFilter::make('type')
+                    ->label('Type')
+                    ->options([
+                        'complaint' => 'Complaint',
+                        'suggestion' => 'Suggestion',
+                        'inquiry' => 'Inquiry',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

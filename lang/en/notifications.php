@@ -15,5 +15,6 @@ return [
         'title' => 'New Maintenance Assignment',
         'new_request' => 'A new maintenance request #:id has been assigned to you.',
         'request_updated' => 'The request #:id has been updated.',
+        'freelancer_request_available' => 'A new maintenance request #:id is available for you.',
     ],
 ];
