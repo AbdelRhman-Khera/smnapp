@@ -41,7 +41,7 @@ class SparePartResource extends Resource
                         Textarea::make('description_en')->label('Description (EN)')->nullable(),
                     ]),
                 ])->columnSpanFull(),
-                TextInput::make('sap_id')->label('SAP ID')->required()->unique(),
+                TextInput::make('sap_id')->label('SAP ID')->required(),
                 TextInput::make('price')->label('Price')->numeric()->required(),
                 TextInput::make('stock')->label('Stock Quantity')->numeric()->default(0),
                 FileUpload::make('image')->label('Image')->image()->nullable(),
