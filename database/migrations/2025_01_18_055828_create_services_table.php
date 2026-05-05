@@ -19,7 +19,7 @@ return new class extends Migration
             $table->text('description_en')->nullable();
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->integer('price');
+            $table->decimal('price', 10, 2);
             $table->timestamps();
         });
     }

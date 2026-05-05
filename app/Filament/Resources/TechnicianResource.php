@@ -58,10 +58,22 @@ class TechnicianResource extends Resource
                 Select::make('manager_id')
                     ->relationship('manager', 'email')
                     ->required(),
+                // Select::make('districts')
+                //     ->relationship('districts', 'name_ar')
+                //     ->multiple()
+                //     ->preload(),
                 Select::make('districts')
-                    ->relationship('districts', 'name_ar')
+                    ->relationship(
+                        name: 'districts',
+                        titleAttribute: 'name_ar',
+                        modifyQueryUsing: fn($query) => $query->with('city')
+                    )
                     ->multiple()
-                    ->preload(),
+                    ->preload()
+                    ->searchable()
+                    ->getOptionLabelFromRecordUsing(function ($record) {
+                        return ($record->city?->name_ar ?? 'بدون مدينة') . ' - ' . $record->name_ar;
+                    }),
                 Select::make('products')
                     ->relationship('products', 'name_ar')
                     ->multiple()
