@@ -189,7 +189,7 @@ class SapController extends Controller
 
         $payload = [
             'CUSTOMER_ID' => (string) (
-                $maintenanceRequest->entry_sap_id
+                $maintenanceRequest->technician->customer_id
                 ?? '18002W03'
             ),
 

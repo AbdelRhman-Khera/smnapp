@@ -32,6 +32,7 @@ class Technician extends Authenticatable
         'sap_id',
         'site_id',
         'is_freelancer',
+        'customer_id',
     ];
 
     /**

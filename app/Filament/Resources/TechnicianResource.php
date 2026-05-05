@@ -48,6 +48,7 @@ class TechnicianResource extends Resource
                     ->required(),
                 TextInput::make('sap_id')->required(),
                 TextInput::make('site_id')->required(),
+                TextInput::make('customer_id')->required(),
                 TextInput::make('password')
                     ->password()
                     ->required(fn($context) => $context === 'create')
