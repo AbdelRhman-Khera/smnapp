@@ -805,6 +805,14 @@ class MaintenanceRequestController extends Controller
 
         $validatedData = $validator->validated();
 
+        if ($maintenanceRequest->technician->is_freelancer == 1 && $validatedData['payment_method'] == 'cash') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'Cash_PAYMENT_NOT_AVAILABLE',
+                'message' => _('messages.cash_payment_not_available_for_freelancer_technician'),
+            ], 400);
+
+        }
         $invoice = $maintenanceRequest->invoice;
         if (!$invoice) {
             return response()->json([
@@ -813,6 +821,7 @@ class MaintenanceRequestController extends Controller
                 'message' => 'Invoice not found for this request.',
             ], 400);
         }
+
 
         $invoice->update([
             'payment_method' => $validatedData['payment_method'],

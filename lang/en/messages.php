@@ -68,6 +68,7 @@ return [
     'internal_server_error' => 'An error occurred while processing the request.',
     'billing_already_serviced' => 'The billing has already been serviced.',
     'invoice_products_not_installable' => 'The invoice products are not installable.',
+    'cash_payment_not_available_for_freelancer_technician' => 'Cash payment is not available for requests assigned to freelancer technicians.',
 
 
 ];
