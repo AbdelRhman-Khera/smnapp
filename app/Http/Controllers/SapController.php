@@ -233,6 +233,7 @@ class SapController extends Controller
 
             $sapStatus = $firstRow['STATUS'] ?? null;
             $sapDesc = $firstRow['DESC'] ?? null;
+            $sapQr = $firstRow['QR_CODE'] ?? null;
 
             $isSuccess = $response->successful() && $sapStatus === 'S';
 
@@ -251,6 +252,8 @@ class SapController extends Controller
                 'sap_sync_status' => $isSuccess ? 'success' : 'failed',
                 'sap_sales_order_no' => $isSuccess ? $sapDesc : null,
                 'sap_last_error' => $isSuccess ? null : ($sapDesc ?? 'SAP request failed'),
+                'sap_qr' => $isSuccess ? $sapQr : null,
+
             ]);
 
             return [

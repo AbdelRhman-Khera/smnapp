@@ -36,6 +36,7 @@ class MaintenanceRequest extends Model
         'is_open_for_freelancers',
         'opened_for_freelancers_at',
         'freelancer_assigned_at',
+        'sap_qr',
 
 
     ];
