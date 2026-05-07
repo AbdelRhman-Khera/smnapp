@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
+use Filament\Tables\Filters\SelectFilter;
 
 class MaintenanceRequestResource extends Resource
 {
@@ -38,11 +39,12 @@ class MaintenanceRequestResource extends Resource
     {
         return $form
             ->schema([
-                TextInput::make('entry_sap_id')
-                    ->default(fn() => auth()->user()?->sap_id)
-                    ->disabled()
-                    ->hidden()
-                    ->dehydrated(false),
+                // TextInput::make('entry_sap_id')
+                //     ->default(fn() => auth()->user()?->sap_id)
+                //     ->disabled()
+                //     ->hidden()
+                //     ->dehydrated(false),
+
                 Select::make('customer_id')
                     ->relationship('customer', 'phone')
                     ->searchable()
@@ -180,6 +182,7 @@ class MaintenanceRequestResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+
             ->columns([
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('customer_full_name')
@@ -206,24 +209,36 @@ class MaintenanceRequestResource extends Resource
                         };
                     }),
                 TextColumn::make('last_status')
-                    ->sortable()
-                    ->searchable()
                     ->label('Status')
-                    ->formatStateUsing(function ($state) {
-                        return match ($state) {
-                            'pending' => 'Pending',
-                            'technician_assigned' => 'Technician Assigned',
-                            'technician_on_the_way' => 'Technician On The Way',
-                            'technician_arrived' => 'Technician Arrived',
-                            'in_progress' => 'In Progress',
-                            'waiting_for_payment' => 'Waiting For Payment',
-                            'waiting_for_technician_confirm_payment' => 'Waiting For Technician Confirm Payment',
-                            'completed' => 'Completed',
-                            'canceled' => 'Canceled',
-                            default => $state,
-                        };
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'pending' => 'gray',
+                        'technician_assigned' => 'info',
+                        'technician_on_the_way' => 'warning',
+                        'technician_arrived' => 'primary',
+                        'in_progress' => 'warning',
+                        'waiting_for_payment' => 'danger',
+                        'waiting_for_technician_confirm_payment' => 'danger',
+                        'completed' => 'success',
+                        'canceled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'pending' => 'Pending',
+                        'technician_assigned' => 'Technician Assigned',
+                        'technician_on_the_way' => 'Technician On The Way',
+                        'technician_arrived' => 'Technician Arrived',
+                        'in_progress' => 'In Progress',
+                        'waiting_for_payment' => 'Waiting For Payment',
+                        'waiting_for_technician_confirm_payment' => 'Waiting For Technician Confirm Payment',
+                        'completed' => 'Completed',
+                        'canceled' => 'Canceled',
+                        default => $state,
                     }),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                // TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('createdBy.name')->label('Created By')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updatedBy.name')->label('Updated By')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('is_open_for_freelancers')
                     ->label('Freelancer Open')
                     ->badge()
@@ -231,40 +246,89 @@ class MaintenanceRequestResource extends Resource
                     ->color(fn($state) => $state ? 'warning' : 'gray'),
             ])->defaultSort('id', 'desc')
             ->filters([
-                Filter::make('new_installation')
-                    ->label('New Installation')
-                    ->query(fn(Builder $query) => $query->where('type', 'new_installation')),
-                Filter::make('regular_maintenance')
-                    ->label('Regular Maintenance')
-                    ->query(fn(Builder $query) => $query->where('type', 'regular_maintenance')),
-                Filter::make('emergency_maintenance')
-                    ->label('Emergency Maintenance')
-                    ->query(fn(Builder $query) => $query->where('type', 'emergency_maintenance')),
-                Filter::make('pending')
-                    ->label('Pending')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'pending')),
-                Filter::make('technician_assigned')
-                    ->label('Technician Assigned')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'technician_assigned')),
-                Filter::make('technician_on_the_way')
-                    ->label('Technician On The Way')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'technician_on_the_way')),
+                SelectFilter::make('last_status')
+                    ->label('Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'technician_assigned' => 'Technician Assigned',
+                        'technician_on_the_way' => 'Technician On The Way',
+                        'technician_arrived' => 'Technician Arrived',
+                        'in_progress' => 'In Progress',
+                        'waiting_for_payment' => 'Waiting For Payment',
+                        'waiting_for_technician_confirm_payment' => 'Waiting For Technician Confirm Payment',
+                        'completed' => 'Completed',
+                        'canceled' => 'Canceled',
+                    ])
+                    ->searchable()
+                    ->preload(),
+                Filter::make('slot_date_range')
+                    ->label('Slot Date')
+                    ->form([
+                        DatePicker::make('from'),
+                        DatePicker::make('to'),
+                    ])
+                    ->query(function ($query, $data) {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn($q) =>
+                                $q->whereHas(
+                                    'slot',
+                                    fn($qq) =>
+                                    $qq->whereDate('date', '>=', $data['from'])
+                                )
+                            )
+                            ->when(
+                                $data['to'],
+                                fn($q) =>
+                                $q->whereHas(
+                                    'slot',
+                                    fn($qq) =>
+                                    $qq->whereDate('date', '<=', $data['to'])
+                                )
+                            );
+                    }),
+                SelectFilter::make('created_by')
+    ->label('Created By')
+    ->options(
+        \App\Models\User::pluck('name', 'id')
+            ->prepend('From App (Customer)', 'app')
+            ->toArray()
+    )
+    ->query(function (Builder $query, array $data) {
 
-                Filter::make('in_progress')
-                    ->label('In Progress')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'in_progress')),
-                Filter::make('waiting_for_payment')
-                    ->label('Waiting For Payment')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'waiting_for_payment')),
-                Filter::make('waiting_for_technician_confirm_payment')
-                    ->label('Waiting For Technician Confirm Payment')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'waiting_for_technician_confirm_payment')),
-                Filter::make('completed')
-                    ->label('Completed')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'completed')),
-                Filter::make('canceled')
-                    ->label('Canceled')
-                    ->query(fn(Builder $query) => $query->where('last_status', 'canceled')),
+        if (!filled($data['value'])) {
+            return $query;
+        }
+
+        if ($data['value'] === 'app') {
+            return $query->whereNull('created_by');
+        }
+
+        return $query->where('created_by', $data['value']);
+    }),
+                SelectFilter::make('is_open_for_freelancers')
+                    ->label('Open for Freelancers')
+                    ->options([
+                        1 => 'Yes',
+                        0 => 'No',
+                    ]),
+                SelectFilter::make('type')
+                    ->label('Maintenance Type')
+                    ->options([
+                        'new_installation' => 'New Installation',
+                        'regular_maintenance' => 'Regular Maintenance',
+                        'emergency_maintenance' => 'Emergency Maintenance',
+                    ]),
+                SelectFilter::make('technician_id')
+                    ->label('Technician')
+                    ->relationship('technician', 'first_name')
+                    ->searchable()
+                    ->preload()
+                    ->getOptionLabelFromRecordUsing(
+                        fn($record) =>
+                        $record->first_name . ' ' . $record->last_name
+                    ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

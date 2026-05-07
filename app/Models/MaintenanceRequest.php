@@ -37,6 +37,8 @@ class MaintenanceRequest extends Model
         'opened_for_freelancers_at',
         'freelancer_assigned_at',
         'sap_qr',
+        'created_by',
+        'updated_by',
 
 
     ];
@@ -49,6 +51,25 @@ class MaintenanceRequest extends Model
 
     protected $appends = ['current_status'];
 
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+
+            if (auth()->check()) {
+
+                $model->created_by = auth()->id();
+                $model->updated_by = auth()->id();
+            }
+        });
+
+        static::updating(function ($model) {
+
+            if (auth()->check()) {
+
+                $model->updated_by = auth()->id();
+            }
+        });
+    }
     public function getPhotosAttribute($value)
     {
         $photos = json_decode($value, true);
@@ -151,5 +172,15 @@ class MaintenanceRequest extends Model
         $this->updateQuietly([
             'hours' => $this->calculateHoursFromProducts(),
         ]);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }
