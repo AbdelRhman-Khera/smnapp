@@ -33,6 +33,7 @@ class Technician extends Authenticatable
         'site_id',
         'is_freelancer',
         'customer_id',
+        'storage_location',
     ];
 
     /**
