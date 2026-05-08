@@ -210,6 +210,8 @@ class TechnicianController extends Controller
             'customer',
             'technician',
             'address',
+            'address.city',
+            'address.district',
             'slot',
             'products',
             'statuses',

@@ -218,6 +218,8 @@ class SapController extends Controller
             ),
 
             'SITE' => (string) ($maintenanceRequest->technician->site_id ?? ''),
+            'STORAGE' => (string) ($maintenanceRequest->technician->storage_location ?? ''),
+            'AMOUNT' => (string) ($maintenanceRequest->invoice->total ?? ''),
 
             'ITEMS' => $items,
         ];
@@ -254,6 +256,10 @@ class SapController extends Controller
                 'sap_last_error' => $isSuccess ? null : ($sapDesc ?? 'SAP request failed'),
                 'sap_qr' => $isSuccess ? $sapQr : null,
 
+            ]);
+
+            $maintenanceRequest->invoice()->update([
+                'qr_code' => $isSuccess ? $sapQr : null,
             ]);
 
             return [

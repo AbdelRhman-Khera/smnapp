@@ -791,7 +791,8 @@ class MaintenanceRequestController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|string|in:cash,online',
+            'payment_method' => 'required|string|in:cash,online,remittance',
+            'remittance' => 'required_if:payment_method,remittance|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -811,7 +812,6 @@ class MaintenanceRequestController extends Controller
                 'response_code' => 'Cash_PAYMENT_NOT_AVAILABLE',
                 'message' => _('messages.cash_payment_not_available_for_freelancer_technician'),
             ], 400);
-
         }
         $invoice = $maintenanceRequest->invoice;
         if (!$invoice) {
@@ -822,6 +822,50 @@ class MaintenanceRequestController extends Controller
             ], 400);
         }
 
+        if ($validatedData['payment_method'] == 'remittance') {
+            if ($request->hasFile('remittance')) {
+                $remittanceFile = $request
+                    ->file('remittance')
+                    ->store('remittances', 'public');
+            }else {
+                return response()->json([
+                    'status' => 422,
+                    'response_code' => 'VALIDATION_ERROR',
+                    'message' => 'Remittance file is required when payment method is remittance.',
+                    'errors' => ['remittance' => ['Remittance file is required when payment method is remittance.']],
+                ], 422);
+            }
+            $invoice->update([
+                'status' => 'completed',
+                'payment_method' => 'remittance',
+                'remittance' => $remittanceFile,
+                'payment_details' => [
+                    'remittance_file' => $remittanceFile,
+                    'uploaded_at' => now(),
+                ],
+            ]);
+
+            $maintenanceRequest->statuses()->create([
+                'status' => 'completed',
+                'notes' => 'Payment by remittance',
+            ]);
+            $maintenanceRequest->update([
+                'last_status' => 'completed',
+            ]);
+
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
+
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'REMITTANCE_DETAILS_SUBMITTED',
+                'message' => 'Remittance details submitted successfully.',
+                'data' => [
+                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address.city', 'address.district', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                    'invoice' => $invoice->load('services', 'spareParts'),
+                ],
+            ], 200);
+        }
 
         $invoice->update([
             'payment_method' => $validatedData['payment_method'],
@@ -840,7 +884,7 @@ class MaintenanceRequestController extends Controller
                 'response_code' => 'PAYMENT_METHOD_UPDATED',
                 'message' => 'Payment method updated successfully.',
                 'data' => [
-                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician','address.city', 'address.district', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
                     'invoice' => $invoice->load('services', 'spareParts'),
                 ],
             ], 200);
