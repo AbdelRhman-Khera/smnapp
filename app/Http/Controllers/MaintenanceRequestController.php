@@ -1342,7 +1342,7 @@ class MaintenanceRequestController extends Controller
             return response()->json([
                 'status' => 400,
                 'response_code' => 'MAX_OPEN_REQUESTS_REACHED',
-                'message' => _('messages.max_open_requests_reached'),
+                'message' => __('messages.max_open_requests_reached'),
                 'data' => [
                     'open_requests_count' => $openRequests->count(),
                     'open_requests' => $openRequests,
@@ -1353,7 +1353,7 @@ class MaintenanceRequestController extends Controller
         return response()->json([
             'status' => 200,
             'response_code' => 'CAN_CREATE_REQUEST',
-            'message' => _('messages.can_create_request'),
+            'message' => __('messages.can_create_request'),
             'data' => [
                 'open_requests_count' => $openRequests->count(),
             ],
