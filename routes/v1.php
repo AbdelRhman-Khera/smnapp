@@ -64,6 +64,7 @@ Route::middleware([SetLanguage::class])->group(function () {
 
 
         ////// maintenance request
+        Route::get('/maintenance-requests/check-open-requests', [MaintenanceRequestController::class, 'checkOpenRequests']);
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::get('/maintenance-request/{id}', [MaintenanceRequestController::class, 'show']);
@@ -84,6 +85,7 @@ Route::middleware([SetLanguage::class])->group(function () {
 
         Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
         Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);
+
 
 
         Route::post('/support-form', [LandingController::class, 'storeSupportForm']);

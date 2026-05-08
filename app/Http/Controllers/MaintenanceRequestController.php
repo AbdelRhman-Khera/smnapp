@@ -1318,4 +1318,45 @@ class MaintenanceRequestController extends Controller
             'data' => $maintenanceRequest->fresh(['customer', 'address', 'products']),
         ], 200);
     }
+
+    public function checkOpenRequests(Request $request)
+    {
+        $customer = $request->user();
+
+        $openStatuses = [
+            'pending',
+            'technician_assigned',
+        ];
+
+        $openRequests = MaintenanceRequest::where('customer_id', $customer->id)
+            ->whereIn('last_status', $openStatuses)
+            ->with([
+                'slot',
+                'technician:id,first_name,last_name,phone',
+            ])
+            ->latest()
+            ->get();
+
+        if ($openRequests->count() >= 2) {
+
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'MAX_OPEN_REQUESTS_REACHED',
+                'message' => _('messages.max_open_requests_reached'),
+                'data' => [
+                    'open_requests_count' => $openRequests->count(),
+                    'open_requests' => $openRequests,
+                ],
+            ], 400);
+        }
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'CAN_CREATE_REQUEST',
+            'message' => 'Customer can create a new maintenance request.',
+            'data' => [
+                'open_requests_count' => $openRequests->count(),
+            ],
+        ], 200);
+    }
 }

@@ -68,7 +68,7 @@ return [
     'internal_server_error' => 'حدث خطأ أثناء معالجة الطلب.',
     'billing_already_serviced' => 'تمت معالجة الفاتورة بالفعل.',
     'invoice_products_not_installable' => 'منتجات الفاتورة ليس لها تركيب.',
-    'cash_payment_not_available_for_freelancer_technician' => 'الدفع نقداً غير متوفر لطلبات تعيينها لفنيين مستقلين.'
-
+    'cash_payment_not_available_for_freelancer_technician' => 'الدفع نقداً غير متوفر لطلبات تعيينها لفنيين مستقلين.',
+    'max_open_requests_reached' => 'لديك بالفعل 2 طلب صيانة مفتوح. يرجى تعديل أو إلغاء أحد مواعيدك الحالية قبل إنشاء طلب جديد.',
 
 ];
