@@ -266,46 +266,46 @@ class MaintenanceRequestResource extends Resource
                 Filter::make('created_at')
                     ->label('Created At')
                     ->form([
-                        DatePicker::make('from'),
-                        DatePicker::make('to'),
+                        DatePicker::make('created_from'),
+                        DatePicker::make('created_to'),
                     ])
                     ->query(function ($query, $data) {
                         return $query
                             ->when(
-                                $data['from'],
+                                $data['created_from'],
                                 fn($q) =>
-                                $q->whereDate('created_at', '>=', $data['from'])
+                                $q->whereDate('created_at', '>=', $data['created_from'])
                             )
                             ->when(
-                                $data['to'],
+                                $data['created_to'],
                                 fn($q) =>
-                                $q->whereDate('created_at', '<=', $data['to'])
+                                $q->whereDate('created_at', '<=', $data['created_to'])
                             );
                     }),
                 Filter::make('slot_date_range')
                     ->label('Slot Date')
                     ->form([
-                        DatePicker::make('from'),
-                        DatePicker::make('to'),
+                        DatePicker::make('slot_from'),
+                        DatePicker::make('slot_to'),
                     ])
                     ->query(function ($query, $data) {
                         return $query
                             ->when(
-                                $data['from'],
+                                $data['slot_from'],
                                 fn($q) =>
                                 $q->whereHas(
                                     'slot',
                                     fn($qq) =>
-                                    $qq->whereDate('date', '>=', $data['from'])
+                                    $qq->whereDate('date', '>=', $data['slot_from'])
                                 )
                             )
                             ->when(
-                                $data['to'],
+                                $data['slot_to'],
                                 fn($q) =>
                                 $q->whereHas(
                                     'slot',
                                     fn($qq) =>
-                                    $qq->whereDate('date', '<=', $data['to'])
+                                    $qq->whereDate('date', '<=', $data['slot_to'])
                                 )
                             );
                     }),
