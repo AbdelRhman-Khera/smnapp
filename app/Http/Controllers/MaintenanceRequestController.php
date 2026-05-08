@@ -390,14 +390,15 @@ class MaintenanceRequestController extends Controller
             ->orderBy('time')
             ->orderBy('technician_id');
 
-        if ($selectedDate === $nowSaudi->toDateString()) {
-            $nextHour = $nowSaudi->copy()
-                ->addHour(24)
-                ->minute(0)
-                ->second(0)
-                ->format('H:i:s');
+        $tomorrowSaudi = $nowSaudi->copy()->addDay()->toDateString();
 
-            $slotsQuery->whereTime('time', '>=', $nextHour);
+        if ($selectedDate < $tomorrowSaudi) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'Slots are available starting from tomorrow only.',
+                'data' => [],
+            ], 200);
         }
 
         $slots = $slotsQuery->get();
@@ -479,7 +480,7 @@ class MaintenanceRequestController extends Controller
 
         $slotsQuery = Slot::query()
             ->whereIn('technician_id', $technicians)
-            ->whereDate('date', '>=', now()->toDateString())
+            ->whereDate('date', '>=', now('Asia/Riyadh')->addDay()->toDateString())
             ->where('is_booked', false)
             ->with('technician')
             ->orderBy('date')
@@ -829,7 +830,7 @@ class MaintenanceRequestController extends Controller
                 $remittanceFile = $request
                     ->file('remittance')
                     ->store('remittances', 'public');
-            }else {
+            } else {
                 return response()->json([
                     'status' => 422,
                     'response_code' => 'VALIDATION_ERROR',
@@ -886,7 +887,7 @@ class MaintenanceRequestController extends Controller
                 'response_code' => 'PAYMENT_METHOD_UPDATED',
                 'message' => 'Payment method updated successfully.',
                 'data' => [
-                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician','address.city', 'address.district', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address.city', 'address.district', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
                     'invoice' => $invoice->load('services', 'spareParts'),
                 ],
             ], 200);
