@@ -11,7 +11,7 @@ class Service extends Model
 {
     use HasFactory, LogsActivity;
 
-    protected $fillable = ['name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'price', 'is_active'];
+    protected $fillable = ['name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'price', 'is_active', 'sap_id'];
     protected $appends = ['name', 'description', 'image_url'];
     // protected $hidden = ['name_ar', 'name_en', 'description_ar', 'description_en'];
 

@@ -115,6 +115,8 @@ class MaintenanceRequestController extends Controller
             'slot',
             'technician',
             'address',
+            'address.city',
+            'address.district',
             'products',
             'statuses',
             'invoice',
@@ -390,7 +392,7 @@ class MaintenanceRequestController extends Controller
 
         if ($selectedDate === $nowSaudi->toDateString()) {
             $nextHour = $nowSaudi->copy()
-                ->addHour()
+                ->addHour(24)
                 ->minute(0)
                 ->second(0)
                 ->format('H:i:s');
