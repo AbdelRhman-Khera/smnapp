@@ -235,6 +235,8 @@ class MaintenanceRequestResource extends Resource
                         'canceled' => 'Canceled',
                         default => $state,
                     }),
+                TextColumn::make('address.city.name_ar')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('address.district.name_ar')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 // TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('createdBy.name')->label('Created By')->toggleable(isToggledHiddenByDefault: true),
@@ -261,6 +263,25 @@ class MaintenanceRequestResource extends Resource
                     ])
                     ->searchable()
                     ->preload(),
+                Filter::make('created_at')
+                    ->label('Created At')
+                    ->form([
+                        DatePicker::make('from'),
+                        DatePicker::make('to'),
+                    ])
+                    ->query(function ($query, $data) {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn($q) =>
+                                $q->whereDate('created_at', '>=', $data['from'])
+                            )
+                            ->when(
+                                $data['to'],
+                                fn($q) =>
+                                $q->whereDate('created_at', '<=', $data['to'])
+                            );
+                    }),
                 Filter::make('slot_date_range')
                     ->label('Slot Date')
                     ->form([
@@ -289,24 +310,24 @@ class MaintenanceRequestResource extends Resource
                             );
                     }),
                 SelectFilter::make('created_by')
-    ->label('Created By')
-    ->options(
-        \App\Models\User::pluck('name', 'id')
-            ->prepend('From App (Customer)', 'app')
-            ->toArray()
-    )
-    ->query(function (Builder $query, array $data) {
+                    ->label('Created By')
+                    ->options(
+                        \App\Models\User::pluck('name', 'id')
+                            ->prepend('From App (Customer)', 'app')
+                            ->toArray()
+                    )
+                    ->query(function (Builder $query, array $data) {
 
-        if (!filled($data['value'])) {
-            return $query;
-        }
+                        if (!filled($data['value'])) {
+                            return $query;
+                        }
 
-        if ($data['value'] === 'app') {
-            return $query->whereNull('created_by');
-        }
+                        if ($data['value'] === 'app') {
+                            return $query->whereNull('created_by');
+                        }
 
-        return $query->where('created_by', $data['value']);
-    }),
+                        return $query->where('created_by', $data['value']);
+                    }),
                 SelectFilter::make('is_open_for_freelancers')
                     ->label('Open for Freelancers')
                     ->options([
