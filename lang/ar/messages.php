@@ -70,5 +70,6 @@ return [
     'invoice_products_not_installable' => 'منتجات الفاتورة ليس لها تركيب.',
     'cash_payment_not_available_for_freelancer_technician' => 'الدفع نقداً غير متوفر لطلبات تعيينها لفنيين مستقلين.',
     'max_open_requests_reached' => 'لديك بالفعل 2 طلب صيانة مفتوح. يرجى تعديل أو إلغاء أحد مواعيدك الحالية قبل إنشاء طلب جديد.',
+    'can_create_request' => 'يمكن للعميل إنشاء طلب صيانة جديد.',
 
 ];

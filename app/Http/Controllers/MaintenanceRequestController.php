@@ -1353,7 +1353,7 @@ class MaintenanceRequestController extends Controller
         return response()->json([
             'status' => 200,
             'response_code' => 'CAN_CREATE_REQUEST',
-            'message' => 'Customer can create a new maintenance request.',
+            'message' => _('messages.can_create_request'),
             'data' => [
                 'open_requests_count' => $openRequests->count(),
             ],
