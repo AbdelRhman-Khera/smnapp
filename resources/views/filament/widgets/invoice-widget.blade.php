@@ -1,181 +1,140 @@
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+<x-filament::widget>
+    <x-filament::card>
 
-    {{-- LEFT INFO --}}
-    <div class="lg:col-span-2">
+        @if ($this->invoice)
 
-        <div class="h-full p-6 bg-white border shadow-sm rounded-2xl">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-            <div class="flex items-center justify-between mb-6">
+                {{-- LEFT SIDE --}}
+                <div class="space-y-4 lg:col-span-2">
 
-                <h3 class="text-2xl font-bold">
-                    Invoice #{{ $this->invoice->id }}
-                </h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-2xl font-bold">
+                            Invoice #{{ $this->invoice->id }}
+                        </h3>
 
-                <span
-                    class="px-4 py-1 text-sm font-bold text-white rounded-xl
-                    {{ $this->invoice->status === 'completed'
-                        ? 'bg-success-600'
-                        : 'bg-warning-600' }}">
-                    {{ ucfirst($this->invoice->status) }}
-                </span>
-
-            </div>
-
-            <div class="grid grid-cols-2 gap-6">
-
-                <div>
-                    <div class="mb-1 text-sm text-gray-500">
-                        Total Amount
+                        <span
+                            class="px-4 py-1 text-sm font-bold text-white rounded-xl
+                            {{ $this->invoice->status === 'completed'
+                                ? 'bg-success-600'
+                                : 'bg-warning-600' }}">
+                            {{ ucfirst($this->invoice->status) }}
+                        </span>
                     </div>
 
-                    <div class="text-2xl font-bold text-primary-600">
-                        {{ number_format($this->invoice->total, 2) }} SAR
-                    </div>
-                </div>
-
-                <div>
-                    <div class="mb-1 text-sm text-gray-500">
-                        Payment Method
-                    </div>
-
-                    <div class="text-lg font-bold">
-                        {{ ucfirst($this->invoice->payment_method) }}
-                    </div>
-                </div>
-
-                <div>
-                    <div class="mb-1 text-sm text-gray-500">
-                        SAP Sales Order
-                    </div>
-
-                    <div class="font-semibold">
-                        {{ $this->record->sap_sales_order_no ?? '-' }}
-                    </div>
-                </div>
-
-                <div>
-                    <div class="mb-1 text-sm text-gray-500">
-                        Invoice Date
-                    </div>
-
-                    <div class="font-semibold">
-                        {{ $this->invoice->created_at?->format('Y-m-d h:i A') }}
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {{-- QR CODE --}}
-    <div>
-
-        <div class="h-full p-6 text-center bg-white border shadow-sm rounded-2xl">
-
-            <h4 class="mb-4 text-lg font-bold">
-                ZATCA QR Code
-            </h4>
-
-            <div class="flex justify-center">
-
-                <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($this->invoice->qr_code) }}"
-                    class="border shadow-sm rounded-xl"
-                >
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{{-- PAYMENT DETAILS --}}
-@if ($this->invoice->payment_details)
-
-    <div class="p-6 mt-6 bg-white border shadow-sm rounded-2xl">
-
-        <h4 class="mb-5 text-xl font-bold">
-            Payment Details
-        </h4>
-
-        {{-- ONLINE --}}
-        @if ($this->invoice->payment_method === 'online')
-
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-                <div class="p-4 border rounded-xl">
-                    <div class="mb-1 text-sm text-gray-500">
-                        Transaction Ref
-                    </div>
-
-                    <div class="font-bold">
-                        {{ $this->invoice->payment_details['tran_ref'] ?? '-' }}
-                    </div>
-                </div>
-
-                <div class="p-4 border rounded-xl">
-                    <div class="mb-1 text-sm text-gray-500">
-                        Payment Result
-                    </div>
-
-                    <div class="font-bold">
-                        {{ $this->invoice->payment_details['payment_result']['response_message'] ?? '-' }}
-                    </div>
-                </div>
-
-                <div class="p-4 border rounded-xl">
-                    <div class="mb-1 text-sm text-gray-500">
-                        Payment Date
-                    </div>
-
-                    <div class="font-bold">
-                        {{ $this->invoice->updated_at?->format('Y-m-d h:i A') }}
-                    </div>
-                </div>
-
-            </div>
-
-        @endif
-
-        {{-- REMITTANCE --}}
-        @if ($this->invoice->payment_method === 'remittance')
-
-            @php
-                $remittance =
-                    $this->invoice->payment_details['remittance_file'] ?? null;
-            @endphp
-
-            @if ($remittance)
-
-                <div class="flex flex-col items-start gap-6 lg:flex-row">
-
-                    <div>
-
-                        <a href="{{ asset('storage/' . $remittance) }}"
-                           target="_blank"
-                           class="inline-flex items-center px-5 py-2 text-sm font-bold text-white transition rounded-xl bg-primary-600 hover:bg-primary-700">
-
-                            Open Remittance File
-                        </a>
-
-                    </div>
-
-                    @php
-                        $extension = pathinfo($remittance, PATHINFO_EXTENSION);
-                    @endphp
-
-                    @if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'webp']))
+                    {{-- BASIC INFO --}}
+                    <div class="grid grid-cols-2 gap-4 p-4 border rounded-xl">
 
                         <div>
+                            <div class="text-sm text-gray-500">
+                                Total Amount
+                            </div>
 
-                            <img
-                                src="{{ asset('storage/' . $remittance) }}"
-                                class="object-cover w-40 border shadow-sm rounded-xl"
-                            >
+                            <div class="text-xl font-bold">
+                                {{ number_format($this->invoice->total, 2) }} SAR
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">
+                                Payment Method
+                            </div>
+
+                            <div class="font-bold">
+                                {{ ucfirst($this->invoice->payment_method) }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">
+                                SAP Sales Order
+                            </div>
+
+                            <div class="font-bold">
+                                {{ $this->record->sap_sales_order_no ?? '-' }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-sm text-gray-500">
+                                Invoice Date
+                            </div>
+
+                            <div class="font-bold">
+                                {{ $this->invoice->created_at?->format('Y-m-d h:i A') }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {{-- PAYMENT DETAILS --}}
+                    @if ($this->invoice->payment_details)
+
+                        <div class="p-4 border rounded-xl">
+
+                            <h4 class="mb-4 text-lg font-bold">
+                                Payment Details
+                            </h4>
+
+                            {{-- ONLINE --}}
+                            @if ($this->invoice->payment_method === 'online')
+
+                                <div class="space-y-2">
+
+                                    <div>
+                                        <span class="font-bold">Transaction Ref:</span>
+
+                                        {{ $this->invoice->payment_details['tran_ref'] ?? '-' }}
+                                    </div>
+
+                                    <div>
+                                        <span class="font-bold">Payment Result:</span>
+
+                                        {{ $this->invoice->payment_details['payment_result']['response_message'] ?? '-' }}
+                                    </div>
+
+                                </div>
+
+                            @endif
+
+                            {{-- REMITTANCE --}}
+                            @if ($this->invoice->payment_method === 'remittance')
+
+                                @php
+                                    $remittance =
+                                        $this->invoice->payment_details['remittance_file'] ?? null;
+                                @endphp
+
+                                @if ($remittance)
+
+                                    <div class="space-y-4">
+
+                                        <a href="{{ asset('storage/' . $remittance) }}"
+                                           target="_blank"
+                                           class="inline-flex items-center px-4 py-2 text-white rounded-lg bg-primary-600">
+
+                                            Open Remittance File
+                                        </a>
+
+                                        @php
+                                            $extension = pathinfo($remittance, PATHINFO_EXTENSION);
+                                        @endphp
+
+                                        {{-- IMAGE --}}
+                                        @if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'webp']))
+
+                                            <img
+                                                src="{{ asset('storage/' . $remittance) }}"
+                                                class="w-64 border rounded-xl"
+                                            >
+
+                                        @endif
+
+                                    </div>
+
+                                @endif
+
+                            @endif
 
                         </div>
 
@@ -183,10 +142,150 @@
 
                 </div>
 
-            @endif
+                {{-- RIGHT SIDE --}}
+                <div>
+
+                    <div class="sticky p-4 border rounded-xl top-4">
+
+                        <h4 class="mb-4 text-lg font-bold text-center">
+                            ZATCA QR Code
+                        </h4>
+
+                        <div class="flex justify-center">
+
+                            <img
+                                src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($this->invoice->qr_code) }}"
+                                class="border rounded-lg"
+                            >
+
+                        </div>
+
+                        <div class="mt-4 text-xs text-gray-500 break-all">
+                            {{ $this->invoice->qr_code }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {{-- SPARE PARTS --}}
+            <div class="mt-8">
+
+                <h4 class="mb-3 text-xl font-bold">
+                    Spare Parts
+                </h4>
+
+                <div class="overflow-hidden border rounded-xl">
+
+                    <table class="w-full">
+
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-3 text-left">Name</th>
+                                <th class="p-3 text-center">Qty</th>
+                                <th class="p-3 text-right">Price</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse ($this->invoice->spareParts as $part)
+
+                                <tr class="border-t">
+
+                                    <td class="p-3">
+                                        {{ $part->name }}
+                                    </td>
+
+                                    <td class="p-3 text-center">
+                                        {{ $part->pivot->quantity }}
+                                    </td>
+
+                                    <td class="p-3 text-right">
+                                        {{ number_format($part->pivot->price, 2) }} SAR
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td colspan="3" class="p-4 text-center text-gray-500">
+                                        No Spare Parts
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            {{-- SERVICES --}}
+            <div class="mt-8">
+
+                <h4 class="mb-3 text-xl font-bold">
+                    Services
+                </h4>
+
+                <div class="overflow-hidden border rounded-xl">
+
+                    <table class="w-full">
+
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-3 text-left">Name</th>
+                                <th class="p-3 text-right">Price</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @forelse ($this->invoice->services as $service)
+
+                                <tr class="border-t">
+
+                                    <td class="p-3">
+                                        {{ $service->name }}
+                                    </td>
+
+                                    <td class="p-3 text-right">
+                                        {{ number_format($service->price, 2) }} SAR
+                                    </td>
+
+                                </tr>
+
+                            @empty
+
+                                <tr>
+                                    <td colspan="2" class="p-4 text-center text-gray-500">
+                                        No Services
+                                    </td>
+                                </tr>
+
+                            @endforelse
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        @else
+
+            <div class="text-gray-500">
+                No invoice found.
+            </div>
 
         @endif
 
-    </div>
-
-@endif
+    </x-filament::card>
+</x-filament::widget>
