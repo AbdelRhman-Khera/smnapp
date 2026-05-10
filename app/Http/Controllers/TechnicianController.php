@@ -180,7 +180,7 @@ class TechnicianController extends Controller
                     ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
             })
             ->where('maintenance_requests.technician_id', $technician->id)
-            ->where('request_statuses.status', 'paid')
+            ->where('request_statuses.status', 'completed')
             ->count();
 
         $ongoingRequests = $totalRequests - $completedRequests;
