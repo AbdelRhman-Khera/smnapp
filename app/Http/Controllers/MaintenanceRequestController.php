@@ -1090,8 +1090,10 @@ class MaintenanceRequestController extends Controller
         }
         try {
 
-            $username = (string) config('services.sap.user');
-            $password = (string) config('services.sap.pass');
+            // $username = (string) config('services.sap.user');
+            // $password = (string) config('services.sap.pass');
+            $username = 'ZINTEGRATION';
+            $password = 'S@Psamnan123123123';
             $startDate = '20260201';
             $baseUrl = 'https://portal.samnan.com.sa:443';
             // $baseUrl = 'https://dev.samnan.com.sa';
