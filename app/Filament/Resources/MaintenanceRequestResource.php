@@ -309,24 +309,49 @@ class MaintenanceRequestResource extends Resource
                                 )
                             );
                     }),
+                // SelectFilter::make('created_by')
+                //     ->label('Created By')
+                //     ->options(
+                //         \App\Models\User::pluck('name', 'id')
+                //             ->prepend('From App (Customer)', 'app')
+                //             ->toArray()
+                //     )
+                //     ->query(function (Builder $query, array $data) {
+
+                //         if (!filled($data['value'])) {
+                //             return $query;
+                //         }
+
+                //         if ($data['value'] === 'app') {
+                //             return $query->whereNull('created_by');
+                //         }
+
+                //         return $query->where('created_by', $data['value']);
+                //     }),
+
                 SelectFilter::make('created_by')
                     ->label('Created By')
                     ->options(
                         \App\Models\User::pluck('name', 'id')
-                            ->prepend('From App (Customer)', 'app')
+                            ->prepend('From App (Customer)', 'customer')
                             ->toArray()
                     )
                     ->query(function (Builder $query, array $data) {
 
-                        if (!filled($data['value'])) {
+                        $value = $data['value'] ?? null;
+
+                        if (!filled($value)) {
                             return $query;
                         }
 
-                        if ($data['value'] === 'app') {
-                            return $query->whereNull('created_by');
+                        if ($value === 'customer') {
+
+                            $userIds = \App\Models\User::pluck('id');
+
+                            return $query->whereNotIn('created_by', $userIds);
                         }
 
-                        return $query->where('created_by', $data['value']);
+                        return $query->where('created_by', $value);
                     }),
                 SelectFilter::make('is_open_for_freelancers')
                     ->label('Open for Freelancers')

@@ -856,6 +856,7 @@ class MaintenanceRequestController extends Controller
                 'last_status' => 'completed',
             ]);
 
+
             $sapResponse = app(\App\Http\Controllers\SapController::class)
                 ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
 
@@ -1001,6 +1002,7 @@ class MaintenanceRequestController extends Controller
             $sapResponse = app(\App\Http\Controllers\SapController::class)
                 ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
 
+
             return response()->json([
                 'status' => 200,
                 'response_code' => 'PAYMENT_SUCCESSFUL',
@@ -1101,6 +1103,7 @@ class MaintenanceRequestController extends Controller
                     'VBELN' => $id,
                     'START_DATE' => $startDate,
                 ]);
+
 
             if (!$response->successful()) {
                 return response()->json([
