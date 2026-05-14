@@ -205,7 +205,7 @@ class TechnicianSparePartRequestController extends Controller
         return response()->json([
             'status' => 200,
             'message' => 'Request approved successfully.',
-            'data' => $spareRequest->load('items.sparePart'),
+            // 'data' => $spareRequest->load('items.sparePart'),
         ]);
     }
 }
