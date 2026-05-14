@@ -10,8 +10,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SapController;
 use App\Http\Controllers\TechnicianController;
+use App\Http\Controllers\TechnicianSparePartRequestController;
 use App\Http\Middleware\SapBasicAuth;
 use App\Http\Middleware\SetLanguage;
+
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -61,6 +63,11 @@ Route::middleware([SetLanguage::class])->group(function () {
 
 
         Route::get('/sap-order/{id}', [MaintenanceRequestController::class, 'getSpecificProductByOrder']);
+
+        // material requests
+        Route::post('/technician/spare-part-request', [TechnicianSparePartRequestController::class, 'store']);
+        Route::get('/technician/spare-part-requests', [TechnicianSparePartRequestController::class, 'index']);
+        Route::get('/technician/spare-part-request/{id}', [TechnicianSparePartRequestController::class, 'show']);
 
 
         ////// maintenance request
@@ -117,5 +124,7 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::middleware([SapBasicAuth::class])->group(function () {
         Route::post('/sap/customer-sync', [SapController::class, 'customerSync']);
         Route::get('/sap/maintenance-request/{id}', [SapController::class, 'getMaintenanceRequestFull']);
+        Route::post('/technician/spare-part-request/{id}/approve', [TechnicianSparePartRequestController::class, 'approve']);
+
     });
 });

@@ -193,6 +193,26 @@ class MaintenanceRequestController extends Controller
             }
         }
 
+        $products = $this->normalizeProductsForAttach($request->products);
+
+
+
+        $totalOperatingHours = 0;
+
+        foreach ($products as $productId => $pivotData) {
+
+            $product = Product::find($productId);
+
+            if ($product) {
+
+                $quantity = (int) ($pivotData['quantity'] ?? 1);
+
+                $totalOperatingHours += (
+                    (int) $product->hours * $quantity
+                );
+            }
+        }
+
         $maintenanceRequest = MaintenanceRequest::create([
             'customer_id' => $customer->id,
             'type' => $request->type,
@@ -202,6 +222,7 @@ class MaintenanceRequestController extends Controller
             'photos' => $photoPaths ?? [],
             'sap_order_id' => $request->sap_order_id ?? null,
             'entry_sap_order_id' => '18002W03',
+            'hours' => $totalOperatingHours > 0 ? $totalOperatingHours : null,
         ]);
 
         $maintenanceRequest->products()->attach(
