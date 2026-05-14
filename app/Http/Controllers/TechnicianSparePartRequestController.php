@@ -192,6 +192,7 @@ class TechnicianSparePartRequestController extends Controller
 
                 $item->update([
                     'approved_quantity' => $itemData['approved_quantity'],
+                    'item_no'           => $itemData['item_no'],
                 ]);
             }
         }

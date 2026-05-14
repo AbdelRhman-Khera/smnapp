@@ -14,6 +14,7 @@ class TechnicianSparePartRequestItem extends Model
         'spare_part_id',
         'quantity',
         'approved_quantity',
+        'item_no',
     ];
 
     public function request()
