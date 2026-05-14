@@ -182,6 +182,7 @@ class TechnicianSparePartRequestController extends Controller
         $spareRequest = TechnicianSparePartRequest::with('items')
             ->findOrFail($id);
 
+            dd($request->items);
         foreach ($request->items as $itemData) {
             $spare = SparePart::where('sap_id', $itemData['item_id'])->first();
             $item = $spareRequest->items()
