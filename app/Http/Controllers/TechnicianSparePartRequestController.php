@@ -277,6 +277,8 @@ class TechnicianSparePartRequestController extends Controller
 
                 $spareRequest->update([
                     'status' => 'delivered',
+                ]);
+                $spareRequest->update([
                     'gr_response' => $responseData,
                     'delivered_at' => now(),
                 ]);
