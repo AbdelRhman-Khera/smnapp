@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->text('machine_pic')->nullable()->after('customer_id');
+            $table->text('machine_pic')->nullable();
         });
         Schema::table('maintenance_requests', function (Blueprint $table) {
-            $table->integer('is_product_delivered')->default(0)->after('status');
+            $table->integer('is_product_delivered')->default(0);
         });
     }
 
