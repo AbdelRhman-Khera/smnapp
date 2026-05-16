@@ -274,11 +274,25 @@ class TechnicianSparePartRequestController extends Controller
             $status = $responseData[0]['STATUS'] ?? null;
             if ($status === 'S') {
 
-                $spareRequest->update([
+                // $spareRequest->update([
+                //     'status' => 'delivered',
+                //     'gr_response' => $responseData,
+                //     'delivered_at' => now(),
+                // ]);
+                $result = $spareRequest->update([
                     'status' => 'delivered',
                     'gr_response' => $responseData,
                     'delivered_at' => now(),
                 ]);
+
+                $spareRequest->refresh();
+
+                dd([
+                    'updated' => $result,
+                    'status_after_refresh' => $spareRequest->status,
+                    'dirty' => $spareRequest->getDirty(),
+                ]);
+
                 return response()->json([
                     'status' => 200,
                     'message' => 'Delivery confirmed successfully.',
