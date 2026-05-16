@@ -277,6 +277,8 @@ class TechnicianSparePartRequestController extends Controller
                 $spareRequest->status = 'delivered';
                 $spareRequest->gr_response = $responseData;
                 $spareRequest->delivered_at = now();
+
+                dd($spareRequest,$spareRequest->status, $spareRequest->getAttributes());
                 $spareRequest->save();
 
                 return response()->json([
