@@ -285,6 +285,7 @@ class TechnicianSparePartRequestController extends Controller
                     'status' => 200,
                     'message' => 'Delivery confirmed successfully.',
                     'sap_response' => $responseData,
+                    'data' => $spareRequest->load('items.sparePart'),
                 ]);
             }else {
                 throw new \Exception(
