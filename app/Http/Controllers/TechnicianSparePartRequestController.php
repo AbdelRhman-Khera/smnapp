@@ -208,9 +208,11 @@ class TechnicianSparePartRequestController extends Controller
             }
         }
 
-        $spareRequest->update([
-            'status' => 'ready_to_deliver',
-        ]);
+        if ($spareRequest->status !== 'delivered') {
+            $spareRequest->update([
+                'status' => 'ready_to_deliver',
+            ]);
+        }
 
         return response()->json([
             'status' => 200,
@@ -273,7 +275,7 @@ class TechnicianSparePartRequestController extends Controller
         \DB::table('technician_spare_part_requests')
             ->where('id', $spareRequest->id)
             ->update([
-                'status'       => 'completed',
+                'status'       => 'delivered',
                 'gr_response'  => json_encode($responseData),
                 'delivered_at' => now(),
                 'updated_at'   => now(),
