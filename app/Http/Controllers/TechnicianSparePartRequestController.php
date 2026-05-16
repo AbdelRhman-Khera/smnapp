@@ -189,6 +189,12 @@ class TechnicianSparePartRequestController extends Controller
 
     public function approve(Request $request, $id)
     {
+        \Log::info('SAP approve called', [
+            'request_id' => $id,
+            'time'       => now(),
+            'ip'         => $request->ip(),
+            'body'       => $request->all(),
+        ]);
         $spareRequest = TechnicianSparePartRequest::with('items')
             ->findOrFail($id);
 
