@@ -273,7 +273,7 @@ class TechnicianSparePartRequestController extends Controller
         \DB::table('technician_spare_part_requests')
             ->where('id', $spareRequest->id)
             ->update([
-                'status'       => 'delivered',
+                'status'       => 'completed',
                 'gr_response'  => json_encode($responseData),
                 'delivered_at' => now(),
                 'updated_at'   => now(),
