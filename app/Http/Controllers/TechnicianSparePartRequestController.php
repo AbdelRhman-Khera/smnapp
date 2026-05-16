@@ -265,45 +265,7 @@ class TechnicianSparePartRequestController extends Controller
 
             $responseData = $response->json();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Save Response
-            |--------------------------------------------------------------------------
-            */
 
-            $status = $responseData[0]['STATUS'] ?? null;
-            if ($status === 'S') {
-
-                // $spareRequest->update([
-                //     'status' => 'delivered',
-                //     'gr_response' => $responseData,
-                //     'delivered_at' => now(),
-                // ]);
-                $result = $spareRequest->update([
-                    'status' => 'delivered',
-                    'gr_response' => $responseData,
-                    'delivered_at' => now(),
-                ]);
-
-                $spareRequest->refresh();
-
-                dd([
-                    'updated' => $result,
-                    'status_after_refresh' => $spareRequest->status,
-                    'dirty' => $spareRequest->getDirty(),
-                ]);
-
-                return response()->json([
-                    'status' => 200,
-                    'message' => 'Delivery confirmed successfully.',
-                    'sap_response' => $responseData,
-                    'data' => $spareRequest->load('items.sparePart'),
-                ]);
-            } else {
-                throw new \Exception(
-                    $responseData[0]['DESC'] ?: 'SAP GR creation failed'
-                );
-            }
         } catch (\Exception $e) {
 
             $spareRequest->update([
@@ -317,6 +279,34 @@ class TechnicianSparePartRequestController extends Controller
                 'message' => 'SAP request failed.',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+
+        $status = $responseData[0]['STATUS'] ?? null;
+        if ($status === 'S') {
+
+            // $spareRequest->update([
+            //     'status' => 'delivered',
+            //     'gr_response' => $responseData,
+            //     'delivered_at' => now(),
+            // ]);
+            $result = $spareRequest->update([
+                'status' => 'delivered',
+                'gr_response' => $responseData,
+                'delivered_at' => now(),
+            ]);
+
+
+
+            return response()->json([
+                'status' => 200,
+                'message' => 'Delivery confirmed successfully.',
+                'sap_response' => $responseData,
+                'data' => $spareRequest->load('items.sparePart'),
+            ]);
+        } else {
+            throw new \Exception(
+                $responseData[0]['DESC'] ?: 'SAP GR creation failed'
+            );
         }
     }
 }

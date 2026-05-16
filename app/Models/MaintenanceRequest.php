@@ -39,6 +39,7 @@ class MaintenanceRequest extends Model
         'sap_qr',
         'created_by',
         'updated_by',
+        'is_product_delivered',
 
 
     ];

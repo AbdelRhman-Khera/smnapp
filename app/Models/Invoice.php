@@ -18,6 +18,7 @@ class Invoice extends Model
         'payment_details',
         'qr_code',
         'remittance',
+        'machine_pic',
     ];
 
     protected $casts = [

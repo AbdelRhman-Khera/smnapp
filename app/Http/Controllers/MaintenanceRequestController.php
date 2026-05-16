@@ -896,7 +896,7 @@ class MaintenanceRequestController extends Controller
             'payment_method' => $validatedData['payment_method'],
         ]);
 
-        if ($validatedData['payment_method'] == 'cash') {
+        if ($validatedData['payment_method'] == 'cash' || $validatedData['payment_method'] == 'machine') {
             $maintenanceRequest->statuses()->create([
                 'status' => 'waiting_for_technician_confirm_payment',
             ]);
