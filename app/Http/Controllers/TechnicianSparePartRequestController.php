@@ -274,14 +274,10 @@ class TechnicianSparePartRequestController extends Controller
 
             $status = $responseData[0]['STATUS'] ?? null;
             if ($status === 'S') {
-
-                $spareRequest->update([
-                    'status' => 'delivered',
-                ]);
-                $spareRequest->update([
-                    'gr_response' => $responseData,
-                    'delivered_at' => now(),
-                ]);
+                $spareRequest->status = 'delivered';
+                $spareRequest->gr_response = $responseData;
+                $spareRequest->delivered_at = now();
+                $spareRequest->save();
 
                 return response()->json([
                     'status' => 200,
