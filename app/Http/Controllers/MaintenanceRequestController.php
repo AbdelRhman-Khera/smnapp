@@ -1385,4 +1385,106 @@ class MaintenanceRequestController extends Controller
             ],
         ], 200);
     }
+
+    public function getAvailableSlots2(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'request_id' => 'required|exists:maintenance_requests,id',
+            'date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest = MaintenanceRequest::with('address', 'products')->findOrFail($request->request_id);
+
+        $district = $maintenanceRequest->address->district;
+        $products = $maintenanceRequest->products->pluck('id')->toArray();
+
+        $availableDays = $district->available_days ?? [];
+        $date = Carbon::parse($request->date);
+        $dayOfWeek = $date->englishDayOfWeek;
+
+        if (!empty($availableDays) && !in_array($dayOfWeek, $availableDays)) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'No slots available on this day for the selected district.',
+                'data' => [],
+            ], 200);
+        }
+
+        $technicians = Technician::whereHas('districts', function ($query) use ($district) {
+            $query->where('name_en', $district->name_en);
+        })->whereHas('products', function ($query) use ($products) {
+            $query->whereIn('products.id', $products);
+        })->get();
+
+        $technicianIds = $technicians->pluck('id')->toArray();
+
+        // $slots = Slot::whereIn('technician_id', $technicianIds)
+        //     ->whereDate('date', $request->date)
+        //     ->where('is_booked', false)
+        //     ->with('technician')
+        //     ->get();
+
+        // new logic
+
+        // $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
+        // $slots = Slot::whereIn('technician_id', $technicianIds)
+        //     ->whereDate('date', $request->date)
+        //     ->where('is_booked', false)
+        //     ->with('technician')
+        //     ->orderBy('technician_id')
+        //     ->orderBy('time')
+        //     ->get();
+
+        // $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
+
+        $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
+
+        $selectedDate = Carbon::parse($request->date)->toDateString();
+
+        // $nowSaudi = Carbon::now('Asia/Riyadh');
+
+        $slotsQuery = Slot::whereIn('technician_id', $technicianIds)
+            ->whereDate('date', $selectedDate)
+            ->where('is_booked', false)
+            ->with('technician')
+            ->orderBy('time')
+            ->orderBy('technician_id');
+
+        // $tomorrowSaudi = $nowSaudi->copy()->addDay()->toDateString();
+
+        // if ($selectedDate < $tomorrowSaudi) {
+        //     return response()->json([
+        //         'status' => 200,
+        //         'response_code' => 'NO_SLOTS_AVAILABLE',
+        //         'message' => 'Slots are available starting from tomorrow only.',
+        //         'data' => [],
+        //     ], 200);
+        // }
+
+        $slots = $slotsQuery->get();
+
+        $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
+
+        $slots = $slots
+            ->unique(fn($slot) => Carbon::parse($slot->time)->format('H:i'))
+            ->values();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'SLOTS_FETCHED',
+            'message' => __('messages.slots_fetched'),
+            'data' => $slots,
+        ], 200);
+    }
 }
