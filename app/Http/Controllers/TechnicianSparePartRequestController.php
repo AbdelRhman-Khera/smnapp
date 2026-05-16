@@ -208,4 +208,92 @@ class TechnicianSparePartRequestController extends Controller
             // 'data' => $spareRequest->load('items.sparePart'),
         ]);
     }
+
+    function confirmDelivery($id)
+    {
+        $spareRequest = TechnicianSparePartRequest::with([
+            'items.sparePart'
+        ])->findOrFail($id);
+
+        if ($spareRequest->status !== 'ready_to_deliver') {
+            return response()->json([
+                'status' => 400,
+                'message' => 'Request is not ready for delivery confirmation.',
+            ], 400);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE GR Payload
+        |--------------------------------------------------------------------------
+        */
+
+        $items = $spareRequest->items->map(function ($item, $index) {
+
+            return [
+                'MATNR' => (string) $item->sparePart->sap_id,
+
+                'QTY' => (string) ($item->approved_quantity),
+
+                'PO_ITEM' => (string) ($item->item_no),
+            ];
+        })->values()->toArray();
+
+        $payload = [
+            'GR_NO' => $spareRequest->sap_ref,
+            'ITEMS' => $items,
+        ];
+
+        try {
+
+            $response = Http::withBasicAuth(
+                'test',
+                'EASTER@Egypt@2026'
+            )->post(
+                'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_GR&sap-language=E',
+                $payload
+            );
+
+            $responseData = $response->json();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Save Response
+            |--------------------------------------------------------------------------
+            */
+
+            $status = $responseData[0]['STATUS'] ?? null;
+            if ($status === 'S') {
+
+                $spareRequest->update([
+                    'gr_response' => $responseData,
+                    'delivered_at' => now(),
+                    'status' => 'delivered',
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'message' => 'Delivery confirmed successfully.',
+                    'sap_response' => $responseData,
+                ]);
+            }else {
+                throw new \Exception(
+                    $responseData[0]['DESC'] ?: 'SAP GR creation failed'
+                );
+            }
+        } catch (\Exception $e) {
+
+            $spareRequest->update([
+                'gr_response' => [
+                    'error' => $e->getMessage(),
+                ],
+            ]);
+
+            return response()->json([
+                'status' => 500,
+                'message' => 'SAP request failed.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

@@ -17,6 +17,8 @@ class TechnicianSparePartRequest extends Model
         'sap_ref',
         'response',
         'delivered_at',
+        'gr_response',
+        'gr_sent_at',
     ];
 
     public function branch()

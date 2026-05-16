@@ -26,7 +26,7 @@ return new class extends Migration
 
             $table->timestamp('delivered_at')->nullable();
             $table->string('status')->default('pending');
-            // pending / created / failed / to_be_delivered / delivered /
+            // pending / created / failed / ready_to_deliver / delivered /
 
             $table->timestamps();
         });

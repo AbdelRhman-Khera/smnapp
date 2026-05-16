@@ -68,6 +68,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/spare-part-request', [TechnicianSparePartRequestController::class, 'store']);
         Route::get('/technician/spare-part-requests', [TechnicianSparePartRequestController::class, 'index']);
         Route::get('/technician/spare-part-request/{id}', [TechnicianSparePartRequestController::class, 'show']);
+        Route::post('/technician/spare-part-request/{id}/confirm-delivery', [TechnicianSparePartRequestController::class, 'confirmDelivery']);
 
 
         ////// maintenance request
