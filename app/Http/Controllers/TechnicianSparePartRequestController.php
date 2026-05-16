@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
 use App\Models\SparePart;
 use App\Models\TechnicianSparePartRequest;
 use Illuminate\Http\Request;
@@ -10,6 +11,15 @@ use Illuminate\Support\Facades\Validator;
 
 class TechnicianSparePartRequestController extends Controller
 {
+    public function branches()
+    {
+        $branches = Branch::all();
+        return response()->json([
+            'status' => 200,
+            'message' => 'Branches fetched successfully.',
+            'data' => $branches,
+        ]);
+    }
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

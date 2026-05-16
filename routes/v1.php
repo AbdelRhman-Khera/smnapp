@@ -121,6 +121,8 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/pages/{slug}', [LandingController::class, 'getPage']);
     Route::get('/spare-parts', [LandingController::class, 'getSpareParts']);
     Route::get('/services', [LandingController::class, 'getServices']);
+    Route::get('/branches', [TechnicianSparePartRequestController::class, 'branches']);
+
 
     Route::middleware([SapBasicAuth::class])->group(function () {
         Route::post('/sap/customer-sync', [SapController::class, 'customerSync']);
