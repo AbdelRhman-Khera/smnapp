@@ -274,22 +274,18 @@ class TechnicianSparePartRequestController extends Controller
             $status = $responseData[0]['STATUS'] ?? null;
             if ($status === 'S') {
 
-                $spareRequest->status = 'delivered';
-                $spareRequest->gr_response = $responseData;
-                $spareRequest->delivered_at = now();
-
-                $spareRequest->save();
-
-                \DB::statement("UPDATE technician_spare_part_requests SET status = 'delivered' WHERE id = ?", [$spareRequest->id]);
-
-
+                $spareRequest->update([
+                    'status' => 'delivered',
+                    'gr_response' => $responseData,
+                    'delivered_at' => now(),
+                ]);
                 return response()->json([
                     'status' => 200,
                     'message' => 'Delivery confirmed successfully.',
                     'sap_response' => $responseData,
                     'data' => $spareRequest->load('items.sparePart'),
                 ]);
-            }else {
+            } else {
                 throw new \Exception(
                     $responseData[0]['DESC'] ?: 'SAP GR creation failed'
                 );

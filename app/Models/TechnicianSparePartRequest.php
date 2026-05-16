@@ -21,6 +21,13 @@ class TechnicianSparePartRequest extends Model
         'gr_sent_at',
     ];
 
+    protected $casts = [
+        'response' => 'array',
+        'gr_response' => 'array',
+        'delivered_at' => 'datetime',
+        'gr_sent_at' => 'datetime',
+    ];
+
     public function branch()
     {
         return $this->belongsTo(Branch::class);
