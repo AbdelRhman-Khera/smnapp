@@ -224,6 +224,7 @@ class TechnicianSparePartRequestController extends Controller
         $spareRequest = TechnicianSparePartRequest::with([
             'items.sparePart'
         ])->findOrFail($id);
+
         if ($spareRequest->status !== 'ready_to_deliver') {
             return response()->json([
                 'status' => 400,
@@ -231,20 +232,11 @@ class TechnicianSparePartRequestController extends Controller
             ], 400);
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE GR Payload
-        |--------------------------------------------------------------------------
-        */
-
-        $items = $spareRequest->items->map(function ($item, $index) {
-
+        $items = $spareRequest->items->map(function ($item) {
             return [
-                'MATNR' => (string) $item->sparePart->sap_id,
-
-                'QTY' => (string) ($item->approved_quantity),
-
-                'PO_ITEM' => (string) ($item->item_no),
+                'MATNR'   => (string) $item->sparePart->sap_id,
+                'QTY'     => (string) $item->approved_quantity,
+                'PO_ITEM' => (string) $item->item_no,
             ];
         })->values()->toArray();
 
@@ -254,59 +246,44 @@ class TechnicianSparePartRequestController extends Controller
         ];
 
         try {
-
-            $response = Http::withBasicAuth(
-                'test',
-                'EASTER@Egypt@2026'
-            )->post(
-                'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_GR&sap-language=E',
-                $payload
-            );
+            $response = Http::withBasicAuth('test', 'EASTER@Egypt@2026')
+                ->post(
+                    'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_GR&sap-language=E',
+                    $payload
+                );
 
             $responseData = $response->json();
-
-
         } catch (\Exception $e) {
-
-            $spareRequest->update([
-                'gr_response' => [
-                    'error' => $e->getMessage(),
-                ],
-            ]);
-
             return response()->json([
-                'status' => 500,
+                'status'  => 500,
                 'message' => 'SAP request failed.',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
 
         $status = $responseData[0]['STATUS'] ?? null;
-        if ($status === 'S') {
 
-            // $spareRequest->update([
-            //     'status' => 'delivered',
-            //     'gr_response' => $responseData,
-            //     'delivered_at' => now(),
-            // ]);
-            $result = $spareRequest->update([
-                'status' => 'delivered',
-                'gr_response' => $responseData,
-                'delivered_at' => now(),
-            ]);
-
-
-
+        if ($status !== 'S') {
             return response()->json([
-                'status' => 200,
-                'message' => 'Delivery confirmed successfully.',
-                'sap_response' => $responseData,
-                'data' => $spareRequest->load('items.sparePart'),
-            ]);
-        } else {
-            throw new \Exception(
-                $responseData[0]['DESC'] ?: 'SAP GR creation failed'
-            );
+                'status'  => 400,
+                'message' => $responseData[0]['DESC'] ?? 'SAP GR creation failed',
+            ], 400);
         }
+
+        \DB::table('technician_spare_part_requests')
+            ->where('id', $spareRequest->id)
+            ->update([
+                'status'       => 'delivered',
+                'gr_response'  => json_encode($responseData),
+                'delivered_at' => now(),
+                'updated_at'   => now(),
+            ]);
+
+        return response()->json([
+            'status'       => 200,
+            'message'      => 'Delivery confirmed successfully.',
+            'sap_response' => $responseData,
+            'data'         => $spareRequest->fresh()->load('items.sparePart'),
+        ]);
     }
 }
