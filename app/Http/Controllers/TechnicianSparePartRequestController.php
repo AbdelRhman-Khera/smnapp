@@ -274,12 +274,15 @@ class TechnicianSparePartRequestController extends Controller
 
             $status = $responseData[0]['STATUS'] ?? null;
             if ($status === 'S') {
+
+            \DB::enableQueryLog();
                 $spareRequest->status = 'delivered';
                 $spareRequest->gr_response = $responseData;
                 $spareRequest->delivered_at = now();
 
-                dd($spareRequest,$spareRequest->status, $spareRequest->getAttributes());
                 $spareRequest->save();
+
+dd(\DB::getQueryLog());
 
                 return response()->json([
                     'status' => 200,
