@@ -476,7 +476,7 @@ class MaintenanceRequestResource extends Resource
 
         // Call the controller method directly
         $controller = app(MaintenanceRequestController::class);
-        $slots = $controller->getAvailableSlots(new \Illuminate\Http\Request([
+        $slots = $controller->getAvailableSlots2(new \Illuminate\Http\Request([
             'request_id' => $record->id,
             'date' => $selectedDate,
         ]));
