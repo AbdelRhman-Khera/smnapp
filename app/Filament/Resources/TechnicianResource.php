@@ -126,26 +126,77 @@ class TechnicianResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
 
+                // Tables\Actions\Action::make('Generate Slots')
+                //     ->label('Generate Slots')
+                //     ->icon('heroicon-o-clock')
+                //     ->form([
+                //         Repeater::make('selected_dates')
+                //             ->label('Select Date(s)')
+                //             ->schema([
+                //                 DatePicker::make('date')
+                //                     ->label('Select Date')
+                //                     ->required(),
+                //             ])
+                //             ->minItems(1)
+                //             ->columns(1)
+                //             ->addable(true)
+                //             ->deletable(true),
+                //     ])
+                //     ->action(fn($data, $record) => self::generateSlots($record, collect($data['selected_dates'])->pluck('date')->toArray()))
+                //     ->modalHeading('Generate Slots for Technician')
+                //     ->successNotificationTitle('Slots generated successfully')
+                //     ->modalButton('Create Slots'),
+
                 Tables\Actions\Action::make('Generate Slots')
                     ->label('Generate Slots')
                     ->icon('heroicon-o-clock')
                     ->form([
-                        Repeater::make('selected_dates')
-                            ->label('Select Date(s)')
+                        // Date range
+                        Forms\Components\Grid::make(2)
                             ->schema([
-                                DatePicker::make('date')
-                                    ->label('Select Date')
-                                    ->required(),
-                            ])
-                            ->minItems(1)
-                            ->columns(1)
-                            ->addable(true)
-                            ->deletable(true),
+                                DatePicker::make('date_from')
+                                    ->label('From Date')
+                                    ->required()
+                                    ->native(false),
+                                DatePicker::make('date_to')
+                                    ->label('To Date')
+                                    ->required()
+                                    ->native(false)
+                                    ->afterOrEqual('date_from'),
+                            ]),
+
+                        Forms\Components\Fieldset::make('First Shift')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TimePicker::make('shift1_from')
+                                            ->label('From')
+                                            ->required()
+                                            ->seconds(false),
+                                        Forms\Components\TimePicker::make('shift1_to')
+                                            ->label('To')
+                                            ->required()
+                                            ->seconds(false),
+                                    ]),
+                            ]),
+
+                        Forms\Components\Fieldset::make('Second Shift (Optional)')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TimePicker::make('shift2_from')
+                                            ->label('From')
+                                            ->seconds(false),
+                                        Forms\Components\TimePicker::make('shift2_to')
+                                            ->label('To')
+                                            ->seconds(false),
+                                    ]),
+                            ]),
                     ])
-                    ->action(fn($data, $record) => self::generateSlots($record, collect($data['selected_dates'])->pluck('date')->toArray()))
+                    ->action(fn($data, $record) => self::generateSlots($record, $data))
                     ->modalHeading('Generate Slots for Technician')
-                    ->successNotificationTitle('Slots generated successfully')
                     ->modalButton('Create Slots'),
+
                 Tables\Actions\Action::make('appointments')
                     ->label('Appointments')
                     ->icon('heroicon-o-calendar-days')
@@ -155,33 +206,83 @@ class TechnicianResource extends Resource
                     ])),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('generate_slots')
-                        ->label('Generate Slots')
-                        ->icon('heroicon-o-clock')
-                        ->form([
-                            Repeater::make('selected_dates')
-                                ->label('Select Date(s)')
-                                ->schema([
-                                    DatePicker::make('date')
-                                        ->label('Select Date')
-                                        ->required(),
-                                ])
-                                ->minItems(1)
-                                ->columns(1)
-                                ->addable(true)
-                                ->deletable(true),
-                        ])
-                        ->action(function ($data, $records) {
-                            foreach ($records as $technician) {
-                                self::generateSlots($technician, collect($data['selected_dates'])->pluck('date')->toArray());
-                            }
-                        })
-                        ->modalHeading('Generate Slots for Selected Technicians')
-                        ->successNotificationTitle('Slots generated successfully')
-                        ->modalButton('Create Slots'),
-                ]),
+                // Tables\Actions\BulkActionGroup::make([
+                //     Tables\Actions\DeleteBulkAction::make(),
+                //     Tables\Actions\BulkAction::make('generate_slots')
+                //         ->label('Generate Slots')
+                //         ->icon('heroicon-o-clock')
+                //         ->form([
+                //             Repeater::make('selected_dates')
+                //                 ->label('Select Date(s)')
+                //                 ->schema([
+                //                     DatePicker::make('date')
+                //                         ->label('Select Date')
+                //                         ->required(),
+                //                 ])
+                //                 ->minItems(1)
+                //                 ->columns(1)
+                //                 ->addable(true)
+                //                 ->deletable(true),
+                //         ])
+                //         ->action(function ($data, $records) {
+                //             foreach ($records as $technician) {
+                //                 self::generateSlots($technician, collect($data['selected_dates'])->pluck('date')->toArray());
+                //             }
+                //         })
+                //         ->modalHeading('Generate Slots for Selected Technicians')
+                //         ->successNotificationTitle('Slots generated successfully')
+                //         ->modalButton('Create Slots'),
+                // ]),
+
+                Tables\Actions\BulkAction::make('generate_slots')
+                    ->label('Generate Slots')
+                    ->icon('heroicon-o-clock')
+                    ->form([
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                DatePicker::make('date_from')
+                                    ->label('From Date')
+                                    ->required()
+                                    ->native(false),
+                                DatePicker::make('date_to')
+                                    ->label('To Date')
+                                    ->required()
+                                    ->native(false),
+                            ]),
+                        Forms\Components\Fieldset::make('First Shift')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TimePicker::make('shift1_from')
+                                            ->label('From')
+                                            ->required()
+                                            ->seconds(false),
+                                        Forms\Components\TimePicker::make('shift1_to')
+                                            ->label('To')
+                                            ->required()
+                                            ->seconds(false),
+                                    ]),
+                            ]),
+                        Forms\Components\Fieldset::make('Second Shift (Optional)')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TimePicker::make('shift2_from')
+                                            ->label('From')
+                                            ->seconds(false),
+                                        Forms\Components\TimePicker::make('shift2_to')
+                                            ->label('To')
+                                            ->seconds(false),
+                                    ]),
+                            ]),
+                    ])
+                    ->action(function ($data, $records) {
+                        foreach ($records as $technician) {
+                            self::generateSlots($technician, $data);
+                        }
+                    })
+                    ->modalHeading('Generate Slots for Selected Technicians')
+                    ->modalButton('Create Slots'),
             ]);
     }
 
@@ -191,30 +292,88 @@ class TechnicianResource extends Resource
             //
         ];
     }
-    protected static function generateSlots($technician, $selectedDates)
+    // protected static function generateSlots($technician, $selectedDates)
+    // {
+    //     $fixedTimes = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '16:00:00', '17:00:00', '18:00:00', '19:00:00'];
+
+    //     foreach ($selectedDates as $date) {
+    //         foreach ($fixedTimes as $time) {
+    //             // Check if the slot already exists
+    //             $existingSlot = Slot::where('technician_id', $technician->id)
+    //                 ->where('date', $date)
+    //                 ->where('time', $time)
+    //                 ->exists();
+
+    //             if (!$existingSlot) {
+    //                 Slot::create([
+    //                     'technician_id' => $technician->id,
+    //                     'date' => $date,
+    //                     'time' => $time,
+    //                     'is_booked' => false,
+    //                 ]);
+    //             }
+    //         }
+    //     }
+
+    //     return redirect()->with('success', 'Slots created successfully.');
+    // }
+
+    protected static function generateSlots($technician, $data)
     {
-        $fixedTimes = ['08:00:00', '09:00:00', '10:00:00', '11:00:00', '16:00:00', '17:00:00', '18:00:00', '19:00:00'];
+        // Build date range
+        $startDate = \Carbon\Carbon::parse($data['date_from']);
+        $endDate   = \Carbon\Carbon::parse($data['date_to']);
+        $dates     = [];
 
-        foreach ($selectedDates as $date) {
-            foreach ($fixedTimes as $time) {
-                // Check if the slot already exists
-                $existingSlot = Slot::where('technician_id', $technician->id)
-                    ->where('date', $date)
-                    ->where('time', $time)
-                    ->exists();
+        while ($startDate->lte($endDate)) {
+            $dates[] = $startDate->format('Y-m-d');
+            $startDate->addDay();
+        }
 
-                if (!$existingSlot) {
-                    Slot::create([
-                        'technician_id' => $technician->id,
-                        'date' => $date,
-                        'time' => $time,
-                        'is_booked' => false,
-                    ]);
+        // Build shifts
+        $shifts = [];
+
+        if (!empty($data['shift1_from']) && !empty($data['shift1_to'])) {
+            $shifts[] = [
+                'from' => $data['shift1_from'],
+                'to'   => $data['shift1_to'],
+            ];
+        }
+
+        if (!empty($data['shift2_from']) && !empty($data['shift2_to'])) {
+            $shifts[] = [
+                'from' => $data['shift2_from'],
+                'to'   => $data['shift2_to'],
+            ];
+        }
+
+        // Generate slots
+        foreach ($dates as $date) {
+            foreach ($shifts as $shift) {
+                $current = \Carbon\Carbon::parse($shift['from']);
+                $end     = \Carbon\Carbon::parse($shift['to']);
+
+                while ($current->lt($end)) {
+                    $time = $current->format('H:i:s');
+
+                    $exists = Slot::where('technician_id', $technician->id)
+                        ->where('date', $date)
+                        ->where('time', $time)
+                        ->exists();
+
+                    if (!$exists) {
+                        Slot::create([
+                            'technician_id' => $technician->id,
+                            'date'          => $date,
+                            'time'          => $time,
+                            'is_booked'     => false,
+                        ]);
+                    }
+
+                    $current->addHour();
                 }
             }
         }
-
-        return redirect()->with('success', 'Slots created successfully.');
     }
     public static function getPages(): array
     {
