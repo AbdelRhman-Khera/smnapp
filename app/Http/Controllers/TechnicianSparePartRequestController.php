@@ -224,10 +224,6 @@ class TechnicianSparePartRequestController extends Controller
         $spareRequest = TechnicianSparePartRequest::with([
             'items.sparePart'
         ])->findOrFail($id);
-
-        \DB::statement("UPDATE technician_spare_part_requests SET status = 'delivered' WHERE id = ?", [$spareRequest->id]);
-
-dd(\DB::select("SELECT status FROM technician_spare_part_requests WHERE id = ?", [$spareRequest->id]));
         if ($spareRequest->status !== 'ready_to_deliver') {
             return response()->json([
                 'status' => 400,
@@ -278,14 +274,14 @@ dd(\DB::select("SELECT status FROM technician_spare_part_requests WHERE id = ?",
             $status = $responseData[0]['STATUS'] ?? null;
             if ($status === 'S') {
 
-            \DB::enableQueryLog();
                 $spareRequest->status = 'delivered';
                 $spareRequest->gr_response = $responseData;
                 $spareRequest->delivered_at = now();
 
                 $spareRequest->save();
 
-dd(\DB::getQueryLog());
+                \DB::statement("UPDATE technician_spare_part_requests SET status = 'delivered' WHERE id = ?", [$spareRequest->id]);
+
 
                 return response()->json([
                     'status' => 200,
