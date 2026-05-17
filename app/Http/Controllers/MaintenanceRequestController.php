@@ -817,7 +817,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|string|in:cash,online,remittance',
+            'payment_method' => 'required|string|in:cash,online,remittance,machine',
             'remittance' => 'required_if:payment_method,remittance|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
