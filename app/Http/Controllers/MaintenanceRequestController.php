@@ -165,6 +165,7 @@ class MaintenanceRequestController extends Controller
             'last_maintenance_date' => 'nullable|date',
             'photos' => 'nullable|array',
             'sap_order_id' => 'nullable|integer',
+            'is_product_delivered'=> 'nullable'
         ]);
 
         $validator->after(function ($validator) use ($request) {
@@ -221,6 +222,7 @@ class MaintenanceRequestController extends Controller
             'last_maintenance_date' => $request->last_maintenance_date ?? null,
             'photos' => $photoPaths ?? [],
             'sap_order_id' => $request->sap_order_id ?? null,
+            'is_product_delivered' => $request->is_product_delivered ?? null,
             'entry_sap_order_id' => '18002W03',
             'hours' => $totalOperatingHours > 0 ? $totalOperatingHours : null,
         ]);

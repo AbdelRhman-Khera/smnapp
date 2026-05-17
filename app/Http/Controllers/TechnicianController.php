@@ -898,4 +898,158 @@ class TechnicianController extends Controller
             ], 200);
         });
     }
+
+    public function confirmMachinePayment(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to confirm payment for this request.',
+            ], 403);
+        }
+
+        if ($maintenanceRequest->current_status->status != 'waiting_for_technician_confirm_payment') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_REQUEST_STATUS',
+                'message' => 'The request is not in waiting_for_technician_confirm_payment status.',
+            ], 400);
+        }
+
+        $invoice = $maintenanceRequest->invoice;
+
+        if (!$invoice || $invoice->payment_method != 'machine' || $invoice->status != 'pending') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_INVOICE',
+                'message' => 'The invoice is not valid for machine confirmation.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'machine_pic' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'lat' => 'required|numeric',
+            'long' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $invoice->update([
+            'status' => 'completed',
+        ]);
+
+        if ($request->hasFile('machine_pic')) {
+            $machinePic = $request
+                ->file('machine_pic')
+                ->store('machine_pics', 'public');
+        }
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'completed',
+            'notes' => 'تم الدفع عن طريق الجهاز وتم تأكيد الدفع من الفني.',
+            'latitude' => $request->input('lat'),
+            'longitude' => $request->input('long'),
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'completed',
+        ]);
+
+        $sapResponse = app(\App\Http\Controllers\SapController::class)
+            ->createSalesOrder($maintenanceRequest->fresh(), 'Machine');
+
+        NotificationService::notifyCustomer(
+            $maintenanceRequest->customer_id,
+            __("notifications.customer.payment_confirmed", ['id' => $maintenanceRequest->id]),
+            $maintenanceRequest->id
+        );
+
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'PAYMENT_CONFIRMED',
+            'message' => 'Machine payment confirmed and request marked as completed.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->load(['statuses', 'customer', 'slot', 'technician', 'address', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+            ],
+        ], 200);
+    }
+
+    public function cancelRequest(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+        $technician = $request->user();
+        if ($technician->id !== $maintenanceRequest->technician_id) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'FORBIDDEN',
+                'message' => __('messages.not_authorized'),
+            ], 403);
+        }
+
+
+        if ($maintenanceRequest->current_status->status === 'completed' || $maintenanceRequest->current_status->status === 'canceled') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'CANNOT_CANCEL',
+                'message' => __('messages.cannot_cancel_request'),
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'canceled',
+            'notes' => $request->notes ?? null,
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'canceled',
+        ]);
+
+        if ($maintenanceRequest->slot_id) {
+            $oldSlot = Slot::find($maintenanceRequest->slot_id);
+            if ($oldSlot) {
+                $oldSlot->update(['is_booked' => false]);
+            }
+            $slotIds = collect([$maintenanceRequest->slot_id])
+                ->merge($maintenanceRequest->extra_slot_id ?? [])
+                ->filter()
+                ->unique()
+                ->toArray();
+
+            Slot::whereIn('id', $slotIds)->update([
+                'is_booked' => false,
+            ]);
+        }
+
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'REQUEST_CANCELED',
+            'message' => __('messages.request_canceled'),
+            'data' => $maintenanceRequest,
+        ], 200);
+    }
 }
