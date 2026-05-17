@@ -38,6 +38,14 @@ class CityResource extends Resource
                         TextInput::make('name_en')->required(),
                     ]),
                 ]),
+            Select::make('is_active')
+                ->label('Status')
+                ->options([
+                    1 => 'Active',
+                    0 => 'Inactive',
+                ])
+                ->default(1)
+                ->required(),
         ]);
     }
 

@@ -43,6 +43,14 @@ class DistrictResource extends Resource
                         TextInput::make('name_en')->required(),
                     ]),
                 ]),
+            Select::make('is_active')
+                ->label('Status')
+                ->options([
+                    1 => 'Active',
+                    0 => 'Inactive',
+                ])
+                ->default(1)
+                ->required(),
             Forms\Components\Section::make('Availability Days')
                 ->description('حدد الأيام المتاحة للتوافر في هذا الحي')
                 ->schema([

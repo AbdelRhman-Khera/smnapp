@@ -148,7 +148,7 @@ class AddressController extends Controller
 
     public function cities()
     {
-        $cities = City::all();
+        $cities = City::where('is_active', 1)->get();
 
         return response()->json([
             'status' => 200,
@@ -160,7 +160,7 @@ class AddressController extends Controller
 
     public function getDistricts(City $city)
     {
-        $districts = $city->districts;
+        $districts = $city->districts->where('is_active', 1);
 
         return response()->json([
             'status' => 200,

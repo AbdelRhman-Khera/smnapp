@@ -9,7 +9,7 @@ use Spatie\Activitylog\LogOptions;
 class City extends Model
 {
     use LogsActivity;
-    protected $fillable = ['name_ar', 'name_en'];
+    protected $fillable = ['name_ar', 'name_en', 'is_active', 'hourly_rate'];
     protected $appends = ['name'];
     // protected $hidden = ['name_ar', 'name_en','created_at', 'updated_at'];
     public function getNameAttribute()
