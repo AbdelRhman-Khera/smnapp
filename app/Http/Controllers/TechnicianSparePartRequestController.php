@@ -240,7 +240,9 @@ class TechnicianSparePartRequestController extends Controller
             ], 400);
         }
 
-        $items = $spareRequest->items->map(function ($item) {
+        $items = $spareRequest->items->filter(function ($item) {
+            return $item->item_no !== null;
+        })->map(function ($item) {
             return [
                 'MATNR'   => (string) $item->sparePart->sap_id,
                 'QTY'     => (string) $item->approved_quantity,
