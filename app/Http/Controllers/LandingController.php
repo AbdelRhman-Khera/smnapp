@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Landing;
 use App\Models\Page;
 use App\Models\Service;
 use App\Models\Slider;
 use App\Models\SparePart;
 use App\Models\SupportForm;
+use App\Models\Technician;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -65,6 +67,16 @@ class LandingController extends Controller
         }
 
         $validatedData = $validator->validated();
+        if($validatedData['user_type'] === 'technician') {
+            $technician = Technician::find($validatedData['user_id']);
+            $validatedData['name'] = $technician ? $technician->first_name . ' ' . $technician->last_name : 'Technician #' . $validatedData['user_id'];
+            $validatedData['phone'] = $technician ? $technician->phone : null;
+        } elseif($validatedData['user_type'] === 'customer') {
+            $customer = Customer::find($validatedData['user_id']);
+            $validatedData['name'] = $customer ? $customer->first_name . ' ' . $customer->last_name : 'Customer #' . $validatedData['user_id'];
+            $validatedData['phone'] = $customer ? $customer->phone : null;
+        }
+
 
         $supportForm = SupportForm::create($validatedData);
 
@@ -92,7 +104,7 @@ class LandingController extends Controller
     {
         // $spareParts = SparePart::where('stock', '>', 0)->get();
          $spareParts = SparePart::all();
-        
+
         return response()->json([
             'status' => 200,
             'response_code' => 'SPARE_PARTS_FETCHED',
