@@ -160,7 +160,7 @@ class AddressController extends Controller
 
     public function getDistricts(City $city)
     {
-        $districts = $city->districts->where('is_active', 1);
+        $districts = $city->districts->where('is_active', 1)->values();
 
         return response()->json([
             'status' => 200,
