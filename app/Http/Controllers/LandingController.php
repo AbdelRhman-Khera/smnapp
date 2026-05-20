@@ -67,14 +67,17 @@ class LandingController extends Controller
         }
 
         $validatedData = $validator->validated();
+
         if($validatedData['user_type'] === 'technician') {
-            $technician = Technician::find($validatedData['user_id']);
+            $technician = Technician::find(auth()->id());
             $validatedData['name'] = $technician ? $technician->first_name . ' ' . $technician->last_name : 'Technician #' . $validatedData['user_id'];
             $validatedData['phone'] = $technician ? $technician->phone : null;
+            $validatedData['user_id'] = auth()->id();
         } elseif($validatedData['user_type'] === 'customer') {
-            $customer = Customer::find($validatedData['user_id']);
+            $customer = Customer::find(auth()->id());
             $validatedData['name'] = $customer ? $customer->first_name . ' ' . $customer->last_name : 'Customer #' . $validatedData['user_id'];
             $validatedData['phone'] = $customer ? $customer->phone : null;
+            $validatedData['user_id'] = auth()->id();
         }
 
 
