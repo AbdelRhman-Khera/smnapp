@@ -373,7 +373,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $technicians = Technician::whereHas('districts', function ($query) use ($district) {
-            $query->where('name_en', $district->name_en);
+            $query->where('districts.id', $district->id);
         })->whereHas('products', function ($query) use ($products) {
             $query->whereIn('products.id', $products);
         })->get();
