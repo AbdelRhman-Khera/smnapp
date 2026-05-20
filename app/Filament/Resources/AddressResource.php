@@ -44,7 +44,11 @@ class AddressResource extends Resource
                 ->reactive(),
             TextInput::make('name')->required(),
             Select::make('city_id')
-                ->relationship('city', 'name_ar')
+                ->relationship(
+                    'city',
+                    'name_ar',
+                    modifyQueryUsing: fn (Builder $query) => $query->where('is_active', 1)
+                )
                 ->required()
                 ->reactive()
                 ->searchable()
@@ -57,7 +61,10 @@ class AddressResource extends Resource
                 ->options(
                     fn(Set $set, callable $get) =>
                     $get('city_id')
-                        ? District::where('city_id', $get('city_id'))->pluck('name_ar', 'id')->toArray()
+                        ? District::where('city_id', $get('city_id'))
+                            ->where('is_active', 1)
+                            ->pluck('name_ar', 'id')
+                            ->toArray()
                         : []
                 )
                 ->disabled(fn(callable $get) => empty($get('city_id'))),
