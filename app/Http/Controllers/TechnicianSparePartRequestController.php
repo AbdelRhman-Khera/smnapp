@@ -68,6 +68,8 @@ class TechnicianSparePartRequestController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        $username = config('services.sap.user');
+        $password = config('services.sap.pass');
         try {
 
             $payload = [
@@ -86,14 +88,14 @@ class TechnicianSparePartRequestController extends Controller
             ];
 
             $response = Http::withBasicAuth(
-                'TEST',
-                'EASTER@Egypt@2026'
+                $username,
+                $password
             )
                 ->acceptJson()
                 ->contentType('application/json')
                 ->timeout(60)
                 ->post(
-                    'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
+                    'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
                     $payload
                 );
 
@@ -255,10 +257,13 @@ class TechnicianSparePartRequestController extends Controller
             'ITEMS' => $items,
         ];
 
+        $username = config('services.sap.user');
+        $password = config('services.sap.pass');
+
         try {
-            $response = Http::withBasicAuth('test', 'EASTER@Egypt@2026')
+            $response = Http::withBasicAuth($username, $password)
                 ->post(
-                    'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_GR&sap-language=E',
+                    'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_GR&sap-language=E',
                     $payload
                 );
 

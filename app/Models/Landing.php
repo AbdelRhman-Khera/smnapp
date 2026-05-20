@@ -39,6 +39,8 @@ class Landing extends Model
         'rights_ar',
         'rights_en',
         'social',
+        'phone',
+        'whatsapp',
     ];
 
     protected $casts = [
@@ -207,4 +209,3 @@ class Landing extends Model
 
     }
 }
-

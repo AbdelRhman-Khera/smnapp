@@ -159,7 +159,8 @@ class SapController extends Controller
             ];
         }
 
-        $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
+        $url = 'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
+        // $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
 
         $serviceItems = collect($maintenanceRequest->invoice?->services ?? [])
             ->map(function ($service) {
@@ -224,8 +225,10 @@ class SapController extends Controller
             'ITEMS' => $items,
         ];
 
+        $username = config('services.sap.username');
+        $password = config('services.sap.password');
         try {
-            $response = Http::withBasicAuth('test', 'EASTER@Egypt@2026')
+            $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
                 ->post($url, $payload);
 

@@ -53,5 +53,11 @@ return [
     'sap' => [
         'user' => env('SAP_USERNAME'),
         'pass' => env('SAP_PASSWORD'),
+
     ],
+    'sap_test' => [
+        'user' => env('SAP_TEST_USERNAME'),
+        'pass' => env('SAP_TEST_PASSWORD'),
+    ],
+
 ];

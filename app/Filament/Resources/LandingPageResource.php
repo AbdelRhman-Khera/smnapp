@@ -213,6 +213,14 @@ class LandingPageResource extends Resource
                         ])
                         ->collapsible()
                         ->columns(2), // Display two fields side-by-side
+                    TextInput::make('phone')
+                        ->label('Phone')
+                        ->tel()
+                        ->maxLength(255),
+                    TextInput::make('whatsapp')
+                        ->label('WhatsApp')
+                        ->tel()
+                        ->maxLength(255),
                     Tabs::make('Rights Text')
                         ->tabs([
                             Tab::make('Arabic')
@@ -244,6 +252,8 @@ class LandingPageResource extends Resource
             ->columns([
                 TextColumn::make('main_title_ar')->label('Main Title (Arabic)'),
                 TextColumn::make('main_title_en')->label('Main Title (English)'),
+                TextColumn::make('phone')->label('Phone')->searchable(),
+                TextColumn::make('whatsapp')->label('WhatsApp')->searchable(),
                 ImageColumn::make('main_image')->label('Main Image'),
             ])
             ->filters([
