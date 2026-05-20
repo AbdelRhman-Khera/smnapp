@@ -18,4 +18,19 @@ class SupportForm extends Model
         'phone',
 
     ];
+
+    protected $casts = [
+        'notes' => 'array',
+];
+
+    public function user()
+    {
+        if ($this->user_type === 'technician') {
+            return $this->belongsTo(Technician::class, 'user_id');
+        } elseif ($this->user_type === 'customer') {
+            return $this->belongsTo(Customer::class, 'user_id');
+        }
+
+        return null;
+    }
 }
