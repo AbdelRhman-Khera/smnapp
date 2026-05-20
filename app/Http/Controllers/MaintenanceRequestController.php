@@ -165,7 +165,7 @@ class MaintenanceRequestController extends Controller
             'last_maintenance_date' => 'nullable|date',
             'photos' => 'nullable|array',
             'sap_order_id' => 'nullable|integer',
-            'is_product_delivered'=> 'nullable'
+            'is_product_delivered' => 'nullable'
         ]);
 
         $validator->after(function ($validator) use ($request) {
@@ -1423,7 +1423,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $technicians = Technician::whereHas('districts', function ($query) use ($district) {
-            $query->where('id', $district->id);
+            $query->where('districts.id', $district->id);
         })->whereHas('products', function ($query) use ($products) {
             $query->whereIn('products.id', $products);
         })->get();
