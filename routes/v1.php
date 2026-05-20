@@ -115,6 +115,7 @@ Route::middleware([SetLanguage::class])->group(function () {
     /// Master Data
 
     Route::get('/landing', [LandingController::class, 'getLandingPage']);
+    Route::get('/info', [LandingController::class, 'getLandingPage']);
     Route::get('/sliders', [LandingController::class, 'sliders']);
     Route::get('/cities', [AddressController::class, 'cities']);
     Route::get('/cities/{city}/districts', [AddressController::class, 'getDistricts']);
