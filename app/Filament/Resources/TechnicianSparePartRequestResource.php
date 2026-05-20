@@ -208,9 +208,8 @@ class TechnicianSparePartRequestResource extends Resource
                     ->schema([
 
                         TextEntry::make('response')
-                            ->formatStateUsing(fn ($state) =>
-                                json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-                            )
+                            ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->response))
+                            ->fontFamily('mono')
                             ->columnSpanFull(),
 
                     ]),
@@ -222,9 +221,8 @@ class TechnicianSparePartRequestResource extends Resource
                     ->schema([
 
                         TextEntry::make('gr_response')
-                            ->formatStateUsing(fn ($state) =>
-                                json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-                            )
+                            ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->gr_response))
+                            ->fontFamily('mono')
                             ->columnSpanFull(),
 
                         // TextEntry::make('gr_sent_at')
@@ -236,6 +234,25 @@ class TechnicianSparePartRequestResource extends Resource
                     ]),
 
             ]);
+    }
+
+    protected static function formatJsonState(mixed $state): string
+    {
+        if (blank($state)) {
+            return '-';
+        }
+
+        if (is_string($state)) {
+            $decoded = json_decode($state, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return $state;
+            }
+
+            $state = $decoded;
+        }
+
+        return json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) ?: '-';
     }
 
     public static function getPages(): array
