@@ -26,6 +26,7 @@ class TechnicianSparePartRequest extends Model
         'gr_response' => 'array',
         'delivered_at' => 'datetime',
         'gr_sent_at' => 'datetime',
+
     ];
 
     public function branch()

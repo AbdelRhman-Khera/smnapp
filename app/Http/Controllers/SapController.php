@@ -225,8 +225,8 @@ class SapController extends Controller
             'ITEMS' => $items,
         ];
 
-        $username = config('services.sap.username');
-        $password = config('services.sap.password');
+        $username = config('services.sap.user');
+        $password = config('services.sap.pass');
         try {
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
