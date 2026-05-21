@@ -206,15 +206,11 @@ class SapController extends Controller
 
             'PHONE' => (string) ($maintenanceRequest->customer->phone ?? ''),
 
-            // 'NAME' => trim(
-            //     ($maintenanceRequest->customer->first_name ?? '') . ' ' .
-            //         ($maintenanceRequest->customer->last_name ?? '')
-            // ),
-            'NAME' => iconv(
-                'UTF-8',
-                'Windows-1256//IGNORE',
-                trim(($maintenanceRequest->customer->first_name ?? '') . ' ' . ($maintenanceRequest->customer->last_name ?? ''))
+            'NAME' => trim(
+                ($maintenanceRequest->customer->first_name ?? '') . ' ' .
+                    ($maintenanceRequest->customer->last_name ?? '')
             ),
+
 
             'STREET' => (string) ($maintenanceRequest->address->district->name_en ?? ''),
 
@@ -236,7 +232,7 @@ class SapController extends Controller
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
                 ->withHeaders([
-                    'Content-Type' => 'application/json; charset=Windows-1256',
+                    'Content-Type' => 'application/json; charset=Windows-1252',
                     'Accept'       => 'application/json',
                 ])
                 ->post($url, $payload);
