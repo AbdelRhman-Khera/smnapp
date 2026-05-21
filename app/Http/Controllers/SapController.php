@@ -234,7 +234,7 @@ class SapController extends Controller
                     'Content-Type' => 'application/json; charset=utf-8',
                     'Accept'       => 'application/json',
                 ])
-                ->post($url, $payload);
+                ->post($url, json_encode($payload, JSON_UNESCAPED_UNICODE));
 
             $body = $response->json();
 
