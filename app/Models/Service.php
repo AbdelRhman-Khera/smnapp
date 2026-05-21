@@ -15,6 +15,9 @@ class Service extends Model
     protected $appends = ['name', 'description', 'image_url'];
     // protected $hidden = ['name_ar', 'name_en', 'description_ar', 'description_en'];
 
+    protected $casts = [
+        'price' => 'float',
+    ];
     public function getNameAttribute()
     {
         return app()->getLocale() == 'ar' ? $this->name_ar : $this->name_en;
