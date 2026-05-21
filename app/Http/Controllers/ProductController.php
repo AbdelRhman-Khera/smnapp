@@ -24,11 +24,13 @@ class ProductController extends Controller
 
     public function getAllProducts(Request $request)
     {
-        $query = Product::query();
+        $query = Product::query()->active();
 
         if ($request->has('search')) {
-            $query->where('name_en', 'like', '%' . $request->search . '%')
-                ->orWhere('name_ar', 'like', '%' . $request->search . '%');
+            $query->where(function ($query) use ($request) {
+                $query->where('name_en', 'like', '%' . $request->search . '%')
+                    ->orWhere('name_ar', 'like', '%' . $request->search . '%');
+            });
         }
 
         if ($request->has('category_id')) {
@@ -52,7 +54,7 @@ class ProductController extends Controller
         $customer = Customer::find(auth()->id());
         $productId = $request->input('product_id');
 
-        $product = Product::find($productId);
+        $product = Product::active()->find($productId);
 
         if (!$product) {
             return response()->json([
@@ -84,7 +86,9 @@ class ProductController extends Controller
     {
         $customer = Customer::find(auth()->id());
         // dd($customer,auth()->id());
-        $products = $customer->products;
+        $products = $customer->products()
+            ->where('products.is_active', 1)
+            ->get();
 
         return response()->json([
             'status' => 200,

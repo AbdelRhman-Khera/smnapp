@@ -36,6 +36,14 @@ class ProductResource extends Resource
             Textarea::make('description_en')->label('Description (English)'),
             FileUpload::make('image')->label('Image'),
             TextInput::make('hours')->label('Hours')->numeric()->required(),
+            Select::make('is_active')
+                ->label('Status')
+                ->options([
+                    1 => 'Active',
+                    0 => 'Inactive',
+                ])
+                ->default(1)
+                ->required(),
             Select::make('category_id')
                 ->label('Category')
                 ->relationship('category', 'name_en')
@@ -51,9 +59,19 @@ class ProductResource extends Resource
                 TextColumn::make('name_ar')->label('Name (Arabic)'),
                 TextColumn::make('name_en')->label('Name (English)'),
                 TextColumn::make('category.name_en')->label('Category')->sortable()->searchable(),
+                TextColumn::make('is_active')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => (int) $state === 1 ? 'Active' : 'Inactive')
+                    ->color(fn ($state): string => (int) $state === 1 ? 'success' : 'danger'),
             ])->defaultSort('id', 'desc')
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('is_active')
+                    ->label('Status')
+                    ->options([
+                        1 => 'Active',
+                        0 => 'Inactive',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

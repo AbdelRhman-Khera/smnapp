@@ -23,7 +23,7 @@ class SapRequestLogResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-magnifying-glass';
 
-    protected static ?string $navigationGroup = 'Business Management';
+    protected static ?string $navigationGroup = 'System';
 
     protected static ?string $navigationLabel = 'SAP Request Logs';
 

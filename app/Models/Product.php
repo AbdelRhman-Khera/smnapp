@@ -10,9 +10,19 @@ use Spatie\Activitylog\LogOptions;
 class Product extends Model
 {
     use HasFactory , LogsActivity;
-    protected $fillable = ['sap_id', 'name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'category_id','hours'];
+    protected $fillable = ['sap_id', 'name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'category_id','hours', 'is_active'];
+
+    protected $casts = [
+        'is_active' => 'integer',
+    ];
+
     protected $appends = ['name', 'description', 'category_name', 'image_url'];
     // protected $hidden = ['name_ar', 'name_en', 'image', 'description_ar', 'description_en', 'category_id'];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 1);
+    }
 
     public function category()
     {

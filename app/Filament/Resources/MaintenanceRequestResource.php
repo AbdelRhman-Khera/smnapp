@@ -116,7 +116,9 @@ class MaintenanceRequestResource extends Resource
                     ->schema([
                         Select::make('product_id')
                             ->label('Product')
-                            ->options(Product::pluck('name_ar', 'id'))
+                            ->options(fn (string $operation) => Product::query()
+                                ->when($operation !== 'view', fn (Builder $query) => $query->active())
+                                ->pluck('name_ar', 'id'))
                             ->searchable()
 
                             ->required(),
