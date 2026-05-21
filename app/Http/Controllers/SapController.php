@@ -206,10 +206,9 @@ class SapController extends Controller
 
             'PHONE' => (string) ($maintenanceRequest->customer->phone ?? ''),
 
-            'NAME' => mb_convert_encoding(
-                trim(($maintenanceRequest->customer->first_name ?? '') . ' ' . ($maintenanceRequest->customer->last_name ?? '')),
-                'ISO-8859-1',
-                'UTF-8'
+            'NAME' => trim(
+                ($maintenanceRequest->customer->first_name ?? '') . ' ' .
+                    ($maintenanceRequest->customer->last_name ?? '')
             ),
 
             'STREET' => (string) ($maintenanceRequest->address->district->name_en ?? ''),
@@ -233,6 +232,7 @@ class SapController extends Controller
                 ->acceptJson()
                 ->withHeaders([
                     'Content-Type' => 'application/json; charset=utf-8',
+                    'Accept'       => 'application/json',
                 ])
                 ->post($url, $payload);
 
