@@ -206,16 +206,16 @@ class SapController extends Controller
 
             'PHONE' => (string) ($maintenanceRequest->customer->phone ?? ''),
 
-            'NAME' => trim(
-                ($maintenanceRequest->customer->first_name ?? '') . ' ' .
-                    ($maintenanceRequest->customer->last_name ?? '')
+            'NAME' => mb_convert_encoding(
+                trim(($maintenanceRequest->customer->first_name ?? '') . ' ' . ($maintenanceRequest->customer->last_name ?? '')),
+                'ISO-8859-1',
+                'UTF-8'
             ),
 
-            'STREET' => (string) ($maintenanceRequest->address->street ?? ''),
+            'STREET' => (string) ($maintenanceRequest->address->district->name_en ?? ''),
 
             'CITY' => (string) (
                 $maintenanceRequest->address->city->name_en
-                ?? $maintenanceRequest->address->city->name_ar
                 ?? ''
             ),
 
