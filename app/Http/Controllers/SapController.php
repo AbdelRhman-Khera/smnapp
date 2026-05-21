@@ -230,7 +230,7 @@ class SapController extends Controller
         try {
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
-                ->timeout(120)
+
                 ->post($url, $payload);
 
             $body = $response->json();
