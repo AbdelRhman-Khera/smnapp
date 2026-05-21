@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\SapRequestLogResource\Pages;
 use App\Http\Controllers\SapController;
 use App\Models\SapRequestLog;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Section;
@@ -143,6 +144,25 @@ class SapRequestLogResource extends Resource
                         ->distinct()
                         ->pluck('action', 'action')
                         ->toArray()),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        DatePicker::make('created_from')
+                            ->label('Created From'),
+                        DatePicker::make('created_until')
+                            ->label('Created Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_from'] ?? null,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['created_until'] ?? null,
+                                fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -284,8 +304,12 @@ class SapRequestLogResource extends Resource
             ?: data_get($record->request_payload, 'PAYMENT_METHOD')
             ?: 'Cash';
 
+        $maintenanceRequest = $record->maintenanceRequest;
+
+        SapRequestLog::where('maintenance_request_id', $record->maintenance_request_id)->delete();
+
         $result = app(SapController::class)->createSalesOrder(
-            $record->maintenanceRequest,
+            $maintenanceRequest,
             $paymentMethod,
         );
 
