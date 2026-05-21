@@ -643,8 +643,8 @@ class TechnicianController extends Controller
             $maintenanceRequest->id
         );
 
-        $sapResponse = app(\App\Http\Controllers\SapController::class)
-            ->createSalesOrder($maintenanceRequest->fresh(), 'Cash');
+        // $sapResponse = app(\App\Http\Controllers\SapController::class)
+        //     ->createSalesOrder($maintenanceRequest->fresh(), 'Cash');
 
         return response()->json([
             'status' => 200,
