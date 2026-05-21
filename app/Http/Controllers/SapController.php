@@ -163,6 +163,7 @@ class SapController extends Controller
         // $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
 
         $serviceItems = collect($maintenanceRequest->invoice?->services ?? [])
+            ->filter(fn($service) => isset($service->price) && $service->price > 0)
             ->map(function ($service) {
                 return array_filter([
                     'MATNR' => (string) ($service->sap_id ?? ''),
