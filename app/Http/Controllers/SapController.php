@@ -231,7 +231,7 @@ class SapController extends Controller
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
                 ->withHeaders([
-                    'Content-Type' => 'application/json; charset=utf-8',
+                    'Content-Type' => 'application/json; charset=Windows-1256',
                     'Accept'       => 'application/json',
                 ])
                 ->post($url, $payload);
