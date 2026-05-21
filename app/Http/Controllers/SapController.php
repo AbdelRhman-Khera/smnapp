@@ -86,7 +86,7 @@ class SapController extends Controller
         $smsResp = Http::withBasicAuth(
             (string) config('services.4jawaly.key'),
             (string) config('services.4jawaly.secret')
-        )->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
+        )->timeout(60)->post('https://api-sms.4jawaly.com/api/v1/account/area/sms/send', [
             'messages' => [[
                 'text' => $smsText,
                 'numbers' => [$data['phone']],
