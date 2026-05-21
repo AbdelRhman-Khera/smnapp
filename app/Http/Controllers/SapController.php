@@ -229,34 +229,15 @@ class SapController extends Controller
         $username = config('services.sap.user');
         $password = config('services.sap.pass');
         try {
-            // Step 1: get session cookie
-            $loginResponse = Http::withBasicAuth($username, $password)
-                ->withHeaders([
-                    'Content-Type'  => 'application/json',
-                    'Cache-Control' => 'no-cache',
-                ])
-
-                ->get($url);
-
-            $cookie = $loginResponse->cookies()->getCookieByName('SAP_SESSIONID_PRD_300');
-
 
             $response = Http::withBasicAuth($username, $password)
+                ->acceptJson()
                 ->withHeaders([
                     'Content-Type'  => 'application/json',
                     'Cache-Control' => 'no-cache',
-                    'Cookie'        => 'SAP_SESSIONID_PRD_300=' . $cookie?->getValue(),
+                    'Accept'        => '*/*',
                 ])
-
                 ->post($url, $payload);
-            // $response = Http::withBasicAuth($username, $password)
-            //     ->acceptJson()
-            //     ->withHeaders([
-            //         'Content-Type'  => 'application/json',
-            //         'Cache-Control' => 'no-cache',
-            //         'Accept'        => '*/*',
-            //     ])
-            //     ->post($url, $payload);
 
             $body = $response->json();
 
