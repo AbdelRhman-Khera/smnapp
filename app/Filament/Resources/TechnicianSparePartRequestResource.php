@@ -207,7 +207,14 @@ class TechnicianSparePartRequestResource extends Resource
 
                     ->schema([
 
+                        TextEntry::make('request_payload')
+                            ->label('SAP Request Payload')
+                            ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->request_payload))
+                            ->fontFamily('mono')
+                            ->columnSpanFull(),
+
                         TextEntry::make('response')
+                            ->label('SAP Response')
                             ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->response))
                             ->fontFamily('mono')
                             ->columnSpanFull(),
@@ -220,7 +227,14 @@ class TechnicianSparePartRequestResource extends Resource
 
                     ->schema([
 
+                        TextEntry::make('gr_request_payload')
+                            ->label('GR Request Payload')
+                            ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->gr_request_payload))
+                            ->fontFamily('mono')
+                            ->columnSpanFull(),
+
                         TextEntry::make('gr_response')
+                            ->label('GR Response')
                             ->state(fn (TechnicianSparePartRequest $record): string => static::formatJsonState($record->gr_response))
                             ->fontFamily('mono')
                             ->columnSpanFull(),

@@ -70,6 +70,8 @@ class TechnicianSparePartRequestController extends Controller
 
         $username = config('services.sap.user');
         $password = config('services.sap.pass');
+        $payload = null;
+
         try {
 
             $payload = [
@@ -86,6 +88,10 @@ class TechnicianSparePartRequestController extends Controller
                     ];
                 })->values()->toArray(),
             ];
+
+            $sparePartRequest->update([
+                'request_payload' => $payload,
+            ]);
 
             $response = Http::withBasicAuth(
                 $username,
@@ -115,12 +121,14 @@ class TechnicianSparePartRequestController extends Controller
                     'sap_ref' => $responseData[0]['DESC'] ?? null,
 
                     'response' => $responseData,
+                    'request_payload' => $payload,
                 ]);
             } else {
 
                 $sparePartRequest->update([
                     'status' => 'failed',
                     'response' => $responseData,
+                    'request_payload' => $payload,
                 ]);
 
                 throw new \Exception(
@@ -135,6 +143,7 @@ class TechnicianSparePartRequestController extends Controller
                 'response' => [
                     'error' => $e->getMessage(),
                 ],
+                'request_payload' => $payload,
             ]);
 
             report($e);
@@ -257,6 +266,10 @@ class TechnicianSparePartRequestController extends Controller
             'ITEMS' => $items,
         ];
 
+        $spareRequest->update([
+            'gr_request_payload' => $payload,
+        ]);
+
         $username = config('services.sap.user');
         $password = config('services.sap.pass');
 
@@ -289,6 +302,7 @@ class TechnicianSparePartRequestController extends Controller
             ->where('id', $spareRequest->id)
             ->update([
                 'status'       => 'delivered',
+                'gr_request_payload' => json_encode($payload),
                 'gr_response'  => json_encode($responseData),
                 'delivered_at' => now(),
                 'updated_at'   => now(),
