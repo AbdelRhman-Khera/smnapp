@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class SupportForm extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'subject',
         'details',
@@ -32,5 +36,10 @@ class SupportForm extends Model
         }
 
         return null;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
     }
 }

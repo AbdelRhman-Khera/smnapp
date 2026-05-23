@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Page extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes, HasFactory, LogsActivity;
 
     protected $fillable = [
         'title_ar',
@@ -41,5 +43,10 @@ class Page extends Model
     public function getContentAttribute()
     {
         return app()->getLocale() == 'ar' ? $this->content_ar : $this->content_en;
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
     }
 }

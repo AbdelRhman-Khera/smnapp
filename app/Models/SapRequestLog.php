@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class SapRequestLog extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'maintenance_request_id',
         'action',
@@ -36,5 +40,10 @@ class SapRequestLog extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
     }
 }

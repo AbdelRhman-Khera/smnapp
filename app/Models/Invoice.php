@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Invoice extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'maintenance_request_id',
@@ -43,5 +45,10 @@ class Invoice extends Model
     public function services()
     {
         return $this->belongsToMany(Service::class, 'invoice_service');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()->logAll();
     }
 }
