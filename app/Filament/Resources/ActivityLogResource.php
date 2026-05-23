@@ -37,6 +37,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 
@@ -240,9 +241,8 @@ class ActivityLogResource extends Resource
                     ->schema([
                         TextEntry::make('changed_values')
                             ->hiddenLabel()
-                            ->state(fn (Activity $record): array => static::formattedChanges($record))
-                            ->bulleted()
-                            ->listWithLineBreaks()
+                            ->state(fn (Activity $record): HtmlString => static::changesTable($record))
+                            ->html()
                             ->columnSpanFull(),
                     ])
                     ->visible(fn (Activity $record): bool => count(static::formattedChanges($record)) > 0),
@@ -360,6 +360,13 @@ class ActivityLogResource extends Resource
 
     protected static function formattedChanges(Activity $activity): array
     {
+        return collect(static::changedRows($activity))
+            ->map(fn (array $row): string => "{$row['field']}: {$row['old']} -> {$row['new']}")
+            ->toArray();
+    }
+
+    protected static function changedRows(Activity $activity): array
+    {
         $properties = $activity->properties?->toArray() ?? [];
         $attributes = Arr::get($properties, 'attributes', []);
         $old = Arr::get($properties, 'old', []);
@@ -375,14 +382,44 @@ class ActivityLogResource extends Resource
             ->values();
 
         return $keys
-            ->map(function (string $key) use ($activity, $attributes, $old): string {
-                $label = static::fieldLabel($key);
-                $before = array_key_exists($key, $old) ? static::formatFieldValue($key, $old[$key], $activity) : '-';
-                $after = array_key_exists($key, $attributes) ? static::formatFieldValue($key, $attributes[$key], $activity) : '-';
-
-                return "{$label}: {$before} -> {$after}";
+            ->map(function (string $key) use ($activity, $attributes, $old): array {
+                return [
+                    'field' => static::fieldLabel($key),
+                    'old' => array_key_exists($key, $old) ? static::formatFieldValue($key, $old[$key], $activity) : '-',
+                    'new' => array_key_exists($key, $attributes) ? static::formatFieldValue($key, $attributes[$key], $activity) : '-',
+                ];
             })
             ->toArray();
+    }
+
+    protected static function changesTable(Activity $activity): HtmlString
+    {
+        $rows = collect(static::changedRows($activity))
+            ->map(function (array $row): string {
+                return '<tr class="border-b border-gray-200 last:border-b-0 dark:border-gray-700">'
+                    . '<td class="whitespace-nowrap px-3 py-2 text-sm font-medium text-gray-950 dark:text-white">' . e($row['field']) . '</td>'
+                    . '<td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">' . nl2br(e($row['old'])) . '</td>'
+                    . '<td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">' . nl2br(e($row['new'])) . '</td>'
+                    . '</tr>';
+            })
+            ->implode('');
+
+        return new HtmlString(
+            '<div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">'
+            . '<table class="w-full divide-y divide-gray-200 text-start dark:divide-gray-700">'
+            . '<thead class="bg-gray-50 dark:bg-gray-800">'
+            . '<tr>'
+            . '<th class="px-3 py-2 text-start text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Field</th>'
+            . '<th class="px-3 py-2 text-start text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Old Value</th>'
+            . '<th class="px-3 py-2 text-start text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">New Value</th>'
+            . '</tr>'
+            . '</thead>'
+            . '<tbody class="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900">'
+            . $rows
+            . '</tbody>'
+            . '</table>'
+            . '</div>'
+        );
     }
 
     protected static function fieldLabel(string $key): string
