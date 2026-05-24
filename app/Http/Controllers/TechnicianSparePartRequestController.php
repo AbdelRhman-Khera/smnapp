@@ -124,39 +124,36 @@ class TechnicianSparePartRequestController extends Controller
                     'request_payload' => $payload,
                 ]);
             } else {
+                $sparePartRequest->update([
+                    'status'          => 'failed',
+                    'response'        => $responseData,
+                    'request_payload' => $payload,
+                ]);
 
-                else {
-    $sparePartRequest->update([
-        'status'          => 'failed',
-        'response'        => $responseData,
-        'request_payload' => $payload,
-    ]);
+                $items = $responseData[0]['ITEMS'] ?? [];
 
-    $items = $responseData[0]['ITEMS'] ?? [];
+                $outOfStockItems = collect($items)
+                    ->filter(fn($item) => ($item['ENOUGH'] ?? '') === 'X')
+                    ->map(function ($item) {
+                        $sapId     = trim($item['MATNR']);
+                        $sparePart = \App\Models\SparePart::where('sap_id', $sapId)->first();
 
-    $outOfStockItems = collect($items)
-        ->filter(fn($item) => ($item['ENOUGH'] ?? '') === 'X')
-        ->map(function ($item) {
-            $sapId     = trim($item['MATNR']);
-            $sparePart = \App\Models\SparePart::where('sap_id', $sapId)->first();
+                        return [
+                            'spare_part_id'   => $sparePart?->id,
+                            'name'            => $sparePart?->name ?? $sapId,
+                            'sap_id'          => $sapId,
+                            'available_stock' => trim($item['CURR_QTY']),
+                            'requested_qty'   => trim($item['REQ_QTY']),
+                        ];
+                    })
+                    ->values();
 
-            return [
-                'spare_part_id'   => $sparePart?->id,
-                'name'            => $sparePart?->name ?? $sapId,
-                'sap_id'          => $sapId,
-                'available_stock' => trim($item['CURR_QTY']),
-                'requested_qty'   => trim($item['REQ_QTY']),
-            ];
-        })
-        ->values();
-
-    return response()->json([
-        'status'  => 400,
-        'message' => 'No enough stock for the following items.',
-        'errors'  => $outOfStockItems,
-        'data'    => $sparePartRequest->load(['branch', 'items.sparePart']),
-    ], 400);
-}
+                return response()->json([
+                    'status'  => 400,
+                    'message' => 'No enough stock for the following items.',
+                    'errors'  => $outOfStockItems,
+                    'data'    => $sparePartRequest->load(['branch', 'items.sparePart']),
+                ], 400);
             }
         } catch (\Throwable $e) {
 
