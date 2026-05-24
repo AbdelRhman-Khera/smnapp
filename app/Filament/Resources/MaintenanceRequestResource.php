@@ -186,7 +186,19 @@ class MaintenanceRequestResource extends Resource
         return $table
 
             ->columns([
-                TextColumn::make('id')->sortable(),
+                TextColumn::make('id')
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->where(function (Builder $query) use ($search) {
+                            $query->where('id', $search)
+                                ->orWhere('sap_order_id', 'like', "%{$search}%")
+                                ->orWhere('sap_sales_order_no', 'like', "%{$search}%")
+                                ->orWhere('invoice_number', 'like', "%{$search}%")
+                                ->orWhereHas('customer', function (Builder $customerQuery) use ($search) {
+                                    $customerQuery->where('phone', 'like', "%{$search}%");
+                                });
+                        });
+                    }),
                 TextColumn::make('customer_full_name')
                     ->label('Customer')
                     ->getStateUsing(function ($record) {
@@ -198,7 +210,13 @@ class MaintenanceRequestResource extends Resource
                                 ->orWhere('last_name', 'like', "%{$search}%");
                         });
                     }),
-                TextColumn::make('customer.phone')->searchable()->label('Phone'),
+                TextColumn::make('customer.phone')
+                    ->label('Phone')
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('customer', function (Builder $customerQuery) use ($search) {
+                            $customerQuery->where('phone', 'like', "%{$search}%");
+                        });
+                    }),
                 TextColumn::make('type')
                     ->searchable()
                     ->label('Type')
