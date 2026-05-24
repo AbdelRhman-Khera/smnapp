@@ -62,6 +62,7 @@ class SapRequestLogResource extends Resource
                     ->with([
                         'maintenanceRequest.customer',
                         'maintenanceRequest.technician',
+                        'maintenanceRequest.invoice',
                         'creator',
                     ])
             )
@@ -79,17 +80,43 @@ class SapRequestLogResource extends Resource
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.customer.phone')
                     ->label('Customer Phone')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('maintenanceRequest.type')
+                    ->label('Request Type')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'new_installation' => 'New Installation',
+                        'regular_maintenance' => 'Regular Maintenance',
+                        'emergency_maintenance' => 'Emergency Maintenance',
+                        default => $state ?: '-',
+                    })
+                    ->placeholder('-')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('maintenanceRequest.invoice.total')
+                    ->label('Amount')
+                    ->money('SAR')
+                    ->sortable()
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('maintenanceRequest.technician.sap_id')
+                    ->label('Technician SAP ID')
+                    ->searchable()
+                    ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('action')
                     ->badge()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Payment')
                     ->badge()
                     ->placeholder('-')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('http_status')
                     ->label('HTTP')
