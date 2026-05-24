@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Invoice;
+use App\Models\MaintenanceRequest;
 use Filament\Widgets\Widget;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
@@ -15,6 +16,8 @@ class InvoiceWidget extends Widget
     protected static string $view = 'filament.widgets.invoice-widget';
 
     public ?Invoice $invoice = null;
+    public ?MaintenanceRequest $record = null;
+
     protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
@@ -24,7 +27,10 @@ class InvoiceWidget extends Widget
     }
     public function mount($record)
     {
-        $this->invoice = Invoice::where('maintenance_request_id', $record->id)->first();
+        $this->record = $record;
+        $this->invoice = Invoice::with(['services', 'spareParts'])
+            ->where('maintenance_request_id', $record->id)
+            ->first();
     }
 
 

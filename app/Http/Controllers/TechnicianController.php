@@ -952,6 +952,10 @@ class TechnicianController extends Controller
             $machinePic = $request
                 ->file('machine_pic')
                 ->store('machine_pics', 'public');
+
+            $invoice->update([
+                'machine_pic' => $machinePic,
+            ]);
         }
 
         $maintenanceRequest->statuses()->create([
