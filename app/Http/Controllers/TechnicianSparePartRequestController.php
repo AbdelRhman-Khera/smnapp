@@ -68,8 +68,8 @@ class TechnicianSparePartRequestController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $username = config('services.sap_test.user');
-        $password = config('services.sap_test.pass');
+        $username = config('services.sap.user');
+        $password = config('services.sap.pass');
         $payload = null;
 
         try {
@@ -101,7 +101,7 @@ class TechnicianSparePartRequestController extends Controller
                 ->contentType('application/json')
                 ->timeout(60)
                 ->post(
-                    'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
+                    'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
                     $payload
                 );
 
