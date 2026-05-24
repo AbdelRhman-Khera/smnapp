@@ -232,6 +232,7 @@ class SapController extends Controller
 
             $response = Http::withBasicAuth($username, $password)
                 ->acceptJson()
+                ->timeout(60)
                 ->withHeaders([
                     'Content-Type'  => 'application/json',
                     'Cache-Control' => 'no-cache',
