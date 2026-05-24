@@ -68,8 +68,8 @@ class TechnicianSparePartRequestController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $username = config('services.sap.user');
-        $password = config('services.sap.pass');
+        $username = config('services.sap_test.user');
+        $password = config('services.sap_test.pass');
         $payload = null;
 
         try {
@@ -101,7 +101,7 @@ class TechnicianSparePartRequestController extends Controller
                 ->contentType('application/json')
                 ->timeout(60)
                 ->post(
-                    'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
+                    'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_STO&sap-language=E',
                     $payload
                 );
 
@@ -125,15 +125,38 @@ class TechnicianSparePartRequestController extends Controller
                 ]);
             } else {
 
-                $sparePartRequest->update([
-                    'status' => 'failed',
-                    'response' => $responseData,
-                    'request_payload' => $payload,
-                ]);
+                else {
+    $sparePartRequest->update([
+        'status'          => 'failed',
+        'response'        => $responseData,
+        'request_payload' => $payload,
+    ]);
 
-                throw new \Exception(
-                    $responseData[0]['DESC'] ?: 'SAP STO creation failed'
-                );
+    $items = $responseData[0]['ITEMS'] ?? [];
+
+    $outOfStockItems = collect($items)
+        ->filter(fn($item) => ($item['ENOUGH'] ?? '') === 'X')
+        ->map(function ($item) {
+            $sapId     = trim($item['MATNR']);
+            $sparePart = \App\Models\SparePart::where('sap_id', $sapId)->first();
+
+            return [
+                'spare_part_id'   => $sparePart?->id,
+                'name'            => $sparePart?->name ?? $sapId,
+                'sap_id'          => $sapId,
+                'available_stock' => trim($item['CURR_QTY']),
+                'requested_qty'   => trim($item['REQ_QTY']),
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'status'  => 400,
+        'message' => 'No enough stock for the following items.',
+        'errors'  => $outOfStockItems,
+        'data'    => $sparePartRequest->load(['branch', 'items.sparePart']),
+    ], 400);
+}
             }
         } catch (\Throwable $e) {
 
