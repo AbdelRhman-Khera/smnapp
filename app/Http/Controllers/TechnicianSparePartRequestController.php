@@ -185,6 +185,7 @@ class TechnicianSparePartRequestController extends Controller
 
         $requests = TechnicianSparePartRequest::where('technician_id', $technician->id)
             ->with(['branch', 'items.sparePart'])
+            ->where('status', '!=', 'failed')
             ->orderBy('created_at', 'desc')
             ->get();
 
