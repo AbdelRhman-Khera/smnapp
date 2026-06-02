@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class RequestsByDistrictChart extends ApexChartWidget
+class RequestsByDistrictChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'requestsByDistrictChart';
     protected static ?string $heading = 'Requests by District';

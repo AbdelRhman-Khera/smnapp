@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Feedback;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class FeedbackRatingChart extends ApexChartWidget
+class FeedbackRatingChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'feedbackRatingChart';
     protected static ?string $heading = 'Feedback Ratings';

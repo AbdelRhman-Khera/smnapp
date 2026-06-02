@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\MaintenanceRequest;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class CompletedPendingRequestsChart extends ApexChartWidget
+class CompletedPendingRequestsChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'completedPendingRequests';
     protected static ?string $heading = 'Completed vs Pending Requests';

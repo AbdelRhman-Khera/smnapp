@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Customer;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class NewCustomersChart extends ApexChartWidget
+class NewCustomersChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'newCustomersChart';
     protected static ?string $heading = 'New Customers per Month';

@@ -4,9 +4,9 @@ namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class TopProductsChart extends ApexChartWidget
+class TopProductsChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'topProductsChart';
     protected static ?string $heading = 'Top Products';

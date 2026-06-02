@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class AvgCompletionTimeChart extends ApexChartWidget
+class AvgCompletionTimeChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'avgCompletionTimeChart';
     protected static ?string $heading = 'Average Completion Time (Hours)';

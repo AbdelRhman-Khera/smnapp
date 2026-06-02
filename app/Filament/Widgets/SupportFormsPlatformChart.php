@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class SupportFormsPlatformChart extends ApexChartWidget
+class SupportFormsPlatformChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'supportFormsPlatformChart';
     protected static ?string $heading = 'Support Forms by Platform';

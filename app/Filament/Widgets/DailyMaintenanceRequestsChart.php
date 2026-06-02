@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\MaintenanceRequest;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class DailyMaintenanceRequestsChart extends ApexChartWidget
+class DailyMaintenanceRequestsChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'dailyRequestsChart';
     protected static ?string $heading = 'Daily Maintenance Requests';

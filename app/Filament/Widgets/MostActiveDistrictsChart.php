@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class MostActiveDistrictsChart extends ApexChartWidget
+class MostActiveDistrictsChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'activeDistrictsChart';
     protected static ?string $heading = 'Most Active Districts';

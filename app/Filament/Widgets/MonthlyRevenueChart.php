@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Invoice;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class MonthlyRevenueChart extends ApexChartWidget
+class MonthlyRevenueChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'monthlyRevenueChart';
     protected static ?string $heading = 'Monthly Revenue';

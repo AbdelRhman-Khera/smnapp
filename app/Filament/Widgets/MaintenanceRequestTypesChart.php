@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\MaintenanceRequest;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class MaintenanceRequestTypesChart extends ApexChartWidget
+class MaintenanceRequestTypesChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'requestTypesChart';
     protected static ?string $heading = 'Request Types';

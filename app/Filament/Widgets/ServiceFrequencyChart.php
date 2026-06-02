@@ -4,9 +4,9 @@ namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Service;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class ServiceFrequencyChart extends ApexChartWidget
+class ServiceFrequencyChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'serviceFrequencyChart';
     protected static ?string $heading = 'Service Frequency';

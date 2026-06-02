@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class RequestsPerSlotChart extends ApexChartWidget
+class RequestsPerSlotChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'requestsPerSlotChart';
     protected static ?string $heading = 'Requests per Slot';

@@ -4,9 +4,9 @@ namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\SparePart;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class SparePartUsageChart extends ApexChartWidget
+class SparePartUsageChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'sparePartsChart';
     protected static ?string $heading = 'Spare Part Usage';

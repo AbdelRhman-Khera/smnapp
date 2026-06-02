@@ -4,9 +4,9 @@ namespace App\Filament\Widgets;
 
 use App\Models\City;
 use App\Models\MaintenanceRequest;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class MostActiveCitiesChart extends ApexChartWidget
+class MostActiveCitiesChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'activeCitiesChart';
     protected static ?string $heading = 'Most Active Cities';

@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\MaintenanceRequest;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class CompletedRequestsMonthlyChart extends ApexChartWidget
+class CompletedRequestsMonthlyChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'completedRequestsMonthly';
     protected static ?string $heading = 'Completed Requests per Month';

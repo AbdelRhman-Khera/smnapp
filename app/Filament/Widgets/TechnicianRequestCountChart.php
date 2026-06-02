@@ -3,9 +3,9 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Technician;
-use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
+use App\Filament\Support\PermissionedApexChartWidget;
 
-class TechnicianRequestCountChart extends ApexChartWidget
+class TechnicianRequestCountChart extends PermissionedApexChartWidget
 {
     protected static ?string $chartId = 'technicianRequestCountChart';
     protected static ?string $heading = 'Requests per Technician';
