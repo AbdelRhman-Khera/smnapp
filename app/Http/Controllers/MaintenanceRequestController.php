@@ -1100,159 +1100,159 @@ class MaintenanceRequestController extends Controller
         ], 200);
     }
 
-    public function getSpecificProductByOrder($id)
-    {
-        $mRequest = MaintenanceRequest::where('sap_order_id', $id)
-            ->where('last_status', '!=', 'canceled')
-            ->first();
-        if ($mRequest) {
-            return response()->json([
-                'message' => __('messages.invalid_order_id'),
-                'maintenance_request_id' => $mRequest->id,
-            ], 409);
-        }
-        try {
+    // public function getSpecificProductByOrder($id)
+    // {
+    //     $mRequest = MaintenanceRequest::where('sap_order_id', $id)
+    //         ->where('last_status', '!=', 'canceled')
+    //         ->first();
+    //     if ($mRequest) {
+    //         return response()->json([
+    //             'message' => __('messages.invalid_order_id'),
+    //             'maintenance_request_id' => $mRequest->id,
+    //         ], 409);
+    //     }
+    //     try {
 
-            // $username = (string) config('services.sap.user');
-            // $password = (string) config('services.sap.pass');
-            $username = 'ZINTEGRATION';
-            $password = 'S@Psamnan123123123';
-            $startDate = '20260201';
-            $baseUrl = 'https://portal.samnan.com.sa:443';
-            // $baseUrl = 'https://dev.samnan.com.sa';
-            // Call SAP API
-            $response = Http::withBasicAuth($username, $password)
-                // ->withoutVerifying()   // local for testing only
-                ->acceptJson()
-                ->post($baseUrl . '/sap/bc/zrestful_sales?sap-client=300&Action=GET_INVOICE_DATA', [
-                    'VBELN' => $id,
-                    'START_DATE' => $startDate,
-                ]);
+    //         // $username = (string) config('services.sap.user');
+    //         // $password = (string) config('services.sap.pass');
+    //         $username = 'ZINTEGRATION';
+    //         $password = 'S@Psamnan123123123';
+    //         $startDate = '20260201';
+    //         $baseUrl = 'https://portal.samnan.com.sa:443';
+    //         // $baseUrl = 'https://dev.samnan.com.sa';
+    //         // Call SAP API
+    //         $response = Http::withBasicAuth($username, $password)
+    //             // ->withoutVerifying()   // local for testing only
+    //             ->acceptJson()
+    //             ->post($baseUrl . '/sap/bc/zrestful_sales?sap-client=300&Action=GET_INVOICE_DATA', [
+    //                 'VBELN' => $id,
+    //                 'START_DATE' => $startDate,
+    //             ]);
 
 
-            if (!$response->successful()) {
-                return response()->json([
-                    'status' => 400,
-                    'response_code' => 'INVALID_ORDER',
-                    'message' => __('messages.invalid_order_id'),
-                ], 400);
-            }
+    //         if (!$response->successful()) {
+    //             return response()->json([
+    //                 'status' => 400,
+    //                 'response_code' => 'INVALID_ORDER',
+    //                 'message' => __('messages.invalid_order_id'),
+    //             ], 400);
+    //         }
 
-            $sapRows = $response->json();
-            // dd($sapRows,$response);
+    //         $sapRows = $response->json();
+    //         // dd($sapRows,$response);
 
-            if (empty($sapRows) || !is_array($sapRows)) {
-                return response()->json([
-                    'status' => 404,
-                    'response_code' => 'BILLING_NOT_FOUND',
-                    'message' => __('messages.invalid_order_id'),
-                ], 404);
-            }
-            $root = collect($sapRows)->first();
+    //         if (empty($sapRows) || !is_array($sapRows)) {
+    //             return response()->json([
+    //                 'status' => 404,
+    //                 'response_code' => 'BILLING_NOT_FOUND',
+    //                 'message' => __('messages.invalid_order_id'),
+    //             ], 404);
+    //         }
+    //         $root = collect($sapRows)->first();
 
-            if (!is_array($root)) {
-                return response()->json([
-                    'status' => 500,
-                    'response_code' => 'INVALID_SAP_RESPONSE',
-                    'message' => __('messages.internal_server_error'),
-                ], 500);
-            }
+    //         if (!is_array($root)) {
+    //             return response()->json([
+    //                 'status' => 500,
+    //                 'response_code' => 'INVALID_SAP_RESPONSE',
+    //                 'message' => __('messages.internal_server_error'),
+    //             ], 500);
+    //         }
 
-            $status = (string) ($root['STATUS'] ?? '');
-            $desc   = (string) ($root['DESC'] ?? '');
+    //         $status = (string) ($root['STATUS'] ?? '');
+    //         $desc   = (string) ($root['DESC'] ?? '');
 
-            // Handle statuses: S / N / F
-            if ($status === 'S') {
+    //         // Handle statuses: S / N / F
+    //         if ($status === 'S') {
 
-                return response()->json([
-                    'status' => 409,
-                    'response_code' => 'BILLING_ALREADY_SERVICED',
-                    'message' => __('messages.billing_already_serviced'),
+    //             return response()->json([
+    //                 'status' => 409,
+    //                 'response_code' => 'BILLING_ALREADY_SERVICED',
+    //                 'message' => __('messages.billing_already_serviced'),
 
-                ], 409);
-            }
+    //             ], 409);
+    //         }
 
-            if ($status === 'N') {
-                return response()->json([
-                    'status' => 404,
-                    'response_code' => 'BILLING_NOT_FOUND',
-                    'message' => __('messages.invalid_order_id'),
+    //         if ($status === 'N') {
+    //             return response()->json([
+    //                 'status' => 404,
+    //                 'response_code' => 'BILLING_NOT_FOUND',
+    //                 'message' => __('messages.invalid_order_id'),
 
-                ], 404);
-            }
+    //             ], 404);
+    //         }
 
-            if ($status !== 'F') {
-                return response()->json([
-                    'status' => 500,
-                    'response_code' => 'UNKNOWN_SAP_STATUS',
-                    'message' => __('messages.internal_server_error'),
+    //         if ($status !== 'F') {
+    //             return response()->json([
+    //                 'status' => 500,
+    //                 'response_code' => 'UNKNOWN_SAP_STATUS',
+    //                 'message' => __('messages.internal_server_error'),
 
-                ], 500);
-            }
+    //             ], 500);
+    //         }
 
-            // STATUS = F => Billing Found => Extract DATA
-            $dataRows = $root['DATA'] ?? [];
+    //         // STATUS = F => Billing Found => Extract DATA
+    //         $dataRows = $root['DATA'] ?? [];
 
-            if (empty($dataRows) || !is_array($dataRows)) {
-                return response()->json([
-                    'status' => 404,
-                    'response_code' => 'NO_PRODUCTS_FOUND',
-                    'message' => __('messages.no_products_found'),
-                ], 404);
-            }
+    //         if (empty($dataRows) || !is_array($dataRows)) {
+    //             return response()->json([
+    //                 'status' => 404,
+    //                 'response_code' => 'NO_PRODUCTS_FOUND',
+    //                 'message' => __('messages.no_products_found'),
+    //             ], 404);
+    //         }
 
-            $sapItems = collect($dataRows)
-                ->filter(fn($row) => !empty($row['MATNR']))
-                ->map(fn($row) => [
-                    'sap_id' => (string) $row['MATNR'],
-                    'qty'    => (float) ($row['QTY'] ?? 0),
-                ]);
+    //         $sapItems = collect($dataRows)
+    //             ->filter(fn($row) => !empty($row['MATNR']))
+    //             ->map(fn($row) => [
+    //                 'sap_id' => (string) $row['MATNR'],
+    //                 'qty'    => (float) ($row['QTY'] ?? 0),
+    //             ]);
 
-            if ($sapItems->isEmpty()) {
-                return response()->json([
-                    'status' => 404,
-                    'response_code' => 'NO_PRODUCTS_FOUND',
-                    'message' => __('messages.no_products_found'),
-                ], 404);
-            }
+    //         if ($sapItems->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => 404,
+    //                 'response_code' => 'NO_PRODUCTS_FOUND',
+    //                 'message' => __('messages.no_products_found'),
+    //             ], 404);
+    //         }
 
-            $qtyBySapId = $sapItems
-                ->groupBy('sap_id')
-                ->map(fn($rows) => $rows->sum('qty')); // [sap_id => total_qty]
+    //         $qtyBySapId = $sapItems
+    //             ->groupBy('sap_id')
+    //             ->map(fn($rows) => $rows->sum('qty')); // [sap_id => total_qty]
 
-            $products = Product::whereIn('sap_id', $qtyBySapId->keys()->all())->get();
+    //         $products = Product::whereIn('sap_id', $qtyBySapId->keys()->all())->get();
 
-            if ($products->isEmpty()) {
-                return response()->json([
-                    'status' => 404,
-                    'response_code' => 'INVOICE_PRODUCTS_NOT_INSTALLABLE',
-                    'message' => __('messages.invoice_products_not_installable'),
-                    'data' => [],
-                ], 404);
-            }
+    //         if ($products->isEmpty()) {
+    //             return response()->json([
+    //                 'status' => 404,
+    //                 'response_code' => 'INVOICE_PRODUCTS_NOT_INSTALLABLE',
+    //                 'message' => __('messages.invoice_products_not_installable'),
+    //                 'data' => [],
+    //             ], 404);
+    //         }
 
-            $data = $products->map(function ($product) use ($qtyBySapId) {
-                return [
-                    'product' => $product,
-                    'qty'     => $qtyBySapId->get((string) $product->sap_id, 0),
-                ];
-            })->values();
+    //         $data = $products->map(function ($product) use ($qtyBySapId) {
+    //             return [
+    //                 'product' => $product,
+    //                 'qty'     => $qtyBySapId->get((string) $product->sap_id, 0),
+    //             ];
+    //         })->values();
 
-            return response()->json([
-                'status' => 200,
-                'response_code' => 'ORDER_PRODUCTS_FETCHED',
-                'message' => __('messages.products_fetched'),
-                'data' => $data,
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 500,
-                'response_code' => 'INTERNAL_SERVER_ERROR',
-                'message' => __('messages.internal_server_error'),
-                'debug' => app()->environment('local') ? $e->getMessage() : null
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'status' => 200,
+    //             'response_code' => 'ORDER_PRODUCTS_FETCHED',
+    //             'message' => __('messages.products_fetched'),
+    //             'data' => $data,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 500,
+    //             'response_code' => 'INTERNAL_SERVER_ERROR',
+    //             'message' => __('messages.internal_server_error'),
+    //             'debug' => app()->environment('local') ? $e->getMessage() : null
+    //         ], 500);
+    //     }
+    // }
 
     public function testpay()
     {
@@ -1487,6 +1487,229 @@ class MaintenanceRequestController extends Controller
             'response_code' => 'SLOTS_FETCHED',
             'message' => __('messages.slots_fetched'),
             'data' => $slots,
+        ], 200);
+    }
+
+
+
+    //new logic for new installation to get products by order id
+
+    public function getSpecificProductByOrder($id)
+    {
+        $mRequest = MaintenanceRequest::where('sap_order_id', $id)
+            ->where('last_status', '!=', 'canceled')
+            ->first();
+        if ($mRequest) {
+            return response()->json([
+                'message' => __('messages.invalid_order_id'),
+                'maintenance_request_id' => $mRequest->id,
+            ], 409);
+        }
+
+        try {
+            $wooResult = $this->getProductsFromWooByOrder($id);
+            if ($wooResult !== null) {
+
+                return $wooResult;
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Woo lookup failed for order ' . $id . ': ' . $e->getMessage());
+        }
+
+        try {
+            $username  = 'ZINTEGRATION';
+            $password  = 'S@Psamnan123123123';
+            $startDate = '20260201';
+            $baseUrl   = 'https://portal.samnan.com.sa:443';
+
+            $response = Http::withBasicAuth($username, $password)
+                ->acceptJson()
+                ->post($baseUrl . '/sap/bc/zrestful_sales?sap-client=300&Action=GET_INVOICE_DATA', [
+                    'VBELN'      => $id,
+                    'START_DATE' => $startDate,
+                ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'INVALID_ORDER',
+                    'message' => __('messages.invalid_order_id'),
+                ], 400);
+            }
+
+            $sapRows = $response->json();
+
+            if (empty($sapRows) || !is_array($sapRows)) {
+                return response()->json([
+                    'status' => 404,
+                    'response_code' => 'BILLING_NOT_FOUND',
+                    'message' => __('messages.invalid_order_id'),
+                ], 404);
+            }
+
+            $root = collect($sapRows)->first();
+
+            if (!is_array($root)) {
+                return response()->json([
+                    'status' => 500,
+                    'response_code' => 'INVALID_SAP_RESPONSE',
+                    'message' => __('messages.internal_server_error'),
+                ], 500);
+            }
+
+            $status = (string) ($root['STATUS'] ?? '');
+
+            if ($status === 'S') {
+                return response()->json([
+                    'status' => 409,
+                    'response_code' => 'BILLING_ALREADY_SERVICED',
+                    'message' => __('messages.billing_already_serviced'),
+                ], 409);
+            }
+
+            if ($status === 'N') {
+                return response()->json([
+                    'status' => 404,
+                    'response_code' => 'BILLING_NOT_FOUND',
+                    'message' => __('messages.invalid_order_id'),
+                ], 404);
+            }
+
+            if ($status !== 'F') {
+                return response()->json([
+                    'status' => 500,
+                    'response_code' => 'UNKNOWN_SAP_STATUS',
+                    'message' => __('messages.internal_server_error'),
+                ], 500);
+            }
+
+            $dataRows = $root['DATA'] ?? [];
+
+            if (empty($dataRows) || !is_array($dataRows)) {
+                return response()->json([
+                    'status' => 404,
+                    'response_code' => 'NO_PRODUCTS_FOUND',
+                    'message' => __('messages.no_products_found'),
+                ], 404);
+            }
+
+            $sapItems = collect($dataRows)
+                ->filter(fn($row) => !empty($row['MATNR']))
+                ->map(fn($row) => [
+                    'sap_id' => (string) $row['MATNR'],
+                    'qty'    => (float) ($row['QTY'] ?? 0),
+                ]);
+
+            if ($sapItems->isEmpty()) {
+                return response()->json([
+                    'status' => 404,
+                    'response_code' => 'NO_PRODUCTS_FOUND',
+                    'message' => __('messages.no_products_found'),
+                ], 404);
+            }
+
+            $qtyBySapId = $sapItems
+                ->groupBy('sap_id')
+                ->map(fn($rows) => $rows->sum('qty'));
+
+            return $this->buildProductsResponse($qtyBySapId);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 500,
+                'response_code' => 'INTERNAL_SERVER_ERROR',
+                'message' => __('messages.internal_server_error'),
+                'debug' => app()->environment('local') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+
+    private function getProductsFromWooByOrder($id)
+    {
+        $baseUrl = "https://samnanstore.com/";
+        $key     = "ck_2e4767e796073107ef7512f2625c9f5eae3e9ebc";     // ck_xxx
+        $secret  = "cs_5bd13a12bb3750db83c4fe46179f7ba861be5ff0";  // cs_xxx
+
+        $response = Http::withBasicAuth($key, $secret)
+            ->acceptJson()
+            ->get($baseUrl . '/wp-json/wc/v3/orders/' . $id);
+
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (!$response->successful()) {
+            \Log::warning('Woo order fetch failed: ' . $response->status());
+            return null;
+        }
+
+        $order     = $response->json();
+
+        // check status
+        $allowedStatuses = ['preparation', 'processing'];
+        $status = (string) ($order['status'] ?? '');
+
+        if (!in_array($status, $allowedStatuses, true)) {
+            return response()->json([
+                'status' => 409,
+                'response_code' => 'ORDER_ALREADY_SERVICED',
+                'message' => __('messages.billing_already_serviced'),
+            ], 409);
+        }
+
+        $lineItems = $order['line_items'] ?? [];
+
+        if (empty($lineItems) || !is_array($lineItems)) {
+            return null;
+        }
+
+        $items = collect($lineItems)
+            ->filter(fn($row) => !empty($row['sku']))
+            ->map(fn($row) => [
+                'sap_id' => (string) $row['sku'],
+                'qty'    => (float) ($row['quantity'] ?? 0),
+            ]);
+
+
+        if ($items->isEmpty()) {
+            return null;
+        }
+
+        $qtyBySapId = $items
+            ->groupBy('sap_id')
+            ->map(fn($rows) => $rows->sum('qty'));
+
+        return $this->buildProductsResponse($qtyBySapId);
+    }
+
+
+    private function buildProductsResponse($qtyBySapId)
+    {
+        $products = Product::whereIn('sap_id', $qtyBySapId->keys()->all())->get();
+
+
+        if ($products->isEmpty()) {
+            return response()->json([
+                'status' => 404,
+                'response_code' => 'INVOICE_PRODUCTS_NOT_INSTALLABLE',
+                'message' => __('messages.invoice_products_not_installable'),
+                'data' => [],
+            ], 404);
+        }
+
+        $data = $products->map(function ($product) use ($qtyBySapId) {
+            return [
+                'product' => $product,
+                'qty'     => $qtyBySapId->get((string) $product->sap_id, 0),
+            ];
+        })->values();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'ORDER_PRODUCTS_FETCHED',
+            'message' => __('messages.products_fetched'),
+            'data' => $data,
         ], 200);
     }
 }
