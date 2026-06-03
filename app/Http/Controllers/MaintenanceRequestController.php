@@ -817,7 +817,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|string|in:cash,online,remittance,machine',
+            'payment_method' => 'required|string|in:online,machine',
             'remittance' => 'required_if:payment_method,remittance|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -831,6 +831,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $validatedData = $validator->validated();
+
 
         // if ($maintenanceRequest->technician->is_freelancer == 1 && $validatedData['payment_method'] == 'cash') {
         //     return response()->json([
@@ -847,6 +848,7 @@ class MaintenanceRequestController extends Controller
                 'message' => 'Invoice not found for this request.',
             ], 400);
         }
+
 
         if ($validatedData['payment_method'] == 'remittance') {
             if ($request->hasFile('remittance')) {
