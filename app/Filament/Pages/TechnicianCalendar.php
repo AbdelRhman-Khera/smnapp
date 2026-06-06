@@ -40,7 +40,10 @@ class TechnicianCalendar extends Page
 
         $this->from = $start->toDateString();
         $this->to = $start->copy()->addDays(6)->toDateString();
-        $this->technicianId = request()->integer('technicianId') ?: null;
+        $this->technicianId = request()->integer('technicianId') ?: Technician::query()
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->value('id');
     }
 
     public static function canAccess(): bool
@@ -102,22 +105,23 @@ class TechnicianCalendar extends Page
     {
         [$start, $end] = $this->dateBounds();
 
-        $technicians = Technician::query()
+        $technician = Technician::query()
             ->select(['id', 'first_name', 'last_name', 'phone'])
             ->when($this->technicianId, fn ($query) => $query->whereKey($this->technicianId))
             ->orderBy('first_name')
             ->orderBy('last_name')
-            ->get();
+            ->first();
 
-        $technicianIds = $technicians->pluck('id');
         $hours = $this->hours();
+        $dates = $this->dates($start, $end);
 
         $timeValues = collect($hours)
             ->map(fn (int $hour): string => sprintf('%02d:00:00', $hour))
             ->all();
 
         $slots = Slot::query()
-            ->whereIn('technician_id', $technicianIds)
+            ->when($technician, fn ($query) => $query->where('technician_id', $technician->id))
+            ->when(! $technician, fn ($query) => $query->whereRaw('1 = 0'))
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
             ->whereIn('time', $timeValues)
             ->get();
@@ -126,7 +130,8 @@ class TechnicianCalendar extends Page
 
         $requests = MaintenanceRequest::query()
             ->with(['customer:id,first_name,last_name,phone'])
-            ->whereIn('technician_id', $technicianIds)
+            ->when($technician, fn ($query) => $query->where('technician_id', $technician->id))
+            ->when(! $technician, fn ($query) => $query->whereRaw('1 = 0'))
             ->where(function ($query) use ($slotIds) {
                 $query->whereIn('slot_id', $slotIds)
                     ->orWhereNotNull('extra_slot_id');
@@ -144,11 +149,11 @@ class TechnicianCalendar extends Page
         );
 
         return [
-            'dates' => $this->dates($start, $end),
+            'dates' => $dates,
             'hours' => $hours,
-            'technicians' => $technicians,
-            'cells' => $this->cells($technicians, $slotsByKey, $requestsBySlot, $start, $end, $hours),
-            'summary' => $this->summary($slots, $technicians, $start, $end, $hours),
+            'technician' => $technician,
+            'cells' => $this->cells($technician, $slotsByKey, $requestsBySlot, $dates, $hours),
+            'summary' => $this->summary($slots, $technician, $dates, $hours),
         ];
     }
 
@@ -164,24 +169,26 @@ class TechnicianCalendar extends Page
             ]);
     }
 
-    private function cells(Collection $technicians, Collection $slotsByKey, Collection $requestsBySlot, Carbon $start, Carbon $end, array $hours): array
+    private function cells(?Technician $technician, Collection $slotsByKey, Collection $requestsBySlot, array $dates, array $hours): array
     {
         $cells = [];
 
-        foreach ($technicians as $technician) {
-            foreach ($this->dates($start, $end) as $date) {
-                foreach ($hours as $hour) {
-                    $time = sprintf('%02d:00:00', $hour);
-                    $key = $this->slotKey((int) $technician->id, $date['value'], $time);
-                    $slot = $slotsByKey->get($key);
-                    $request = $slot ? $requestsBySlot->get($slot->id) : null;
+        if (! $technician) {
+            return $cells;
+        }
 
-                    $cells[$technician->id][$date['value']][$time] = [
-                        'slot' => $slot,
-                        'request' => $request,
-                        'url' => $request ? MaintenanceRequestResource::getUrl('view', ['record' => $request->id]) : null,
-                    ];
-                }
+        foreach ($dates as $date) {
+            foreach ($hours as $hour) {
+                $time = sprintf('%02d:00:00', $hour);
+                $key = $this->slotKey((int) $technician->id, $date['value'], $time);
+                $slot = $slotsByKey->get($key);
+                $request = $slot ? $requestsBySlot->get($slot->id) : null;
+
+                $cells[$date['value']][$time] = [
+                    'slot' => $slot,
+                    'request' => $request,
+                    'url' => $request ? MaintenanceRequestResource::getUrl('view', ['record' => $request->id]) : null,
+                ];
             }
         }
 
@@ -208,9 +215,9 @@ class TechnicianCalendar extends Page
         return $mapped;
     }
 
-    private function summary(Collection $slots, Collection $technicians, Carbon $start, Carbon $end, array $hours): array
+    private function summary(Collection $slots, ?Technician $technician, array $dates, array $hours): array
     {
-        $totalCells = $technicians->count() * count($this->dates($start, $end)) * count($hours);
+        $totalCells = ($technician ? 1 : 0) * count($dates) * count($hours);
         $free = $slots->where('is_booked', false)->count();
         $occupied = $slots->where('is_booked', true)->count();
 

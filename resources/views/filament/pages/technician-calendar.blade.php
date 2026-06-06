@@ -6,7 +6,6 @@
             <div class="tech-calendar__field tech-calendar__field--wide">
                 <label>Tech Name</label>
                 <select wire:model.live="technicianId">
-                    <option value="">All</option>
                     <?php foreach ($this->technicianOptions as $id => $name): ?>
                         <option value="{{ $id }}">{{ $name }}</option>
                     <?php endforeach; ?>
@@ -34,7 +33,7 @@
         </div>
 
         <div class="tech-calendar__summary">
-            <span>All Appointments <strong>{{ $calendar['summary']['total'] }}</strong></span>
+            <span>Appointments <strong>{{ $calendar['summary']['total'] }}</strong></span>
             <span class="tech-calendar__summary-free">Free <strong>{{ $calendar['summary']['free'] }}</strong></span>
             <span class="tech-calendar__summary-booked">Occupied <strong>{{ $calendar['summary']['occupied'] }}</strong></span>
             <span class="tech-calendar__summary-empty">No Slot <strong>{{ $calendar['summary']['empty'] }}</strong></span>
@@ -44,86 +43,76 @@
             <table class="tech-calendar__table">
                 <thead>
                     <tr>
-                        <th class="tech-calendar__sticky tech-calendar__tech-head">Technician</th>
-                        <?php foreach ($calendar['dates'] as $date): ?>
-                            <th colspan="{{ count($calendar['hours']) }}" class="tech-calendar__date-head">
-                                {{ $date['label'] }}
-                                <small>{{ $date['day'] }}</small>
+                        <th class="tech-calendar__sticky tech-calendar__time-head">
+                            <span>Date / Time</span>
+                            <?php if ($calendar['technician']): ?>
+                                <small>{{ trim($calendar['technician']->first_name . ' ' . $calendar['technician']->last_name) }}</small>
+                            <?php endif; ?>
+                        </th>
+                        <?php foreach ($calendar['hours'] as $hour): ?>
+                            <th class="tech-calendar__hour-head">
+                                {{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}
                             </th>
-                        <?php endforeach; ?>
-                    </tr>
-                    <tr>
-                        <th class="tech-calendar__sticky tech-calendar__time-head">Date / Time</th>
-                        <?php foreach ($calendar['dates'] as $date): ?>
-                            <?php foreach ($calendar['hours'] as $hour): ?>
-                                <th class="tech-calendar__hour-head">
-                                    {{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}
-                                </th>
-                            <?php endforeach; ?>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
 
                 <tbody>
-                    <?php if ($calendar['technicians']->isEmpty()): ?>
+                    <?php if (! $calendar['technician']): ?>
                         <tr>
                             <td colspan="2" class="tech-calendar__empty-state">No technicians found.</td>
                         </tr>
                     <?php else: ?>
-                    <?php foreach ($calendar['technicians'] as $technician): ?>
+                    <?php foreach ($calendar['dates'] as $date): ?>
                         <tr>
-                            <th class="tech-calendar__sticky tech-calendar__tech-name">
-                                <span>{{ trim($technician->first_name . ' ' . $technician->last_name) ?: 'Technician #' . $technician->id }}</span>
-                                <small>{{ $technician->phone }}</small>
+                            <th class="tech-calendar__sticky tech-calendar__date-name">
+                                <span>{{ $date['label'] }}</span>
+                                <small>{{ $date['day'] }}</small>
                             </th>
 
-                            <?php foreach ($calendar['dates'] as $date): ?>
-                                <?php foreach ($calendar['hours'] as $hour): ?>
-                                    <?php
-                                        $time = sprintf('%02d:00:00', $hour);
-                                        $cell = $calendar['cells'][$technician->id][$date['value']][$time];
-                                        $slot = $cell['slot'];
-                                        $request = $cell['request'];
-                                    ?>
+                            <?php foreach ($calendar['hours'] as $hour): ?>
+                                <?php
+                                    $time = sprintf('%02d:00:00', $hour);
+                                    $cell = $calendar['cells'][$date['value']][$time];
+                                    $slot = $cell['slot'];
+                                    $request = $cell['request'];
+                                ?>
 
-                                    <td>
-                                        <?php if (! $slot): ?>
-                                            <?php if (auth()->user()?->can('create_slot')): ?>
-                                                <button
-                                                    type="button"
-                                                    class="tech-calendar__cell tech-calendar__cell--empty"
-                                                    wire:click="createSlot({{ $technician->id }}, '{{ $date['value'] }}', '{{ $time }}')"
-                                                    wire:confirm="Create available slot for this technician at {{ $date['label'] }} {{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}?"
-                                                >
-                                                    <strong>+</strong>
-                                                    <span>Add</span>
-                                                </button>
-                                            <?php else: ?>
-                                                <div class="tech-calendar__cell tech-calendar__cell--empty tech-calendar__cell--locked">
-                                                    <strong>+</strong>
-                                                    <span>No Slot</span>
-                                                </div>
-                                            <?php endif; ?>
-                                        <?php elseif (! $slot->is_booked): ?>
-                                            <div class="tech-calendar__cell tech-calendar__cell--free">
-                                                <strong>Available</strong>
-                                                <span>#{{ $slot->id }}</span>
-                                            </div>
+                                <td>
+                                    <?php if (! $slot): ?>
+                                        <?php if (auth()->user()?->can('create_slot')): ?>
+                                            <button
+                                                type="button"
+                                                class="tech-calendar__cell tech-calendar__cell--empty"
+                                                wire:click="createSlot({{ $calendar['technician']->id }}, '{{ $date['value'] }}', '{{ $time }}')"
+                                                wire:confirm="Create available slot for this technician at {{ $date['label'] }} {{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}?"
+                                            >
+                                                <strong>+</strong>
+                                                <span>Add</span>
+                                            </button>
                                         <?php else: ?>
-                                            <?php if ($request && $cell['url']): ?>
-                                                <a href="{{ $cell['url'] }}" class="tech-calendar__cell tech-calendar__cell--booked">
-                                                    <strong>Booked</strong>
-                                                    <span>Order #{{ $request->id }}</span>
-                                                </a>
-                                            <?php else: ?>
-                                                <div class="tech-calendar__cell tech-calendar__cell--booked">
-                                                    <strong>Booked</strong>
-                                                    <span>Slot #{{ $slot->id }}</span>
-                                                </div>
-                                            <?php endif; ?>
+                                            <div class="tech-calendar__cell tech-calendar__cell--empty tech-calendar__cell--locked">
+                                                <strong>+</strong>
+                                                <span>No Slot</span>
+                                            </div>
                                         <?php endif; ?>
-                                    </td>
-                                <?php endforeach; ?>
+                                    <?php elseif (! $slot->is_booked): ?>
+                                        <div class="tech-calendar__cell tech-calendar__cell--free">
+                                            <strong>Available</strong>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php if ($request && $cell['url']): ?>
+                                            <a href="{{ $cell['url'] }}" class="tech-calendar__cell tech-calendar__cell--booked">
+                                                <strong>Booked</strong>
+                                                <span>Order #{{ $request->id }}</span>
+                                            </a>
+                                        <?php else: ?>
+                                            <div class="tech-calendar__cell tech-calendar__cell--booked">
+                                                <strong>Booked</strong>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </td>
                             <?php endforeach; ?>
                         </tr>
                     <?php endforeach; ?>
@@ -282,10 +271,6 @@
             color: #f8fafc;
         }
 
-        .tech-calendar__table thead tr:nth-child(2) th {
-            top: 64px;
-        }
-
         .tech-calendar__sticky {
             left: 0;
             min-width: 190px !important;
@@ -293,25 +278,19 @@
             z-index: 4 !important;
         }
 
-        .tech-calendar__tech-head,
         .tech-calendar__time-head,
-        .tech-calendar__tech-name {
+        .tech-calendar__date-name {
             background: #bfdbfe !important;
         }
 
-        .dark .tech-calendar__tech-head,
         .dark .tech-calendar__time-head,
-        .dark .tech-calendar__tech-name {
+        .dark .tech-calendar__date-name {
             background: #1e3a8a !important;
             color: #f8fafc;
         }
 
-        .tech-calendar__date-head {
-            height: 64px;
-        }
-
-        .tech-calendar__date-head small,
-        .tech-calendar__tech-name small {
+        .tech-calendar__time-head small,
+        .tech-calendar__date-name small {
             display: block;
             font-size: 11px;
             font-weight: 600;
@@ -319,12 +298,12 @@
             opacity: .75;
         }
 
-        .tech-calendar__tech-name {
+        .tech-calendar__date-name {
             color: #0f172a;
             font-size: 13px;
             font-weight: 800;
             padding: 8px !important;
-            text-align: start !important;
+            text-align: center !important;
         }
 
         .tech-calendar__cell {
