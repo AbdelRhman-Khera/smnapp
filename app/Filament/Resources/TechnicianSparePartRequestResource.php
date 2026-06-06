@@ -21,11 +21,11 @@ class TechnicianSparePartRequestResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
 
-    protected static ?string $navigationGroup = 'Business Management';
+    protected static ?string $navigationGroup = 'Technicians Management';
 
     protected static ?string $navigationLabel = 'Technician Spare Part Requests';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
