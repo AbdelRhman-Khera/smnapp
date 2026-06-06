@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    @php($calendar = $this->calendarData)
+    <?php $calendar = $this->calendarData; ?>
 
     <div class="tech-calendar">
         <div class="tech-calendar__toolbar">
@@ -7,9 +7,9 @@
                 <label>Tech Name</label>
                 <select wire:model.live="technicianId">
                     <option value="">All</option>
-                    @foreach ($this->technicianOptions as $id => $name)
+                    <?php foreach ($this->technicianOptions as $id => $name): ?>
                         <option value="{{ $id }}">{{ $name }}</option>
-                    @endforeach
+                    <?php endforeach; ?>
                 </select>
             </div>
 
@@ -45,45 +45,50 @@
                 <thead>
                     <tr>
                         <th class="tech-calendar__sticky tech-calendar__tech-head">Technician</th>
-                        @foreach ($calendar['dates'] as $date)
+                        <?php foreach ($calendar['dates'] as $date): ?>
                             <th colspan="{{ count($calendar['hours']) }}" class="tech-calendar__date-head">
                                 {{ $date['label'] }}
                                 <small>{{ $date['day'] }}</small>
                             </th>
-                        @endforeach
+                        <?php endforeach; ?>
                     </tr>
                     <tr>
                         <th class="tech-calendar__sticky tech-calendar__time-head">Date / Time</th>
-                        @foreach ($calendar['dates'] as $date)
-                            @foreach ($calendar['hours'] as $hour)
+                        <?php foreach ($calendar['dates'] as $date): ?>
+                            <?php foreach ($calendar['hours'] as $hour): ?>
                                 <th class="tech-calendar__hour-head">
                                     {{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}
                                 </th>
-                            @endforeach
-                        @endforeach
+                            <?php endforeach; ?>
+                        <?php endforeach; ?>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @forelse ($calendar['technicians'] as $technician)
+                    <?php if ($calendar['technicians']->isEmpty()): ?>
+                        <tr>
+                            <td colspan="2" class="tech-calendar__empty-state">No technicians found.</td>
+                        </tr>
+                    <?php else: ?>
+                    <?php foreach ($calendar['technicians'] as $technician): ?>
                         <tr>
                             <th class="tech-calendar__sticky tech-calendar__tech-name">
                                 <span>{{ trim($technician->first_name . ' ' . $technician->last_name) ?: 'Technician #' . $technician->id }}</span>
                                 <small>{{ $technician->phone }}</small>
                             </th>
 
-                            @foreach ($calendar['dates'] as $date)
-                                @foreach ($calendar['hours'] as $hour)
-                                    @php
+                            <?php foreach ($calendar['dates'] as $date): ?>
+                                <?php foreach ($calendar['hours'] as $hour): ?>
+                                    <?php
                                         $time = sprintf('%02d:00:00', $hour);
                                         $cell = $calendar['cells'][$technician->id][$date['value']][$time];
                                         $slot = $cell['slot'];
                                         $request = $cell['request'];
-                                    @endphp
+                                    ?>
 
                                     <td>
-                                        @if (! $slot)
-                                            @if (auth()->user()?->can('create_slot'))
+                                        <?php if (! $slot): ?>
+                                            <?php if (auth()->user()?->can('create_slot')): ?>
                                                 <button
                                                     type="button"
                                                     class="tech-calendar__cell tech-calendar__cell--empty"
@@ -93,39 +98,36 @@
                                                     <strong>+</strong>
                                                     <span>Add</span>
                                                 </button>
-                                            @else
+                                            <?php else: ?>
                                                 <div class="tech-calendar__cell tech-calendar__cell--empty tech-calendar__cell--locked">
                                                     <strong>+</strong>
                                                     <span>No Slot</span>
                                                 </div>
-                                            @endif
-                                        @elseif (! $slot->is_booked)
+                                            <?php endif; ?>
+                                        <?php elseif (! $slot->is_booked): ?>
                                             <div class="tech-calendar__cell tech-calendar__cell--free">
                                                 <strong>Available</strong>
                                                 <span>#{{ $slot->id }}</span>
                                             </div>
-                                        @else
-                                            @if ($request && $cell['url'])
+                                        <?php else: ?>
+                                            <?php if ($request && $cell['url']): ?>
                                                 <a href="{{ $cell['url'] }}" class="tech-calendar__cell tech-calendar__cell--booked">
                                                     <strong>Booked</strong>
                                                     <span>Order #{{ $request->id }}</span>
                                                 </a>
-                                            @else
+                                            <?php else: ?>
                                                 <div class="tech-calendar__cell tech-calendar__cell--booked">
                                                     <strong>Booked</strong>
                                                     <span>Slot #{{ $slot->id }}</span>
                                                 </div>
-                                            @endif
-                                        @endif
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </td>
-                                @endforeach
-                            @endforeach
+                                <?php endforeach; ?>
+                            <?php endforeach; ?>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="2" class="tech-calendar__empty-state">No technicians found.</td>
-                        </tr>
-                    @endforelse
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
