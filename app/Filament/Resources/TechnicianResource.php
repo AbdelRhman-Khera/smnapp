@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Hash;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use App\Filament\Resources\MaintenanceRequestResource;
+use App\Filament\Pages\TechnicianCalendar;
 use Filament\Tables\Filters\SelectFilter;
 
 class TechnicianResource extends Resource
@@ -208,6 +209,15 @@ class TechnicianResource extends Resource
                     ->url(fn($record) => MaintenanceRequestResource::getUrl('technician-appointments', [
                         'technician' => $record->id,
                     ])),
+
+                Tables\Actions\Action::make('calendar')
+                    ->label('Calendar')
+                    ->icon('heroicon-o-calendar')
+                    ->color('gray')
+                    ->url(fn($record) => TechnicianCalendar::getUrl([
+                        'technicianId' => $record->id,
+                    ]))
+                    ->visible(fn (): bool => auth()->user()?->can('page_TechnicianCalendar') ?? false),
             ])
             ->bulkActions([
                 // Tables\Actions\BulkActionGroup::make([

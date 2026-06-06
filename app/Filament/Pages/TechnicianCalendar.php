@@ -40,6 +40,7 @@ class TechnicianCalendar extends Page
 
         $this->from = $start->toDateString();
         $this->to = $start->copy()->addDays(6)->toDateString();
+        $this->technicianId = request()->integer('technicianId') ?: null;
     }
 
     public static function canAccess(): bool

@@ -83,7 +83,7 @@
 
                                     <td>
                                         @if (! $slot)
-                                            @can('create_slot')
+                                            @if (auth()->user()?->can('create_slot'))
                                                 <button
                                                     type="button"
                                                     class="tech-calendar__cell tech-calendar__cell--empty"
@@ -98,7 +98,7 @@
                                                     <strong>+</strong>
                                                     <span>No Slot</span>
                                                 </div>
-                                            @endcan
+                                            @endif
                                         @elseif (! $slot->is_booked)
                                             <div class="tech-calendar__cell tech-calendar__cell--free">
                                                 <strong>Available</strong>

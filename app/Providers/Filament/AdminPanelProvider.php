@@ -20,6 +20,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
 use Filament\Navigation\MenuItem;
+use Filament\Navigation\NavigationGroup;
 use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 use Awcodes\Overlook\OverlookPlugin;
 use Awcodes\Overlook\Widgets\OverlookWidget;
@@ -38,6 +39,14 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarFullyCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::hex('#1C4199'),
+            ])
+            ->navigationGroups([
+                NavigationGroup::make('System'),
+                NavigationGroup::make('Technicians Management'),
+                NavigationGroup::make('Business Management'),
+                NavigationGroup::make('Geographical Locations'),
+                NavigationGroup::make('Content Management'),
+                NavigationGroup::make('Support Management'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
