@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\SkipCsrfForPayment;
+use App\Models\Invoice;
 
 Route::get('/', function () {
     return redirect('/admin');
@@ -31,3 +32,14 @@ Route::get('/test2', [\App\Http\Controllers\MaintenanceRequestController::class,
 // Route::post('/payment/callback1', [\App\Http\Controllers\MaintenanceRequestController::class, 'paymentCallback'])->middleware(SkipCsrfForPayment::class)->name('payment.callback1');
 Route::post('/payment/callback1', [\App\Http\Controllers\MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback1');
 
+Route::get('/admin/sales-invoices/{invoice}/print', function (Invoice $invoice) {
+    $invoice->load([
+        'maintenanceRequest.customer',
+        'maintenanceRequest.address.city',
+        'maintenanceRequest.address.district',
+        'services',
+        'spareParts',
+    ]);
+
+    return view('sales-invoices.print', compact('invoice'));
+})->middleware('auth')->name('admin.sales-invoices.print');

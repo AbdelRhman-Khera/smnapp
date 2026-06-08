@@ -14,6 +14,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'maintenance_request_id',
+        'total',
         'service_cost',
         'payment_method',
         'status',
