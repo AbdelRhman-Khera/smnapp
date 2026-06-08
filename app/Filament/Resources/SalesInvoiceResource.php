@@ -163,8 +163,8 @@ class SalesInvoiceResource extends Resource
                         DatePicker::make('until')->label('Until'),
                     ])
                     ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('created_at', '<=', $date))),
+                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('invoices.created_at', '>=', $date))
+                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('invoices.created_at', '<=', $date))),
 
                 SelectFilter::make('payment_method')
                     ->label('Payment Type')
