@@ -622,6 +622,9 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
+
+            'lat' => 'required|numeric',
+            'long' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -636,6 +639,8 @@ class TechnicianController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'completed',
             'notes' => $request->notes,
+            'latitude' => $request->lat,
+            'longitude' => $request->long,
         ]);
 
         $maintenanceRequest->update([
