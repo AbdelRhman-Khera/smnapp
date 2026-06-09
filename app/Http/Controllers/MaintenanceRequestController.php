@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\MaintenanceRequest;
+use App\Models\Setting;
 use App\Models\Product;
 use App\Models\Slot;
 use App\Models\Technician;
@@ -817,7 +818,7 @@ class MaintenanceRequestController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|string|in:online,machine',
+            'payment_method' => 'required|string',
             'remittance' => 'required_if:payment_method,remittance|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
@@ -831,6 +832,23 @@ class MaintenanceRequestController extends Controller
         }
 
         $validatedData = $validator->validated();
+
+        $paymentMethodIsActive = in_array(
+            $validatedData['payment_method'],
+            Setting::activePaymentMethodCodes(),
+            true
+        );
+
+        if (! $paymentMethodIsActive) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'PAYMENT_METHOD_NOT_AVAILABLE',
+                'message' => 'This payment method is currently not available.',
+                'errors' => [
+                    'payment_method' => ['This payment method is currently not available.'],
+                ],
+            ], 422);
+        }
 
 
         // if ($maintenanceRequest->technician->is_freelancer == 1 && $validatedData['payment_method'] == 'cash') {

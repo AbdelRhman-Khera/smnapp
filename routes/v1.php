@@ -9,6 +9,7 @@ use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SapController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TechnicianController;
 use App\Http\Controllers\TechnicianSparePartRequestController;
 use App\Http\Middleware\SapBasicAuth;
@@ -125,6 +126,7 @@ Route::middleware([SetLanguage::class])->group(function () {
     Route::get('/spare-parts', [LandingController::class, 'getSpareParts']);
     Route::get('/services', [LandingController::class, 'getServices']);
     Route::get('/branches', [TechnicianSparePartRequestController::class, 'branches']);
+    Route::get('/payment-methods', [SettingsController::class, 'paymentMethods']);
 
 
     Route::middleware([SapBasicAuth::class])->group(function () {
