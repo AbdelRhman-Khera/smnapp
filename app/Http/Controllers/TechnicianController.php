@@ -313,6 +313,8 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
+            'lat' => 'required|numeric',
+            'long' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -327,6 +329,9 @@ class TechnicianController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'technician_on_the_way',
             'notes' => $request->notes,
+            'latitude' => $request->lat,
+            'longitude' => $request->long,
+
         ]);
 
         $maintenanceRequest->update([
@@ -1012,6 +1017,8 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'required|string',
+            'lat' => 'required|numeric',
+            'long' => 'required|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -1026,6 +1033,8 @@ class TechnicianController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'canceled',
             'notes' => $request->notes ?? null,
+            'latitude' => $request->lat,
+            'longitude' => $request->long,
         ]);
 
         $maintenanceRequest->update([
