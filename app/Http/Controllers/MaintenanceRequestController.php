@@ -1474,7 +1474,7 @@ class MaintenanceRequestController extends Controller
 
         $selectedDate = Carbon::parse($request->date)->toDateString();
 
-        // $nowSaudi = Carbon::now('Asia/Riyadh');
+        $nowSaudi = Carbon::now('Asia/Riyadh')->toDateString();
 
         $slotsQuery = Slot::whereIn('technician_id', $technicianIds)
             ->whereDate('date', $selectedDate)
@@ -1485,14 +1485,14 @@ class MaintenanceRequestController extends Controller
 
         // $tomorrowSaudi = $nowSaudi->copy()->addDay()->toDateString();
 
-        // if ($selectedDate < $tomorrowSaudi) {
-        //     return response()->json([
-        //         'status' => 200,
-        //         'response_code' => 'NO_SLOTS_AVAILABLE',
-        //         'message' => 'Slots are available starting from tomorrow only.',
-        //         'data' => [],
-        //     ], 200);
-        // }
+        if ($selectedDate < $nowSaudi) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'Slots not available .',
+                'data' => [],
+            ], 200);
+        }
 
         $slots = $slotsQuery->get();
 
