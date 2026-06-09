@@ -1474,7 +1474,17 @@ class MaintenanceRequestController extends Controller
 
         $selectedDate = Carbon::parse($request->date)->toDateString();
 
-        $nowSaudi = Carbon::now('Asia/Riyadh')->toDateString();
+        $nowSaudi = Carbon::now('Asia/Riyadh');
+        $todaySaudi = $nowSaudi->toDateString();
+
+        if ($selectedDate < $todaySaudi) {
+            return response()->json([
+                'status' => 200,
+                'response_code' => 'NO_SLOTS_AVAILABLE',
+                'message' => 'No slots available for past dates.',
+                'data' => [],
+            ], 200);
+        }
 
         $slotsQuery = Slot::whereIn('technician_id', $technicianIds)
             ->whereDate('date', $selectedDate)
@@ -1483,16 +1493,20 @@ class MaintenanceRequestController extends Controller
             ->orderBy('time')
             ->orderBy('technician_id');
 
+        if ($selectedDate === $todaySaudi) {
+            $slotsQuery->whereTime('time', '>=', $nowSaudi->copy()->minute(0)->second(0)->format('H:i:s'));
+        }
+
         // $tomorrowSaudi = $nowSaudi->copy()->addDay()->toDateString();
 
-        if ($selectedDate < $nowSaudi) {
-            return response()->json([
-                'status' => 200,
-                'response_code' => 'NO_SLOTS_AVAILABLE',
-                'message' => 'Slots not available .',
-                'data' => [],
-            ], 200);
-        }
+        // if ($selectedDate < $tomorrowSaudi) {
+        //     return response()->json([
+        //         'status' => 200,
+        //         'response_code' => 'NO_SLOTS_AVAILABLE',
+        //         'message' => 'Slots are available starting from tomorrow only.',
+        //         'data' => [],
+        //     ], 200);
+        // }
 
         $slots = $slotsQuery->get();
 
