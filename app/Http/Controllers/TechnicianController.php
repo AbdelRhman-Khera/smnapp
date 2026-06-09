@@ -313,8 +313,8 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
-            'lat' => 'required|numeric',
-            'long' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -373,8 +373,8 @@ class TechnicianController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'lat' => 'required|numeric',
-            'long' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
             'notes' => 'nullable|string',
         ]);
 
@@ -434,8 +434,8 @@ class TechnicianController extends Controller
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
 
-            'lat' => 'required|numeric',
-            'long' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
             'spare_parts' => 'nullable|array',
             'spare_parts.*.id' => 'required|exists:spare_parts,id',
             'spare_parts.*.quantity' => 'required|integer|min:1',
@@ -628,8 +628,8 @@ class TechnicianController extends Controller
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
 
-            'lat' => 'required|numeric',
-            'long' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -1027,8 +1027,8 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'required|string',
-            'lat' => 'required|numeric',
-            'long' => 'required|numeric',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
