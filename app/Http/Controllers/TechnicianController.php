@@ -433,6 +433,9 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'notes' => 'nullable|string',
+
+            'lat' => 'required|numeric',
+            'long' => 'required|numeric',
             'spare_parts' => 'nullable|array',
             'spare_parts.*.id' => 'required|exists:spare_parts,id',
             'spare_parts.*.quantity' => 'required|integer|min:1',
@@ -483,6 +486,8 @@ class TechnicianController extends Controller
         $maintenanceRequest->statuses()->create([
             'status' => 'waiting_for_payment',
             'notes' => $validatedData['notes'] ?? null,
+            'latitude' => $validatedData['lat'],
+            'longitude' => $validatedData['long'],
         ]);
 
         $maintenanceRequest->update([
