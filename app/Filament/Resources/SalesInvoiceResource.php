@@ -235,6 +235,18 @@ class SalesInvoiceResource extends Resource
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $query->whereHas('maintenanceRequest', fn (Builder $query) => $query->where('technician_id', $data['value']))
                         : $query),
+
+                SelectFilter::make('technician_type')
+                    ->label('Technician Type')
+                    ->options([
+                        'employee' => 'Employee',
+                        'freelancer' => 'Freelancer',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'employee' => $query->whereHas('maintenanceRequest.technician', fn (Builder $query) => $query->where('is_freelancer', false)),
+                        'freelancer' => $query->whereHas('maintenanceRequest.technician', fn (Builder $query) => $query->where('is_freelancer', true)),
+                        default => $query,
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('print_invoice')
