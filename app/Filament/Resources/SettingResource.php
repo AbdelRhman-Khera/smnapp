@@ -22,6 +22,31 @@ class SettingResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_setting') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_setting') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('update_setting') ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->can('delete_setting') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_setting') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form

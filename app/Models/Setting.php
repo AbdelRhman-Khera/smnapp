@@ -28,7 +28,7 @@ class Setting extends Model
 
     public static function getValue(string $key, mixed $default = null): mixed
     {
-        return static::query()->where('key', $key)->value('value') ?? $default;
+        return static::query()->where('key', $key)->first()?->value ?? $default;
     }
 
     public static function paymentMethods(): array

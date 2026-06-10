@@ -31,6 +31,16 @@ class SalesInvoiceResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_sales::invoice') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_sales::invoice') ?? false;
+    }
+
     public static function canCreate(): bool
     {
         return false;

@@ -33,6 +33,11 @@ Route::get('/test2', [\App\Http\Controllers\MaintenanceRequestController::class,
 Route::post('/payment/callback1', [\App\Http\Controllers\MaintenanceRequestController::class, 'paymentCallback'])->name('payment.callback1');
 
 Route::get('/admin/sales-invoices/{invoice}/print', function (Invoice $invoice) {
+    abort_unless(
+        auth()->user()?->can('view_sales::invoice') || auth()->user()?->can('view_any_sales::invoice'),
+        403,
+    );
+
     $invoice->load([
         'maintenanceRequest.customer',
         'maintenanceRequest.address.city',
