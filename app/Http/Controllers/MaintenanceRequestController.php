@@ -1513,7 +1513,7 @@ class MaintenanceRequestController extends Controller
         $slots = $this->filterSlotsByRequiredConsecutiveHours($slots, $requiredSlots);
 
         $slots = $slots
-            ->unique(fn($slot) => Carbon::parse($slot->time)->format('H:i'))
+            // ->unique(fn($slot) => Carbon::parse($slot->time)->format('H:i'))
             ->values();
 
         return response()->json([
