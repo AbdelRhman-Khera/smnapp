@@ -228,6 +228,19 @@ class SapController extends Controller
 
         $username = config('services.sap.user');
         $password = config('services.sap.pass');
+
+        $sapRequestLog = SapRequestLog::create([
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'action' => 'create_sales_order',
+            'payment_method' => $paymentMethod,
+            'http_method' => 'POST',
+            'url' => $url,
+            'sap_status' => 'initiated',
+            'request_payload' => $payload,
+            'is_success' => false,
+            'created_by' => auth()->id(),
+        ]);
+
         try {
 
             $response = Http::withBasicAuth($username, $password)
@@ -250,13 +263,10 @@ class SapController extends Controller
 
             $isSuccess = $response->successful() && $sapStatus === 'S';
 
-            SapRequestLog::create([
-                'maintenance_request_id' => $maintenanceRequest->id,
-                'payment_method' => $paymentMethod,
+            $sapRequestLog->update([
                 'http_status' => $response->status(),
-                'sap_status' => $sapStatus,
+                'sap_status' => $sapStatus ?: ($response->successful() ? 'unknown' : 'failed'),
                 'sap_desc' => $sapDesc,
-                'request_payload' => $payload,
                 'response_body' => $body,
                 'is_success' => $isSuccess,
             ]);
@@ -280,10 +290,8 @@ class SapController extends Controller
                 'response' => $body,
             ];
         } catch (\Throwable $e) {
-            SapRequestLog::create([
-                'maintenance_request_id' => $maintenanceRequest->id,
-                'payment_method' => $paymentMethod,
-                'request_payload' => $payload,
+            $sapRequestLog->update([
+                'sap_status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'is_success' => false,
             ]);

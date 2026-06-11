@@ -136,6 +136,8 @@ class SapRequestLogResource extends Resource
                     ->color(fn (?string $state): string => match ($state) {
                         'S' => 'success',
                         'E' => 'danger',
+                        'initiated' => 'warning',
+                        'failed' => 'danger',
                         default => 'gray',
                     }),
 
@@ -161,8 +163,10 @@ class SapRequestLogResource extends Resource
                 Tables\Filters\SelectFilter::make('sap_status')
                     ->label('SAP Status')
                     ->options([
+                        'initiated' => 'Initiated',
                         'S' => 'Success',
                         'E' => 'Error',
+                        'failed' => 'Failed',
                     ]),
 
                 Tables\Filters\SelectFilter::make('action')
@@ -245,6 +249,8 @@ class SapRequestLogResource extends Resource
                                     ->color(fn (?string $state): string => match ($state) {
                                         'S' => 'success',
                                         'E' => 'danger',
+                                        'initiated' => 'warning',
+                                        'failed' => 'danger',
                                         default => 'gray',
                                     })
                                     ->placeholder('-'),
@@ -333,7 +339,7 @@ class SapRequestLogResource extends Resource
 
         $maintenanceRequest = $record->maintenanceRequest;
 
-        SapRequestLog::where('maintenance_request_id', $record->maintenance_request_id)->delete();
+        // Keep all SAP request attempts for auditability; retries should append a new log entry, not delete older ones.
 
         $result = app(SapController::class)->createSalesOrder(
             $maintenanceRequest,
