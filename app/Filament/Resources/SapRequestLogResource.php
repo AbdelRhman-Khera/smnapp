@@ -339,14 +339,20 @@ class SapRequestLogResource extends Resource
 
         $maintenanceRequest = $record->maintenanceRequest;
 
-        // Keep all SAP request attempts for auditability; retries should append a new log entry, not delete older ones.
-
         $result = app(SapController::class)->createSalesOrder(
             $maintenanceRequest,
             $paymentMethod,
         );
 
         $success = (bool) ($result['success'] ?? false);
+        $newLogId = $result['sap_request_log_id'] ?? null;
+
+        if ($newLogId) {
+            SapRequestLog::query()
+                ->where('maintenance_request_id', $record->maintenance_request_id)
+                ->whereKeyNot($newLogId)
+                ->delete();
+        }
 
         Notification::make()
             ->title($success ? 'SAP request resent successfully' : 'SAP resend failed')

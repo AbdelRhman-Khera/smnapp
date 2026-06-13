@@ -288,6 +288,7 @@ class SapController extends Controller
                 'sap_status' => $sapStatus,
                 'sap_desc' => $sapDesc,
                 'response' => $body,
+                'sap_request_log_id' => $sapRequestLog->id,
             ];
         } catch (\Throwable $e) {
             $sapRequestLog->update([
@@ -304,6 +305,7 @@ class SapController extends Controller
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
+                'sap_request_log_id' => $sapRequestLog->id,
             ];
         }
     }
