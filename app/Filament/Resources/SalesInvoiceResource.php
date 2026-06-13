@@ -6,8 +6,13 @@ use App\Filament\Resources\MaintenanceRequestResource;
 use App\Filament\Resources\SalesInvoiceResource\Pages;
 use App\Models\District;
 use App\Models\Invoice;
+use App\Models\Service;
+use App\Models\Setting;
+use App\Models\SparePart;
 use App\Models\Technician;
+use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
@@ -48,12 +53,98 @@ class SalesInvoiceResource extends Resource
 
     public static function canEdit($record): bool
     {
-        return false;
+        return auth()->user()?->can('update_sales::invoice') ?? false;
     }
 
     public static function canDelete($record): bool
     {
         return false;
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Invoice Details')
+                    ->schema([
+                        Forms\Components\Placeholder::make('maintenance_request_id')
+                            ->label('Request #')
+                            ->content(fn (?Invoice $record): string => $record?->maintenance_request_id ? "#{$record->maintenance_request_id}" : '-'),
+
+                        Forms\Components\Placeholder::make('current_total')
+                            ->label('Current Total')
+                            ->content(fn (?Invoice $record): string => number_format((float) ($record?->total ?? 0), 2) . ' SAR'),
+
+                        Forms\Components\Select::make('payment_method')
+                            ->label('Payment Method')
+                            ->options(fn (): array => static::paymentMethodOptions())
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->columns(3),
+
+                Forms\Components\Section::make('Services')
+                    ->schema([
+                        Forms\Components\Repeater::make('services_items')
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\Select::make('service_id')
+                                    ->label('Service')
+                                    ->options(fn (): array => Service::query()
+                                        ->orderBy('name_en')
+                                        ->pluck('name_en', 'id')
+                                        ->toArray())
+                                    ->searchable()
+                                    ->required(),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->columns(1),
+                    ]),
+
+                Forms\Components\Section::make('Spare Parts')
+                    ->schema([
+                        Forms\Components\Repeater::make('spare_parts_items')
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\Select::make('spare_part_id')
+                                    ->label('Spare Part')
+                                    ->options(fn (): array => SparePart::query()
+                                        ->orderBy('name_en')
+                                        ->pluck('name_en', 'id')
+                                        ->toArray())
+                                    ->searchable()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set): void {
+                                        if ($state && $part = SparePart::find($state)) {
+                                            $set('price', $part->price);
+                                        }
+                                    }),
+
+                                Forms\Components\TextInput::make('quantity')
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->default(1)
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('price')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->required(),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->columns(3),
+                    ]),
+
+                Forms\Components\Textarea::make('edit_note')
+                    ->label('Edit Note')
+                    ->required()
+                    ->rows(4)
+                    ->columnSpanFull()
+                    ->dehydrated(false),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -140,6 +231,13 @@ class SalesInvoiceResource extends Resource
                     ->formatStateUsing(fn (?string $state): string => ucfirst($state ?: '-'))
                     ->placeholder('-')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('latest_note')
+                    ->label('Notes')
+                    ->state(fn (Invoice $record): ?string => collect($record->notes ?? [])->last()['note'] ?? null)
+                    ->limit(50)
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.sap_sync_status')
                     ->label('SAP Sync Status')
@@ -249,6 +347,7 @@ class SalesInvoiceResource extends Resource
                     }),
             ])
             ->actions([
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('print_invoice')
                     ->label('Print')
                     ->icon('heroicon-o-printer')
@@ -263,6 +362,7 @@ class SalesInvoiceResource extends Resource
     {
         return [
             'index' => Pages\ListSalesInvoices::route('/'),
+            'edit' => Pages\EditSalesInvoice::route('/{record}/edit'),
         ];
     }
 
@@ -284,5 +384,15 @@ class SalesInvoiceResource extends Resource
             'emergency_maintenance' => 'Emergency Maintenance',
             default => $state ?: '-',
         };
+    }
+
+    public static function paymentMethodOptions(): array
+    {
+        return collect(Setting::paymentMethods())
+            ->filter(fn (array $method): bool => (bool) ($method['is_active'] ?? false))
+            ->mapWithKeys(fn (array $method): array => [
+                $method['code'] => $method['label_en'] ?? $method['code'],
+            ])
+            ->toArray();
     }
 }

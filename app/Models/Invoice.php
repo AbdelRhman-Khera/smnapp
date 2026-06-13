@@ -19,6 +19,7 @@ class Invoice extends Model
         'payment_method',
         'status',
         'payment_details',
+        'notes',
         'qr_code',
         'remittance',
         'machine_pic',
@@ -26,6 +27,7 @@ class Invoice extends Model
 
     protected $casts = [
         'payment_details' => 'array',
+        'notes' => 'array',
     ];
 
     public function maintenanceRequest()
