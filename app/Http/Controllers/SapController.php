@@ -202,6 +202,8 @@ class SapController extends Controller
 
             'ORDER_NO' => (string) ($maintenanceRequest->id),
 
+            // 'DATE' => $maintenanceRequest->invoice?->created_at?->format('Ymd') ?? now()->format('Ymd'),
+
             'PAYMENT_METHOD' => $paymentMethod,
 
             'PHONE' => (string) ($maintenanceRequest->customer->phone ?? ''),
