@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\MaintenanceRequestResource;
 use App\Filament\Resources\SalesInvoiceResource\Pages;
+use App\Http\Controllers\SapController;
 use App\Models\District;
 use App\Models\Invoice;
 use App\Models\Service;
@@ -13,6 +14,7 @@ use App\Models\Technician;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\Filter;
@@ -348,6 +350,39 @@ class SalesInvoiceResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('send_to_sap')
+                    ->label('Send to SAP')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Send invoice to SAP?')
+                    ->modalDescription('This will create a SAP sales order for this maintenance request.')
+                    ->visible(fn (Invoice $record): bool => static::canEdit($record)
+                        && $record->maintenanceRequest?->sap_sync_status === 'pending')
+                    ->action(function (Invoice $record): void {
+                        $record->loadMissing([
+                            'maintenanceRequest.invoice',
+                            'maintenanceRequest.invoice.services',
+                            'maintenanceRequest.invoice.spareParts',
+                            'maintenanceRequest.customer',
+                            'maintenanceRequest.technician',
+                            'maintenanceRequest.address.city',
+                            'maintenanceRequest.address.district',
+                        ]);
+
+                        $result = app(SapController::class)->createSalesOrder(
+                            $record->maintenanceRequest,
+                            static::formatPaymentMethodForSap((string) $record->payment_method),
+                        );
+
+                        $success = (bool) ($result['success'] ?? false);
+
+                        Notification::make()
+                            ->title($success ? 'Sent to SAP successfully' : 'SAP sync failed')
+                            ->body($result['sap_desc'] ?? $result['message'] ?? null)
+                            ->color($success ? 'success' : 'danger')
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('print_invoice')
                     ->label('Print')
                     ->icon('heroicon-o-printer')
@@ -394,5 +429,16 @@ class SalesInvoiceResource extends Resource
                 $method['code'] => $method['label_en'] ?? $method['code'],
             ])
             ->toArray();
+    }
+
+    public static function formatPaymentMethodForSap(string $paymentMethod): string
+    {
+        return match ($paymentMethod) {
+            'online' => 'Online',
+            'machine' => 'Machine',
+            'cash' => 'Cash',
+            'remittance' => 'Remittance',
+            default => ucfirst($paymentMethod),
+        };
     }
 }
