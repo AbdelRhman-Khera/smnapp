@@ -106,7 +106,7 @@ class LandingController extends Controller
     public function getSpareParts()
     {
         // $spareParts = SparePart::where('stock', '>', 0)->get();
-         $spareParts = SparePart::all();
+        $spareParts = SparePart::active()->get();
 
         return response()->json([
             'status' => 200,
