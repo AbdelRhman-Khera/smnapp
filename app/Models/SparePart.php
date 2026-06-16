@@ -18,11 +18,13 @@ class SparePart extends Model
         'stock',
         'image',
         'sap_id',
+        'is_active',
     ];
 
     protected $casts = [
         'price' => 'float',
         'stock' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     // protected $hidden = [
@@ -56,6 +58,11 @@ class SparePart extends Model
     public function getImageUrlAttribute()
     {
         return url('storage/' . $this->image);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 
     public function getActivitylogOptions(): LogOptions

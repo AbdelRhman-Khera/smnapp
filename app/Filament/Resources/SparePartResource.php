@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Tables\Filters\SelectFilter;
 
 class SparePartResource extends Resource
 {
@@ -44,6 +45,7 @@ class SparePartResource extends Resource
                 TextInput::make('sap_id')->label('SAP ID')->required(),
                 TextInput::make('price')->label('Price')->numeric()->required(),
                 TextInput::make('stock')->label('Stock Quantity')->numeric()->default(0),
+                Toggle::make('is_active')->label('Active')->default(true),
                 FileUpload::make('image')->label('Image')->image()->nullable(),
             ]);
     }
@@ -57,9 +59,15 @@ class SparePartResource extends Resource
                 TextColumn::make('name_en')->label('Name (EN)')->sortable()->searchable(),
                 TextColumn::make('price')->label('Price')->sortable(),
                 TextColumn::make('stock')->label('Stock Quantity')->sortable(),
+                Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
             ])->defaultSort('id', 'desc')
             ->filters([
-                //
+                SelectFilter::make('is_active')
+                    ->label('Active')
+                    ->options([
+                        1 => 'Active',
+                        0 => 'Inactive',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
