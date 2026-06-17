@@ -160,12 +160,16 @@ class MaintenanceRequest extends Model
     {
         $this->loadMissing('products');
 
-        return $this->products->sum(function ($product) {
+        $productHours = $this->products->sum(function ($product) {
             $quantity = (float) ($product->pivot->quantity ?? 1);
             $productHours = (float) ($product->hours ?? 0);
 
             return $productHours * $quantity;
         });
+
+        $this->loadMissing('address.district.area');
+
+        return $productHours + (float) ($this->address?->district?->area?->extra_hours ?? 0);
     }
 
     public function recalculateHours(): void

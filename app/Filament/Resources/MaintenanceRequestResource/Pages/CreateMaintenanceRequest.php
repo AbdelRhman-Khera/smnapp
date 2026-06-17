@@ -51,7 +51,7 @@ class CreateMaintenanceRequest extends CreateRecord
             if (!empty($sync)) {
                 $maintenanceRequest->products()->sync($sync);
                 if (!empty($this->data['products_items'])) {
-                    $maintenanceRequest->recalculateHours($this->data['products_items']);
+                    $maintenanceRequest->recalculateHours();
                 }
             }
         }

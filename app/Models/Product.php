@@ -10,10 +10,11 @@ use Spatie\Activitylog\LogOptions;
 class Product extends Model
 {
     use HasFactory , LogsActivity;
-    protected $fillable = ['sap_id', 'name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'category_id','hours', 'is_active'];
+    protected $fillable = ['sap_id', 'name_ar', 'name_en', 'description_ar', 'description_en', 'image', 'category_id','hours', 'maintenance_fee', 'is_active'];
 
     protected $casts = [
         'is_active' => 'integer',
+        'maintenance_fee' => 'float',
     ];
 
     protected $appends = ['name', 'description', 'category_name', 'image_url'];
@@ -59,6 +60,7 @@ class Product extends Model
     {
         return url('storage/' . $this->image);
     }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logAll();
