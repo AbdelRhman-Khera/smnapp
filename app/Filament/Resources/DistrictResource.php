@@ -34,6 +34,12 @@ class DistrictResource extends Resource
             Select::make('city_id')
                 ->relationship('city', 'name_ar')
                 ->required(),
+            Select::make('area_id')
+                ->label('Area')
+                ->relationship('area', 'name_en')
+                ->searchable()
+                ->preload()
+                ->nullable(),
             Tabs::make('Language')
                 ->tabs([
                     Tab::make('Arabic')->schema([
@@ -76,6 +82,7 @@ class DistrictResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
+                TextColumn::make('area.name_en')->label('Area')->sortable()->searchable(),
                 TextColumn::make('name_ar')->sortable()->searchable(),
                 TextColumn::make('name_en')->sortable()->searchable(),
 
@@ -84,6 +91,11 @@ class DistrictResource extends Resource
                 SelectFilter::make('city_id')
                     ->label('City')
                     ->relationship('city', 'name_ar')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('area_id')
+                    ->label('Area')
+                    ->relationship('area', 'name_en')
                     ->searchable()
                     ->preload(),
             ])

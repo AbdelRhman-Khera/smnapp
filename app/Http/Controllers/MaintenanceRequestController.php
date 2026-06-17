@@ -232,13 +232,15 @@ class MaintenanceRequestController extends Controller
             $this->normalizeProductsForAttach($request->products)
         );
 
+        $maintenanceRequest->recalculateHours();
+
         $maintenanceRequest->statuses()->create([
             'status' => 'pending',
         ]);
 
         $maintenanceRequest->last_status = 'pending';
         $maintenanceRequest->save();
-        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'feedback']);
+        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address.district.area', 'products', 'statuses', 'invoice', 'feedback']);
 
         return response()->json([
             'status' => 200,

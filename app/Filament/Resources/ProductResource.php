@@ -36,6 +36,12 @@ class ProductResource extends Resource
             Textarea::make('description_en')->label('Description (English)'),
             FileUpload::make('image')->label('Image'),
             TextInput::make('hours')->label('Hours')->numeric()->required(),
+            TextInput::make('maintenance_fee')
+                ->label('Product Maintenance Fee')
+                ->numeric()
+                ->step(0.01)
+                ->default(0)
+                ->required(),
             Select::make('is_active')
                 ->label('Status')
                 ->options([
@@ -59,6 +65,7 @@ class ProductResource extends Resource
                 TextColumn::make('name_ar')->label('Name (Arabic)'),
                 TextColumn::make('name_en')->label('Name (English)'),
                 TextColumn::make('category.name_en')->label('Category')->sortable()->searchable(),
+                TextColumn::make('maintenance_fee')->label('Maintenance Fee')->money('SAR')->sortable(),
                 TextColumn::make('is_active')
                     ->label('Status')
                     ->badge()

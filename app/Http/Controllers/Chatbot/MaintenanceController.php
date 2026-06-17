@@ -72,6 +72,8 @@ class MaintenanceController extends Controller
             $this->normalizeProductsForAttach($request->products)
         );
 
+        $maintenanceRequest->recalculateHours();
+
         $maintenanceRequest->statuses()->create([
             'status' => 'pending',
             'notes' => 'تم انشاء الطلب عن طريق واتساب شات بوت',
@@ -79,7 +81,7 @@ class MaintenanceController extends Controller
 
         $maintenanceRequest->last_status = 'pending';
         $maintenanceRequest->save();
-        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'feedback']);
+        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address.district.area', 'products', 'statuses', 'invoice', 'feedback']);
 
         return response()->json([
             'status' => 200,
@@ -309,6 +311,8 @@ class MaintenanceController extends Controller
                 $this->normalizeProductsForAttach($products)
             );
 
+            $maintenanceRequest->recalculateHours();
+
             $maintenanceRequest->statuses()->create([
                 'status' => 'pending',
                 'notes' => 'تم انشاء الطلب عن طريق واتساب شات بوت',
@@ -316,7 +320,7 @@ class MaintenanceController extends Controller
 
             $maintenanceRequest->last_status = 'pending';
             $maintenanceRequest->save();
-            $maintenanceRequest->load(['customer', 'slot', 'technician', 'address', 'products', 'statuses', 'invoice', 'feedback']);
+            $maintenanceRequest->load(['customer', 'slot', 'technician', 'address.district.area', 'products', 'statuses', 'invoice', 'feedback']);
 
             return response()->json([
                 'status' => 200,

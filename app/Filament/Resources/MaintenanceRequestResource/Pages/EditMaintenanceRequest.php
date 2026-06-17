@@ -79,7 +79,7 @@ class EditMaintenanceRequest extends EditRecord
         }
 
         $record->products()->sync($sync);
-        $record->recalculateHours($this->data['products_items']);
+        $record->recalculateHours();
 
 
         return $record;
