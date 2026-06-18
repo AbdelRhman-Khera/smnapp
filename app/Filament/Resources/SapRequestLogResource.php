@@ -90,6 +90,7 @@ class SapRequestLogResource extends Resource
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                         default => $state ?: '-',
                     })
                     ->placeholder('-')

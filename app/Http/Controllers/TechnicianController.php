@@ -456,7 +456,7 @@ class TechnicianController extends Controller
 
         $total = 0;
 
-        foreach ($validatedData['spare_parts'] as $sparePart) {
+        foreach (($validatedData['spare_parts'] ?? []) as $sparePart) {
             $sparePartModel = \App\Models\SparePart::findOrFail($sparePart['id']);
             $total += $sparePartModel->price * $sparePart['quantity'];
         }
@@ -468,11 +468,12 @@ class TechnicianController extends Controller
 
         $invoice = new Invoice();
         $invoice->maintenance_request_id = $maintenanceRequest->id;
+        $invoice->invoice_type = 'final';
         $invoice->total = $total;
         $invoice->status = 'pending';
         $invoice->save();
 
-        foreach ($validatedData['spare_parts'] as $sparePart) {
+        foreach (($validatedData['spare_parts'] ?? []) as $sparePart) {
             $invoice->spareParts()->attach($sparePart['id'], [
                 'quantity' => $sparePart['quantity'],
                 'price' => \App\Models\SparePart::findOrFail($sparePart['id'])->price,
@@ -491,7 +492,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'waiting_for_payment',
+            'last_status' => 'waiting_for_payment',
             'invoice_number' => $invoice->id,
         ]);
 
@@ -648,8 +649,11 @@ class TechnicianController extends Controller
             'longitude' => $request->long,
         ]);
 
+        $invoice = $this->createZeroServiceInvoice($maintenanceRequest, 'New installation completed without charge.');
+
         $maintenanceRequest->update([
             'last_status' => 'completed',
+            'invoice_number' => $invoice->id,
         ]);
 
         NotificationService::notifyCustomer(
@@ -677,6 +681,244 @@ class TechnicianController extends Controller
                 'products'
             ]),
         ], 200);
+    }
+
+    public function completeWithoutPayment(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to update this request.',
+            ], 403);
+        }
+
+        if ($maintenanceRequest->current_status->status != 'in_progress') {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_STATUS',
+                'message' => 'The request is not in progress.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $invoice = $this->createZeroServiceInvoice(
+            $maintenanceRequest,
+            'Maintenance request completed without charge.'
+        );
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'completed',
+            'notes' => $request->notes,
+            'latitude' => $request->lat,
+            'longitude' => $request->long,
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'completed',
+            'invoice_number' => $invoice->id,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'REQUEST_COMPLETED_WITHOUT_PAYMENT',
+            'message' => 'Request completed with a zero invoice.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->load(['statuses', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                'invoice' => $invoice,
+            ],
+        ], 200);
+    }
+
+    public function updatePendingInvoice(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::with(['invoice.services', 'invoice.spareParts'])->findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to update this request invoice.',
+            ], 403);
+        }
+
+        $invoice = $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if (! $invoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PENDING_INVOICE_NOT_FOUND',
+                'message' => 'No unpaid final invoice found for this request.',
+            ], 400);
+        }
+
+        if (! in_array($maintenanceRequest->last_status, ['waiting_for_payment', 'waiting_for_technician_confirm_payment'], true)) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_NOT_EDITABLE',
+                'message' => 'Invoice can only be updated before customer payment is completed.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+            'payment_method' => 'nullable|string',
+            'spare_parts' => 'nullable|array',
+            'spare_parts.*.id' => 'required|exists:spare_parts,id',
+            'spare_parts.*.quantity' => 'required|integer|min:1',
+            'spare_parts.*.price' => 'nullable|numeric|min:0',
+            'services' => 'nullable|array',
+            'services.*.id' => 'required|exists:services,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+        $before = $this->invoiceSnapshot($invoice->load(['services', 'spareParts']));
+
+        $services = array_key_exists('services', $validatedData)
+            ? $validatedData['services']
+            : $invoice->services->map(fn ($service) => ['id' => $service->id])->all();
+        $spareParts = array_key_exists('spare_parts', $validatedData)
+            ? $validatedData['spare_parts']
+            : $invoice->spareParts
+                ->map(fn ($part) => [
+                    'id' => $part->id,
+                    'quantity' => (int) ($part->pivot->quantity ?? 1),
+                    'price' => (float) ($part->pivot->price ?? $part->price ?? 0),
+                ])
+                ->all();
+
+        $servicesTotal = 0;
+        $serviceIds = [];
+
+        foreach ($services as $service) {
+            $serviceModel = \App\Models\Service::findOrFail($service['id']);
+            $servicesTotal += (float) $serviceModel->price;
+            $serviceIds[] = $serviceModel->id;
+        }
+
+        $sparePartsTotal = 0;
+        $sparePartSync = [];
+
+        foreach ($spareParts as $sparePart) {
+            $sparePartModel = \App\Models\SparePart::findOrFail($sparePart['id']);
+            $price = array_key_exists('price', $sparePart)
+                ? (float) $sparePart['price']
+                : (float) $sparePartModel->price;
+            $quantity = (int) $sparePart['quantity'];
+
+            $sparePartsTotal += $price * $quantity;
+            $sparePartSync[$sparePartModel->id] = [
+                'quantity' => $quantity,
+                'price' => $price,
+            ];
+        }
+
+        $invoice->services()->sync(array_values(array_unique($serviceIds)));
+        $invoice->spareParts()->sync($sparePartSync);
+
+        $invoice->refresh()->load(['services', 'spareParts']);
+
+        $notes = collect($invoice->notes ?? [])
+            ->push([
+                'type' => 'invoice_updated_by_technician',
+                'technician_id' => Auth::id(),
+                'note' => $validatedData['notes'] ?? null,
+                'before' => $before,
+                'after' => $this->invoiceSnapshot($invoice),
+                'created_at' => now()->toDateTimeString(),
+            ])
+            ->values()
+            ->all();
+
+        $invoice->update([
+            'total' => $servicesTotal + $sparePartsTotal,
+            'payment_method' => $validatedData['payment_method'] ?? $invoice->payment_method,
+            'notes' => $notes,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'INVOICE_UPDATED',
+            'message' => 'Invoice updated successfully.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->fresh(['statuses', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                'invoice' => $invoice->fresh(['services', 'spareParts']),
+            ],
+        ], 200);
+    }
+
+    private function invoiceSnapshot(Invoice $invoice): array
+    {
+        return [
+            'payment_method' => $invoice->payment_method,
+            'total' => (float) $invoice->total,
+            'services' => $invoice->services
+                ->map(fn ($service): array => [
+                    'id' => $service->id,
+                    'name' => $service->name_en ?? $service->name_ar,
+                    'price' => (float) ($service->price ?? 0),
+                ])
+                ->values()
+                ->all(),
+            'spare_parts' => $invoice->spareParts
+                ->map(fn ($part): array => [
+                    'id' => $part->id,
+                    'name' => $part->name_en ?? $part->name_ar,
+                    'quantity' => (int) ($part->pivot->quantity ?? 1),
+                    'price' => (float) ($part->pivot->price ?? $part->price ?? 0),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function createZeroServiceInvoice(MaintenanceRequest $maintenanceRequest, string $note): Invoice
+    {
+        return $maintenanceRequest->invoices()->firstOrCreate(
+            [
+                'invoice_type' => 'zero_service',
+                'status' => 'completed',
+            ],
+            [
+                'total' => 0,
+                'payment_method' => null,
+                'notes' => [
+                    [
+                        'note' => $note,
+                        'created_at' => now()->toDateTimeString(),
+                    ],
+                ],
+            ]
+        );
     }
 
     public function updateFcmToken(Request $request)

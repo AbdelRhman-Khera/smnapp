@@ -19,8 +19,9 @@ class CreateMaintenanceRequest extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Set default status to 'pending'
-        $data['last_status'] = 'pending';
+        $data['last_status'] = in_array($data['type'] ?? null, ['regular_maintenance', 'emergency_maintenance'], true)
+            ? 'visit_payment_pending'
+            : 'pending';
 
         // Products are stored on the pivot table (maintenance_request_product)
         $this->productsToSync = $data['products_items'] ?? [];
@@ -58,7 +59,15 @@ class CreateMaintenanceRequest extends CreateRecord
 
 
         $maintenanceRequest->statuses()->create([
-            'status' => 'pending',
+            'status' => $maintenanceRequest->last_status,
         ]);
+
+        if ($maintenanceRequest->requiresVisitFeePayment()) {
+            $maintenanceRequest->invoices()->create([
+                'invoice_type' => 'visit_fee',
+                'total' => $maintenanceRequest->calculateVisitFee(),
+                'status' => 'pending',
+            ]);
+        }
     }
 }

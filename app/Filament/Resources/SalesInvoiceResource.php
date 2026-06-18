@@ -216,6 +216,21 @@ class SalesInvoiceResource extends Resource
                     ->money('SAR')
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('invoice_type')
+                    ->label('Invoice Type')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'visit_fee' => 'Visit Fee',
+                        'final' => 'Final',
+                        'zero_service' => 'Zero Service',
+                        default => ucfirst((string) ($state ?: '-')),
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'visit_fee' => 'info',
+                        'zero_service' => 'gray',
+                        default => 'success',
+                    }),
+
                 Tables\Columns\TextColumn::make('status')
                     ->label('Payment Status')
                     ->badge()
@@ -309,6 +324,7 @@ class SalesInvoiceResource extends Resource
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                     ])
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $query->whereHas('maintenanceRequest', fn (Builder $query) => $query->where('type', $data['value']))
@@ -418,6 +434,7 @@ class SalesInvoiceResource extends Resource
             'new_installation' => 'New Installation',
             'regular_maintenance' => 'Regular Maintenance',
             'emergency_maintenance' => 'Emergency Maintenance',
+            'warranty' => 'Warranty',
             default => $state ?: '-',
         };
     }

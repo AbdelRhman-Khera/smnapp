@@ -108,8 +108,35 @@ class MaintenanceRequestResource extends Resource
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                     ])
+                    ->live()
                     ->required(),
+
+                Select::make('warranty_source_request_id')
+                    ->label('Warranty Source Request')
+                    ->options(fn ($get) => \App\Models\MaintenanceRequest::query()
+                        ->where('customer_id', $get('customer_id'))
+                        ->where('last_status', 'completed')
+                        ->where(function (Builder $query) {
+                            $query->where(function (Builder $query) {
+                                $query->whereIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                                    ->whereHas('statuses', fn (Builder $query) => $query
+                                        ->where('status', 'completed')
+                                        ->where('created_at', '>=', now()->subMonth()));
+                            })->orWhere(function (Builder $query) {
+                                $query->where('type', 'new_installation')
+                                    ->whereHas('statuses', fn (Builder $query) => $query
+                                        ->where('status', 'completed')
+                                        ->where('created_at', '>=', now()->subYears(2)));
+                            });
+                        })
+                        ->latest('id')
+                        ->limit(50)
+                        ->pluck('id', 'id'))
+                    ->searchable()
+                    ->required(fn ($get) => $get('type') === 'warranty')
+                    ->visible(fn ($get) => $get('type') === 'warranty'),
 
                 Repeater::make('products_items')
                     ->label('Products')
@@ -225,6 +252,7 @@ class MaintenanceRequestResource extends Resource
                             'new_installation' => 'New Installation',
                             'regular_maintenance' => 'Regular Maintenance',
                             'emergency_maintenance' => 'Emergency Maintenance',
+                            'warranty' => 'Warranty',
                             default => $state,
                         };
                     }),
@@ -233,6 +261,8 @@ class MaintenanceRequestResource extends Resource
                     ->badge()
                     ->color(fn($state) => match ($state) {
                         'pending' => 'gray',
+                        'visit_payment_pending' => 'warning',
+                        'service_paid' => 'success',
                         'technician_assigned' => 'info',
                         'technician_on_the_way' => 'warning',
                         'technician_arrived' => 'primary',
@@ -245,6 +275,8 @@ class MaintenanceRequestResource extends Resource
                     })
                     ->formatStateUsing(fn($state) => match ($state) {
                         'pending' => 'Pending',
+                        'visit_payment_pending' => 'Visit Payment Pending',
+                        'service_paid' => 'Service Paid',
                         'technician_assigned' => 'Technician Assigned',
                         'technician_on_the_way' => 'Technician On The Way',
                         'technician_arrived' => 'Technician Arrived',
@@ -272,6 +304,8 @@ class MaintenanceRequestResource extends Resource
                     ->label('Status')
                     ->options([
                         'pending' => 'Pending',
+                        'visit_payment_pending' => 'Visit Payment Pending',
+                        'service_paid' => 'Service Paid',
                         'technician_assigned' => 'Technician Assigned',
                         'technician_on_the_way' => 'Technician On The Way',
                         'technician_arrived' => 'Technician Arrived',
@@ -385,6 +419,7 @@ class MaintenanceRequestResource extends Resource
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                     ]),
                 SelectFilter::make('technician_id')
                     ->label('Technician')
@@ -402,7 +437,7 @@ class MaintenanceRequestResource extends Resource
                 Tables\Actions\Action::make('Book Appointment')
                     ->label('Book Appointment')
                     ->icon('heroicon-o-calendar')
-                    ->disabled(fn($record) => !in_array($record->last_status, ['pending', 'technician_assigned']))
+                    ->disabled(fn($record) => !in_array($record->last_status, ['pending', 'service_paid', 'technician_assigned']))
                     ->form([
                         DatePicker::make('selected_date')
                             ->label('Select Date')

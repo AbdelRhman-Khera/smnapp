@@ -75,7 +75,7 @@ class CompletePaidRequest extends Page implements HasForms
         $maintenanceRequest = MaintenanceRequest::query()
             ->with(['invoice', 'customer', 'technician', 'address.city', 'address.district', 'products'])
             ->whereKey($data['request_id'])
-            ->whereHas('invoice', fn ($query) => $query->where('status', 'pending'))
+            ->whereHas('invoices', fn ($query) => $query->where('status', 'pending')->where('invoice_type', 'final'))
             ->firstOrFail();
 
         $userName = auth()->user()?->name ?: 'System';
@@ -84,7 +84,12 @@ class CompletePaidRequest extends Page implements HasForms
         $statusNote = "Completed by: {$userName} | Payment method: {$paymentMethod} | Note: {$note}";
 
         DB::transaction(function () use ($maintenanceRequest, $paymentMethod, $statusNote): void {
-            $maintenanceRequest->invoice()->update([
+            $maintenanceRequest->invoices()
+                ->where('status', 'pending')
+                ->where('invoice_type', 'final')
+                ->latest()
+                ->firstOrFail()
+                ->update([
                 'status' => 'completed',
                 'payment_method' => $paymentMethod,
             ]);
@@ -119,7 +124,7 @@ class CompletePaidRequest extends Page implements HasForms
     {
         return MaintenanceRequest::query()
             ->with(['customer', 'invoice'])
-            ->whereHas('invoice', fn ($query) => $query->where('status', 'pending'))
+            ->whereHas('invoices', fn ($query) => $query->where('status', 'pending')->where('invoice_type', 'final'))
             ->where(function ($query) use ($search) {
                 $query->where('id', 'like', "%{$search}%")
                     ->orWhereHas('customer', function ($query) use ($search) {

@@ -102,6 +102,8 @@ class TechnicianAppointments extends ListRecords
                 SelectFilter::make('last_status')
                     ->options([
                         'pending' => 'Pending',
+                        'visit_payment_pending' => 'Visit Payment Pending',
+                        'service_paid' => 'Service Paid',
                         'technician_assigned' => 'Technician Assigned',
                         'technician_on_the_way' => 'Technician On The Way',
                         'technician_arrived' => 'Technician Arrived',

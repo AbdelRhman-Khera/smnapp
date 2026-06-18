@@ -75,6 +75,7 @@ Route::middleware([SetLanguage::class])->group(function () {
 
         ////// maintenance request
         Route::get('/maintenance-requests/check-open-requests', [MaintenanceRequestController::class, 'checkOpenRequests']);
+        Route::get('/maintenance-requests/warranty-eligible', [MaintenanceRequestController::class, 'warrantyEligibleRequests']);
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::get('/maintenance-request/{id}', [MaintenanceRequestController::class, 'show']);
@@ -90,9 +91,11 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request/{id}/set-on-the-way', [TechnicianController::class, 'setOnTheWay']);
         Route::post('/maintenance-request/{id}/set-in-progress', [TechnicianController::class, 'setInProgress']);
         Route::post('/maintenance-request/{id}/set-waiting-for-payment', [TechnicianController::class, 'setWaitingForPayment']);
+        Route::put('/maintenance-request/{id}/invoice', [TechnicianController::class, 'updatePendingInvoice']);
         Route::post('/maintenance-request/{id}/confirm-cash-payment', [TechnicianController::class, 'confirmCashPayment']);
         Route::post('/maintenance-request/{id}/confirm-machine-payment', [TechnicianController::class, 'confirmMachinePayment']);
         Route::post('/maintenance-request/{id}/finish-installation', [TechnicianController::class, 'finishInstallation']);
+        Route::post('/maintenance-request/{id}/complete-without-payment', [TechnicianController::class, 'completeWithoutPayment']);
 
         Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
         Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);

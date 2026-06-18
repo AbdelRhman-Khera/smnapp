@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
@@ -17,6 +18,7 @@ class MaintenanceRequest extends Model
         'customer_id',
         'technician_id',
         'type',
+        'warranty_source_request_id',
         'products',
         'address_id',
         'sap_order_id',
@@ -121,7 +123,32 @@ class MaintenanceRequest extends Model
 
     public function invoice()
     {
-        return $this->hasOne(Invoice::class);
+        return $this->hasOne(Invoice::class)->latestOfMany();
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function visitFeeInvoice()
+    {
+        return $this->hasOne(Invoice::class)->where('invoice_type', 'visit_fee')->latestOfMany();
+    }
+
+    public function finalInvoice()
+    {
+        return $this->hasOne(Invoice::class)->where('invoice_type', 'final')->latestOfMany();
+    }
+
+    public function warrantySourceRequest()
+    {
+        return $this->belongsTo(self::class, 'warranty_source_request_id');
+    }
+
+    public function warrantyRequests()
+    {
+        return $this->hasMany(self::class, 'warranty_source_request_id');
     }
 
     public function getCurrentStatusAttribute()
@@ -177,6 +204,52 @@ class MaintenanceRequest extends Model
         $this->updateQuietly([
             'hours' => $this->calculateHoursFromProducts(),
         ]);
+    }
+
+    public function calculateVisitFee(): float
+    {
+        $this->loadMissing('products', 'address.district.area');
+
+        $productsFee = $this->products->sum(function ($product) {
+            $quantity = (float) ($product->pivot->quantity ?? 1);
+
+            return (float) ($product->maintenance_fee ?? 0) * $quantity;
+        });
+
+        return $productsFee + (float) ($this->address?->district?->area?->maintenance_fee ?? 0);
+    }
+
+    public function requiresVisitFeePayment(): bool
+    {
+        return in_array($this->type, ['regular_maintenance', 'emergency_maintenance'], true);
+    }
+
+    public function isEligibleWarrantySource(): bool
+    {
+        if ($this->last_status !== 'completed') {
+            return false;
+        }
+
+        $completedAt = $this->statuses()
+            ->where('status', 'completed')
+            ->latest()
+            ->value('created_at');
+
+        if (! $completedAt) {
+            return false;
+        }
+
+        $completedAt = Carbon::parse($completedAt);
+
+        if ($this->type === 'new_installation') {
+            return $completedAt->greaterThanOrEqualTo(now()->subYears(2));
+        }
+
+        if (in_array($this->type, ['regular_maintenance', 'emergency_maintenance'], true)) {
+            return $completedAt->greaterThanOrEqualTo(now()->subMonth());
+        }
+
+        return false;
     }
 
     public function createdBy()
