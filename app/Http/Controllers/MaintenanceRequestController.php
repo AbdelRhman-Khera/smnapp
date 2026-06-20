@@ -1469,11 +1469,17 @@ class MaintenanceRequestController extends Controller
             ], 403);
         }
 
-        if ($maintenanceRequest->last_status !== 'pending') {
+        $requiredStatus = $maintenanceRequest->requiresVisitFeePayment()
+            ? 'service_paid'
+            : 'pending';
+
+        if ($maintenanceRequest->last_status !== $requiredStatus) {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVALID_STATUS',
-                'message' => 'Only pending requests can be opened for freelancers.',
+                'message' => $maintenanceRequest->requiresVisitFeePayment()
+                    ? 'Visit fee must be paid before opening this request for freelancers.'
+                    : 'Only pending requests can be opened for freelancers.',
             ], 400);
         }
 
@@ -1491,7 +1497,7 @@ class MaintenanceRequestController extends Controller
         ]);
 
         $maintenanceRequest->statuses()->create([
-            'status' => 'pending',
+            'status' => $requiredStatus,
             'notes' => 'Customer opened this request for freelancer technicians.',
         ]);
 

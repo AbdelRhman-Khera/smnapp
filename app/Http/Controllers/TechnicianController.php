@@ -439,7 +439,7 @@ class TechnicianController extends Controller
             'spare_parts' => 'nullable|array',
             'spare_parts.*.id' => 'required|exists:spare_parts,id',
             'spare_parts.*.quantity' => 'required|integer|min:1',
-            'services' => 'required|array',
+            'services' => 'nullable|array',
             'services.*.id' => 'required|exists:services,id',
         ]);
 
@@ -976,7 +976,15 @@ class TechnicianController extends Controller
             ->where('is_open_for_freelancers', true)
             ->whereNull('technician_id')
             ->whereNull('slot_id')
-            ->whereIn('last_status', ['pending'])
+            ->where(function ($query) {
+                $query->where(function ($query) {
+                    $query->whereIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                        ->where('last_status', 'service_paid');
+                })->orWhere(function ($query) {
+                    $query->whereNotIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                        ->where('last_status', 'pending');
+                });
+            })
             ->whereHas('address', function ($query) use ($districtIds) {
                 $query->whereIn('district_id', $districtIds);
             })
@@ -1032,11 +1040,17 @@ class TechnicianController extends Controller
                 ], 400);
             }
 
-            if ($maintenanceRequest->last_status !== 'pending') {
+            $requiredStatus = $maintenanceRequest->requiresVisitFeePayment()
+                ? 'service_paid'
+                : 'pending';
+
+            if ($maintenanceRequest->last_status !== $requiredStatus) {
                 return response()->json([
                     'status' => 400,
                     'response_code' => 'INVALID_STATUS',
-                    'message' => 'Only pending requests can be claimed.',
+                    'message' => $maintenanceRequest->requiresVisitFeePayment()
+                        ? 'Visit fee must be paid before this request can be claimed.'
+                        : 'Only pending requests can be claimed.',
                 ], 400);
             }
 
