@@ -927,6 +927,7 @@ class TechnicianController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fcm_token' => 'required|string|max:255',
+            'preferred_locale' => 'nullable|in:ar,en',
         ]);
 
         if ($validator->fails()) {
@@ -940,6 +941,7 @@ class TechnicianController extends Controller
 
         $technician->update([
             'fcm_token' => $request->fcm_token,
+            'preferred_locale' => $request->input('preferred_locale', substr((string) $request->header('Accept-Language', 'en'), 0, 2)) === 'ar' ? 'ar' : 'en',
         ]);
 
         return response()->json([

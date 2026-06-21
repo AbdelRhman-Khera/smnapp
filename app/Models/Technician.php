@@ -29,6 +29,7 @@ class Technician extends Authenticatable
         'rating',
         'reviews_count',
         'fcm_token',
+        'preferred_locale',
         'sap_id',
         'site_id',
         'is_freelancer',

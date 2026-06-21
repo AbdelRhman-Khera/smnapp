@@ -25,6 +25,7 @@ class Customer extends Authenticatable
         'authorized',
         'activated',
         'fcm_token',
+        'preferred_locale',
     ];
 
     /**
