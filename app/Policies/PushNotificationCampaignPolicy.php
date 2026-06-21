@@ -12,31 +12,31 @@ class PushNotificationCampaignPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_push_notification_campaign');
+        return $user->can('view_any_push::notification::campaign');
     }
 
     public function view(User $user, PushNotificationCampaign $campaign): bool
     {
-        return $user->can('view_push_notification_campaign');
+        return $user->can('view_push::notification::campaign');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create_push_notification_campaign');
+        return $user->can('create_push::notification::campaign');
     }
 
     public function update(User $user, PushNotificationCampaign $campaign): bool
     {
-        return $user->can('update_push_notification_campaign');
+        return $user->can('update_push::notification::campaign');
     }
 
     public function delete(User $user, PushNotificationCampaign $campaign): bool
     {
-        return $user->can('delete_push_notification_campaign');
+        return $user->can('delete_push::notification::campaign');
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->can('delete_any_push_notification_campaign');
+        return $user->can('delete_any_push::notification::campaign');
     }
 }
