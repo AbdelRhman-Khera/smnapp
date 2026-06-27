@@ -183,12 +183,12 @@ class SimulationController extends Controller
     public function assignTechnician(MaintenanceRequest $request, int $technicianId, string $scheduledAt): MaintenanceRequest
     {
         return DB::transaction(function () use ($request, $technicianId, $scheduledAt): MaintenanceRequest {
-            if ($request->requiresVisitFeePayment() && $request->last_status !== 'service_paid') {
+            if ($request->requiresVisitFeePayment() && ! in_array($request->last_status, ['service_paid', 'technician_assigned'], true)) {
                 abort(422, 'Visit fee must be paid before assigning a technician.');
             }
 
-            if (! $request->requiresVisitFeePayment() && $request->last_status !== 'pending') {
-                abort(422, 'Only pending requests can be assigned.');
+            if (! $request->requiresVisitFeePayment() && ! in_array($request->last_status, ['pending', 'technician_assigned'], true)) {
+                abort(422, 'Only pending or technician assigned requests can be assigned.');
             }
 
             $start = Carbon::parse($scheduledAt)->minute(0)->second(0);

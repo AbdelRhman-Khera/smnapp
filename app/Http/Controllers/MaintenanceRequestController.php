@@ -787,7 +787,7 @@ class MaintenanceRequestController extends Controller
 
             if (
                 $maintenanceRequest->requiresVisitFeePayment()
-                && $maintenanceRequest->last_status !== 'service_paid'
+                && ! in_array($maintenanceRequest->last_status, ['service_paid', 'technician_assigned'], true)
             ) {
                 return response()->json([
                     'status' => 400,
@@ -798,13 +798,13 @@ class MaintenanceRequestController extends Controller
 
             if (
                 ! $maintenanceRequest->requiresVisitFeePayment()
-                && $maintenanceRequest->last_status !== 'pending' || 'technician_assigned'
+                && ! in_array($maintenanceRequest->last_status, ['pending', 'technician_assigned'], true)
 
             ) {
                 return response()->json([
                     'status' => 400,
                     'response_code' => 'INVALID_STATUS',
-                    'message' => 'Only pending requests can be assigned.',
+                    'message' => 'Only pending or technician assigned requests can be assigned.',
                 ], 400);
             }
 
@@ -900,6 +900,19 @@ class MaintenanceRequestController extends Controller
                 'status' => 400,
                 'response_code' => 'CANNOT_CANCEL',
                 'message' => __('messages.cannot_cancel_request'),
+            ], 400);
+        }
+
+        $visitFeePaid = $maintenanceRequest->requiresVisitFeePayment()
+            && $maintenanceRequest->visitFeeInvoice()
+                ->where('status', 'completed')
+                ->exists();
+
+        if ($visitFeePaid) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'VISIT_FEE_ALREADY_PAID',
+                'message' => 'Cannot cancel request after visit fee has been paid.',
             ], 400);
         }
 

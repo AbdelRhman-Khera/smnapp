@@ -210,11 +210,19 @@ class MaintenanceRequest extends Model
     {
         $this->loadMissing('products', 'address.district.area');
 
-        $productsFee = $this->products->sum(function ($product) {
-            $quantity = (float) ($product->pivot->quantity ?? 1);
-
-            return (float) ($product->maintenance_fee ?? 0) * $quantity;
+        $totalProducts = $this->products->sum(function ($product) {
+            return max(1, (int) ($product->pivot->quantity ?? 1));
         });
+
+        $highestProductFee = (float) $this->products->max(function ($product) {
+            return (float) ($product->maintenance_fee ?? 0);
+        });
+
+        $productMultiplier = $totalProducts <= 3
+            ? 1
+            : (int) ceil(($totalProducts - 1) / 2);
+
+        $productsFee = $highestProductFee * $productMultiplier;
 
         return $productsFee + (float) ($this->address?->district?->area?->maintenance_fee ?? 0);
     }
