@@ -798,7 +798,8 @@ class MaintenanceRequestController extends Controller
 
             if (
                 ! $maintenanceRequest->requiresVisitFeePayment()
-                && $maintenanceRequest->last_status !== 'pending'
+                && $maintenanceRequest->last_status !== 'pending' || 'technician_assigned'
+
             ) {
                 return response()->json([
                     'status' => 400,
