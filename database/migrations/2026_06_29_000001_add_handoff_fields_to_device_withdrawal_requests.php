@@ -13,7 +13,7 @@ return new class extends Migration
                 $table->foreignId('handoff_technician_id')
                     ->nullable()
                     ->after('technician_id')
-                    ->constrained('technicians')
+                    ->constrained('technicians', indexName: 'dwr_handoff_technician_fk')
                     ->nullOnDelete();
             }
 
@@ -47,7 +47,8 @@ return new class extends Migration
     {
         Schema::table('device_withdrawal_requests', function (Blueprint $table) {
             if (Schema::hasColumn('device_withdrawal_requests', 'handoff_technician_id')) {
-                $table->dropConstrainedForeignId('handoff_technician_id');
+                $table->dropForeign('dwr_handoff_technician_fk');
+                $table->dropColumn('handoff_technician_id');
             }
 
             foreach ([

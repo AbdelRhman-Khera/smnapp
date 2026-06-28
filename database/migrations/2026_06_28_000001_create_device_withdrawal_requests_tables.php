@@ -20,14 +20,14 @@ return new class extends Migration
 
         Schema::create('device_withdrawal_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('maintenance_request_id')->constrained('maintenance_requests')->cascadeOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
-            $table->foreignId('technician_id')->nullable()->constrained('technicians')->nullOnDelete();
-            $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
-            $table->foreignId('received_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('maintenance_request_id')->constrained('maintenance_requests', indexName: 'dwr_request_fk')->cascadeOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained('customers', indexName: 'dwr_customer_fk')->nullOnDelete();
+            $table->foreignId('technician_id')->nullable()->constrained('technicians', indexName: 'dwr_technician_fk')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained('branches', indexName: 'dwr_branch_fk')->nullOnDelete();
+            $table->foreignId('received_by_user_id')->nullable()->constrained('users', indexName: 'dwr_received_by_fk')->nullOnDelete();
             $table->foreignId('follow_up_maintenance_request_id')
                 ->nullable()
-                ->constrained('maintenance_requests')
+                ->constrained('maintenance_requests', indexName: 'dwr_follow_up_request_fk')
                 ->nullOnDelete();
             $table->string('status')->default('pending_customer_approval')->index();
             $table->json('customer_decision_notes')->nullable();
@@ -46,9 +46,9 @@ return new class extends Migration
         Schema::create('device_withdrawal_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('device_withdrawal_request_id')
-                ->constrained('device_withdrawal_requests')
+                ->constrained('device_withdrawal_requests', indexName: 'dwi_withdrawal_fk')
                 ->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained('products', indexName: 'dwi_product_fk')->cascadeOnDelete();
             $table->string('serial_number')->nullable();
             $table->text('notes')->nullable();
             $table->json('photos')->nullable();
