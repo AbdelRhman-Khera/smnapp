@@ -4,6 +4,7 @@ use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DeviceWithdrawalRequestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\NotificationController;
@@ -96,6 +97,14 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request/{id}/confirm-machine-payment', [TechnicianController::class, 'confirmMachinePayment']);
         Route::post('/maintenance-request/{id}/finish-installation', [TechnicianController::class, 'finishInstallation']);
         Route::post('/maintenance-request/{id}/complete-without-payment', [TechnicianController::class, 'completeWithoutPayment']);
+        Route::get('/technician/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianIndex']);
+        Route::post('/maintenance-request/{id}/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianStore']);
+        Route::post('/device-withdrawals/{id}/deliver-to-branch', [DeviceWithdrawalRequestController::class, 'technicianDeliverToBranch']);
+
+        Route::get('/device-withdrawals', [DeviceWithdrawalRequestController::class, 'customerIndex']);
+        Route::post('/device-withdrawals/{id}/approve', [DeviceWithdrawalRequestController::class, 'customerApprove']);
+        Route::post('/device-withdrawals/{id}/reject', [DeviceWithdrawalRequestController::class, 'customerReject']);
+        Route::post('/device-withdrawals/{id}/confirm-received', [DeviceWithdrawalRequestController::class, 'customerConfirmReceived']);
 
         Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
         Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);

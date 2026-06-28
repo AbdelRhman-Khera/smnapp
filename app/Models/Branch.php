@@ -17,6 +17,16 @@ class Branch extends Model
         'sap_id',
     ];
 
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function deviceWithdrawalRequests()
+    {
+        return $this->hasMany(DeviceWithdrawalRequest::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logAll();

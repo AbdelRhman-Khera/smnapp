@@ -40,6 +40,13 @@ class UserResource extends Resource
                     Forms\Components\TextInput::make('sap_id')
                         ->required(),
 
+                    Forms\Components\Select::make('branch_id')
+                        ->label('Managed Branch')
+                        ->relationship('branch', 'name_en')
+                        ->searchable()
+                        ->preload()
+                        ->nullable(),
+
                     Forms\Components\TextInput::make('title')
                         ->label('Job Title')
                         ->nullable(),
@@ -88,6 +95,10 @@ class UserResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('sap_id')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name_en')
+                    ->label('Branch')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('title')

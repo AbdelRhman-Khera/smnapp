@@ -151,6 +151,16 @@ class MaintenanceRequest extends Model
         return $this->hasMany(self::class, 'warranty_source_request_id');
     }
 
+    public function deviceWithdrawalRequests()
+    {
+        return $this->hasMany(DeviceWithdrawalRequest::class);
+    }
+
+    public function workshopWithdrawalSource()
+    {
+        return $this->hasOne(DeviceWithdrawalRequest::class, 'follow_up_maintenance_request_id');
+    }
+
     public function getCurrentStatusAttribute()
     {
         return $this->statuses()->latest()->first();

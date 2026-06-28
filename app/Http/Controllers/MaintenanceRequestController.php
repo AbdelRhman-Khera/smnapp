@@ -401,6 +401,19 @@ class MaintenanceRequestController extends Controller
                 return;
             }
 
+            if ($maintenanceRequest->workshopWithdrawalSource()->exists()) {
+                $maintenanceRequest->statuses()->create([
+                    'status' => 'service_paid',
+                    'notes' => 'Workshop repair invoice paid. Request is ready for appointment booking.',
+                ]);
+
+                $maintenanceRequest->update([
+                    'last_status' => 'service_paid',
+                ]);
+
+                return;
+            }
+
             $maintenanceRequest->statuses()->create([
                 'status' => 'completed',
                 'notes' => is_string($paymentDetails) ? $paymentDetails : null,

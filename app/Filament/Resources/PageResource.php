@@ -86,7 +86,6 @@ class PageResource extends Resource
                 ])->columnSpanFull(),
             TextInput::make('slug')
                 ->label('Slug')
-
                 ->required(),
             Toggle::make('is_active')
                 ->label('Is Active')
