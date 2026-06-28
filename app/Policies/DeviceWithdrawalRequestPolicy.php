@@ -27,16 +27,28 @@ class DeviceWithdrawalRequestPolicy
 
     public function update(User $user, DeviceWithdrawalRequest $model): bool
     {
-        return $user->can('update_device::withdrawal::request');
+        return $user->can('update_device::withdrawal::request')
+            && $this->canManageBranch($user, $model);
     }
 
     public function delete(User $user, DeviceWithdrawalRequest $model): bool
     {
-        return $user->can('delete_device::withdrawal::request');
+        return $user->can('delete_device::withdrawal::request')
+            && $this->canManageBranch($user, $model);
     }
 
     public function deleteAny(User $user): bool
     {
         return $user->can('delete_any_device::withdrawal::request');
+    }
+
+    private function canManageBranch(User $user, DeviceWithdrawalRequest $model): bool
+    {
+        if ($user->hasRole(['super_admin', 'Super Admin'])) {
+            return true;
+        }
+
+        return filled($model->branch_id)
+            && (int) $user->branch_id === (int) $model->branch_id;
     }
 }

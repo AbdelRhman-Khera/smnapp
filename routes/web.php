@@ -60,4 +60,16 @@ Route::middleware('auth')->prefix('simulate')->name('simulation.')->group(functi
     Route::post('/requests/{maintenanceRequest}/final-invoice', [SimulationController::class, 'createFinalInvoiceAction'])->name('final-invoice');
     Route::post('/requests/{maintenanceRequest}/pay-final', [SimulationController::class, 'payFinalInvoiceAction'])->name('pay-final');
     Route::post('/requests/{maintenanceRequest}/complete-without-payment', [SimulationController::class, 'completeWithoutPaymentAction'])->name('complete-without-payment');
+    Route::post('/requests/{maintenanceRequest}/withdrawals', [SimulationController::class, 'createWithdrawalAction'])->name('withdrawals.create');
+    Route::post('/withdrawals/{withdrawalRequest}/approve', [SimulationController::class, 'approveWithdrawalAction'])->name('withdrawals.approve');
+    Route::post('/withdrawals/{withdrawalRequest}/reject', [SimulationController::class, 'rejectWithdrawalAction'])->name('withdrawals.reject');
+    Route::post('/withdrawals/{withdrawalRequest}/assign-delivery-technician', [SimulationController::class, 'assignWithdrawalDeliveryTechnicianAction'])->name('withdrawals.assign-delivery-technician');
+    Route::post('/withdrawals/{withdrawalRequest}/receive-from-technician', [SimulationController::class, 'receiveWithdrawalFromTechnicianAction'])->name('withdrawals.receive-from-technician');
+    Route::post('/withdrawals/{withdrawalRequest}/deliver-to-branch', [SimulationController::class, 'deliverWithdrawalToBranchAction'])->name('withdrawals.deliver-to-branch');
+    Route::post('/withdrawals/{withdrawalRequest}/branch-receive', [SimulationController::class, 'branchReceiveWithdrawalAction'])->name('withdrawals.branch-receive');
+    Route::post('/withdrawals/{withdrawalRequest}/start-repair', [SimulationController::class, 'startWithdrawalRepairAction'])->name('withdrawals.start-repair');
+    Route::post('/withdrawals/{withdrawalRequest}/complete-repair', [SimulationController::class, 'completeWithdrawalRepairAction'])->name('withdrawals.complete-repair');
+    Route::post('/withdrawals/{withdrawalRequest}/follow-up', [SimulationController::class, 'createWithdrawalFollowUpAction'])->name('withdrawals.follow-up');
+    Route::post('/withdrawals/{withdrawalRequest}/deliver-to-customer', [SimulationController::class, 'deliverWithdrawalToCustomerAction'])->name('withdrawals.deliver-to-customer');
+    Route::post('/withdrawals/{withdrawalRequest}/confirm-customer-receipt', [SimulationController::class, 'confirmWithdrawalCustomerReceiptAction'])->name('withdrawals.confirm-customer-receipt');
 });

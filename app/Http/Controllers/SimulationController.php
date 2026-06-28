@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\Address;
+use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\DeviceWithdrawalRequest;
 use App\Models\MaintenanceRequest;
 use App\Models\Product;
 use App\Models\Service;
@@ -21,7 +23,22 @@ class SimulationController extends Controller
     public function index(Request $request)
     {
         $simulationRequest = $request->integer('simulation_request_id')
-            ? MaintenanceRequest::with(['customer', 'address.district.area', 'technician', 'slot', 'invoices.services', 'invoices.spareParts', 'statuses'])
+            ? MaintenanceRequest::with([
+                'customer',
+                'address.district.area',
+                'technician',
+                'slot',
+                'invoices.services',
+                'invoices.spareParts',
+                'statuses',
+                'deviceWithdrawalRequests.items.product',
+                'deviceWithdrawalRequests.branch',
+                'deviceWithdrawalRequests.technician',
+                'deviceWithdrawalRequests.handoffTechnician',
+                'deviceWithdrawalRequests.followUpMaintenanceRequest',
+                'workshopWithdrawalSource.items.product',
+                'workshopWithdrawalSource.branch',
+            ])
                 ->findOrFail($request->integer('simulation_request_id'))
             : null;
 
@@ -31,6 +48,7 @@ class SimulationController extends Controller
             'addresses' => Address::query()->orderBy('name')->get(),
             'products' => Product::query()->active()->orderBy('name_en')->get(),
             'technicians' => Technician::query()->orderBy('first_name')->orderBy('last_name')->get(),
+            'branches' => Branch::query()->orderBy('name_en')->get(),
             'services' => Service::query()->orderBy('name_en')->get(),
             'spareParts' => SparePart::query()->orderBy('name_en')->get(),
         ]);
@@ -106,9 +124,14 @@ class SimulationController extends Controller
 
     public function payFinalInvoiceAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
-        $this->payFinalInvoice($maintenanceRequest);
+        $maintenanceRequest = $this->payFinalInvoice($maintenanceRequest);
 
-        return $this->redirectToSimulation($maintenanceRequest, 'Final invoice paid and request completed.');
+        return $this->redirectToSimulation(
+            $maintenanceRequest,
+            $maintenanceRequest->last_status === 'service_paid'
+                ? 'Workshop repair invoice paid. Request is ready for appointment booking.'
+                : 'Final invoice paid and request completed.'
+        );
     }
 
     public function completeWithoutPaymentAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
@@ -116,6 +139,118 @@ class SimulationController extends Controller
         $this->completeWithoutPayment($maintenanceRequest);
 
         return $this->redirectToSimulation($maintenanceRequest, 'Request completed with a zero invoice.');
+    }
+
+    public function createWithdrawalAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'branch_id' => ['nullable', 'exists:branches,id'],
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['exists:products,id'],
+            'serial_number' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $this->createWithdrawal($maintenanceRequest, $data);
+
+        return $this->redirectToSimulation($maintenanceRequest, 'Device withdrawal request created.');
+    }
+
+    public function approveWithdrawalAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->customerDecisionForWithdrawal($withdrawalRequest, true);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Customer approved the withdrawal request.');
+    }
+
+    public function rejectWithdrawalAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->customerDecisionForWithdrawal($withdrawalRequest, false);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Customer rejected the withdrawal request.');
+    }
+
+    public function assignWithdrawalDeliveryTechnicianAction(Request $request, DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'technician_id' => ['required', 'exists:technicians,id'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $this->assignWithdrawalDeliveryTechnician($withdrawalRequest, (int) $data['technician_id'], $data);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Withdrawal assigned to another technician.');
+    }
+
+    public function receiveWithdrawalFromTechnicianAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->receiveWithdrawalFromTechnician($withdrawalRequest);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Delivery technician received the withdrawn device.');
+    }
+
+    public function deliverWithdrawalToBranchAction(Request $request, DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'branch_id' => ['required', 'exists:branches,id'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $this->deliverWithdrawalToBranch($withdrawalRequest, (int) $data['branch_id'], $data['notes'] ?? null);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Withdrawn device delivered to branch.');
+    }
+
+    public function branchReceiveWithdrawalAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->branchReceiveWithdrawal($withdrawalRequest);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Branch received the withdrawn device.');
+    }
+
+    public function startWithdrawalRepairAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->startWithdrawalRepair($withdrawalRequest);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Workshop repair started.');
+    }
+
+    public function completeWithdrawalRepairAction(Request $request, DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'workshop_notes' => ['nullable', 'string'],
+        ]);
+
+        $this->completeWithdrawalRepair($withdrawalRequest, $data['workshop_notes'] ?? null);
+
+        return $this->redirectToSimulation($withdrawalRequest->maintenanceRequest, 'Workshop repair completed.');
+    }
+
+    public function createWithdrawalFollowUpAction(Request $request, DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $data = $request->validate([
+            'invoice_total' => ['required', 'numeric', 'min:0'],
+            'problem_description' => ['required', 'string'],
+        ]);
+
+        $followUp = $this->createWithdrawalFollowUp($withdrawalRequest, $data);
+
+        return $this->redirectToSimulation($followUp, 'Follow-up request and invoice created. Continue the cycle from this request.');
+    }
+
+    public function deliverWithdrawalToCustomerAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->deliverWithdrawalToCustomer($withdrawalRequest);
+
+        return $this->redirectToSimulation($withdrawalRequest->followUpMaintenanceRequest, 'Technician delivered the repaired device to customer.');
+    }
+
+    public function confirmWithdrawalCustomerReceiptAction(DeviceWithdrawalRequest $withdrawalRequest): RedirectResponse
+    {
+        $this->confirmWithdrawalCustomerReceipt($withdrawalRequest);
+
+        return $this->redirectToSimulation($withdrawalRequest->followUpMaintenanceRequest, 'Customer confirmed device receipt. Withdrawal cycle closed.');
     }
 
     public function createRequest(array $data): MaintenanceRequest
@@ -292,10 +427,257 @@ class SimulationController extends Controller
                 'payment_method' => 'online',
                 'payment_details' => ['simulation' => true, 'paid_at' => now()->toDateTimeString()],
             ]);
+
+            if ($request->workshopWithdrawalSource()->exists()) {
+                $request->statuses()->create(['status' => 'service_paid', 'notes' => 'Workshop repair invoice paid through simulation.']);
+                $request->update(['last_status' => 'service_paid']);
+
+                return $request->fresh(['invoices', 'statuses']);
+            }
+
             $request->statuses()->create(['status' => 'completed', 'notes' => 'Final invoice paid through simulation.']);
             $request->update(['last_status' => 'completed']);
 
             return $request->fresh(['invoices', 'statuses']);
+        });
+    }
+
+    public function createWithdrawal(MaintenanceRequest $request, array $data): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($request, $data): DeviceWithdrawalRequest {
+            abort_unless($request->last_status === 'in_progress', 422, 'Request must be in progress.');
+            abort_unless(filled($request->technician_id), 422, 'Request must have an assigned technician.');
+
+            $requestProductIds = $request->products()->pluck('products.id')->all();
+            $productIds = collect($data['product_ids'])->map(fn ($id): int => (int) $id)->unique()->values();
+
+            abort_unless($productIds->diff($requestProductIds)->isEmpty(), 422, 'Withdrawal products must belong to the maintenance request.');
+
+            $withdrawalRequest = DeviceWithdrawalRequest::create([
+                'maintenance_request_id' => $request->id,
+                'customer_id' => $request->customer_id,
+                'technician_id' => $request->technician_id,
+                'branch_id' => $data['branch_id'] ?? null,
+                'status' => DeviceWithdrawalRequest::STATUS_PENDING_CUSTOMER_APPROVAL,
+                'technician_notes' => $data['notes'] ?? null,
+            ]);
+
+            foreach ($productIds as $productId) {
+                $withdrawalRequest->items()->create([
+                    'product_id' => $productId,
+                    'serial_number' => $data['serial_number'] ?? null,
+                    'notes' => $data['notes'] ?? null,
+                    'photos' => [],
+                    'status' => DeviceWithdrawalRequest::STATUS_PENDING_CUSTOMER_APPROVAL,
+                ]);
+            }
+
+            return $withdrawalRequest->fresh(['items.product']);
+        });
+    }
+
+    public function customerDecisionForWithdrawal(DeviceWithdrawalRequest $withdrawalRequest, bool $approved): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest, $approved): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_PENDING_CUSTOMER_APPROVAL, 422, 'Withdrawal must be waiting for customer approval.');
+
+            $status = $approved
+                ? DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER
+                : DeviceWithdrawalRequest::STATUS_REJECTED_BY_CUSTOMER;
+
+            $withdrawalRequest->update([
+                'status' => $status,
+                'customer_decision_notes' => ['simulation' => true, 'approved' => $approved],
+                'customer_decision_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => $status]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function assignWithdrawalDeliveryTechnician(DeviceWithdrawalRequest $withdrawalRequest, int $technicianId, array $data): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest, $technicianId, $data): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER, 422, 'Withdrawal must be approved by customer.');
+            abort_unless($withdrawalRequest->technician_id !== $technicianId, 422, 'Choose another technician.');
+
+            $withdrawalRequest->update([
+                'handoff_technician_id' => $technicianId,
+                'branch_id' => $data['branch_id'] ?? $withdrawalRequest->branch_id,
+                'handoff_notes' => $data['notes'] ?? null,
+                'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
+                'assigned_to_handoff_technician_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN]);
+
+            return $withdrawalRequest->fresh(['items', 'handoffTechnician']);
+        });
+    }
+
+    public function receiveWithdrawalFromTechnician(DeviceWithdrawalRequest $withdrawalRequest): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN, 422, 'Withdrawal must be assigned to a delivery technician.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_DELIVERY_TECHNICIAN,
+                'received_by_handoff_technician_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_DELIVERY_TECHNICIAN]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function deliverWithdrawalToBranch(DeviceWithdrawalRequest $withdrawalRequest, int $branchId, ?string $notes): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest, $branchId, $notes): DeviceWithdrawalRequest {
+            abort_unless(in_array($withdrawalRequest->status, [
+                DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER,
+                DeviceWithdrawalRequest::STATUS_RECEIVED_BY_DELIVERY_TECHNICIAN,
+            ], true), 422, 'Withdrawal is not ready to be delivered to branch.');
+
+            $withdrawalRequest->update([
+                'branch_id' => $branchId,
+                'status' => DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH,
+                'technician_notes' => $notes ?? $withdrawalRequest->technician_notes,
+                'delivered_to_branch_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH]);
+
+            return $withdrawalRequest->fresh(['items', 'branch']);
+        });
+    }
+
+    public function branchReceiveWithdrawal(DeviceWithdrawalRequest $withdrawalRequest): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH, 422, 'Withdrawal must be delivered to branch first.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH,
+                'received_by_user_id' => auth()->id(),
+                'received_by_branch_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function startWithdrawalRepair(DeviceWithdrawalRequest $withdrawalRequest): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH, 422, 'Withdrawal must be received by branch first.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_UNDER_REPAIR,
+                'repair_started_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_UNDER_REPAIR]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function completeWithdrawalRepair(DeviceWithdrawalRequest $withdrawalRequest, ?string $notes): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest, $notes): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_UNDER_REPAIR, 422, 'Withdrawal must be under repair first.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED,
+                'workshop_notes' => $notes,
+                'repair_completed_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function createWithdrawalFollowUp(DeviceWithdrawalRequest $withdrawalRequest, array $data): MaintenanceRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest, $data): MaintenanceRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED, 422, 'Withdrawal repair must be completed first.');
+            abort_unless(blank($withdrawalRequest->follow_up_maintenance_request_id), 422, 'Follow-up request already exists.');
+
+            $withdrawalRequest->loadMissing(['maintenanceRequest', 'items']);
+
+            $followUp = MaintenanceRequest::create([
+                'customer_id' => $withdrawalRequest->customer_id,
+                'type' => 'regular_maintenance',
+                'address_id' => $withdrawalRequest->maintenanceRequest?->address_id,
+                'problem_description' => $data['problem_description'],
+                'last_status' => 'waiting_for_payment',
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+
+            $sync = $withdrawalRequest->items
+                ->pluck('product_id')
+                ->unique()
+                ->mapWithKeys(fn ($productId): array => [$productId => ['quantity' => 1]])
+                ->all();
+
+            $followUp->products()->sync($sync);
+            $followUp->recalculateHours();
+            $followUp->statuses()->create(['status' => 'waiting_for_payment', 'notes' => 'Workshop follow-up created through simulation.']);
+
+            $invoice = $followUp->invoices()->create([
+                'invoice_type' => 'final',
+                'total' => (float) $data['invoice_total'],
+                'status' => 'pending',
+                'notes' => [[
+                    'source' => 'simulation_device_withdrawal',
+                    'device_withdrawal_request_id' => $withdrawalRequest->id,
+                    'created_at' => now()->toDateTimeString(),
+                ]],
+            ]);
+
+            $followUp->update(['invoice_number' => $invoice->id]);
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED,
+                'follow_up_maintenance_request_id' => $followUp->id,
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
+
+            return $followUp->fresh(['invoices', 'statuses']);
+        });
+    }
+
+    public function deliverWithdrawalToCustomer(DeviceWithdrawalRequest $withdrawalRequest): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest): DeviceWithdrawalRequest {
+            $withdrawalRequest->loadMissing('followUpMaintenanceRequest');
+
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED, 422, 'Follow-up request must be created first.');
+            abort_unless($withdrawalRequest->followUpMaintenanceRequest?->last_status === 'completed', 422, 'Follow-up request must be completed first.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_DELIVERED_TO_CUSTOMER,
+                'delivered_to_customer_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_DELIVERED_TO_CUSTOMER]);
+
+            return $withdrawalRequest->fresh(['items']);
+        });
+    }
+
+    public function confirmWithdrawalCustomerReceipt(DeviceWithdrawalRequest $withdrawalRequest): DeviceWithdrawalRequest
+    {
+        return DB::transaction(function () use ($withdrawalRequest): DeviceWithdrawalRequest {
+            abort_unless($withdrawalRequest->status === DeviceWithdrawalRequest::STATUS_DELIVERED_TO_CUSTOMER, 422, 'Device must be delivered to customer first.');
+
+            $withdrawalRequest->update([
+                'status' => DeviceWithdrawalRequest::STATUS_COMPLETED,
+                'customer_received_at' => now(),
+            ]);
+            $withdrawalRequest->items()->update(['status' => DeviceWithdrawalRequest::STATUS_COMPLETED]);
+
+            return $withdrawalRequest->fresh(['items']);
         });
     }
 

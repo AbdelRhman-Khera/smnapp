@@ -81,6 +81,10 @@ class DeviceWithdrawalRequestResource extends Resource
                     ->label('Technician')
                     ->formatStateUsing(fn ($record) => trim(($record->technician?->first_name ?? '') . ' ' . ($record->technician?->last_name ?? '')) ?: '-')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('handoffTechnician.first_name')
+                    ->label('Delivery Technician')
+                    ->formatStateUsing(fn ($record) => trim(($record->handoffTechnician?->first_name ?? '') . ' ' . ($record->handoffTechnician?->last_name ?? '')) ?: '-')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('branch.name_en')
                     ->label('Branch')
                     ->sortable()
@@ -92,11 +96,14 @@ class DeviceWithdrawalRequestResource extends Resource
                         DeviceWithdrawalRequest::STATUS_PENDING_CUSTOMER_APPROVAL => 'warning',
                         DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER => 'info',
                         DeviceWithdrawalRequest::STATUS_REJECTED_BY_CUSTOMER => 'danger',
+                        DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN => 'warning',
+                        DeviceWithdrawalRequest::STATUS_RECEIVED_BY_DELIVERY_TECHNICIAN => 'info',
                         DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH => 'primary',
                         DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH => 'info',
                         DeviceWithdrawalRequest::STATUS_UNDER_REPAIR => 'warning',
                         DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED => 'success',
                         DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED => 'success',
+                        DeviceWithdrawalRequest::STATUS_DELIVERED_TO_CUSTOMER => 'info',
                         DeviceWithdrawalRequest::STATUS_COMPLETED => 'success',
                         DeviceWithdrawalRequest::STATUS_CANCELED => 'danger',
                         default => 'gray',
@@ -117,7 +124,8 @@ class DeviceWithdrawalRequestResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn (DeviceWithdrawalRequest $record): bool => static::canManageBranch($record)),
                 static::receiveAtBranchAction(),
                 static::startRepairAction(),
                 static::completeRepairAction(),
@@ -143,6 +151,9 @@ class DeviceWithdrawalRequestResource extends Resource
                             ->placeholder('-'),
                         TextEntry::make('branch.name_en')
                             ->label('Branch'),
+                        TextEntry::make('handoffTechnician.first_name')
+                            ->label('Delivery Technician')
+                            ->formatStateUsing(fn ($record) => trim(($record->handoffTechnician?->first_name ?? '') . ' ' . ($record->handoffTechnician?->last_name ?? '')) ?: '-'),
                         TextEntry::make('receivedBy.name')
                             ->label('Received By')
                             ->placeholder('-'),
@@ -153,6 +164,7 @@ class DeviceWithdrawalRequestResource extends Resource
                             ->placeholder('-'),
                     ]),
                     TextEntry::make('technician_notes')->placeholder('-')->columnSpanFull(),
+                    TextEntry::make('handoff_notes')->placeholder('-')->columnSpanFull(),
                     TextEntry::make('branch_notes')->placeholder('-')->columnSpanFull(),
                     TextEntry::make('workshop_notes')->placeholder('-')->columnSpanFull(),
                 ]),
@@ -196,6 +208,7 @@ class DeviceWithdrawalRequestResource extends Resource
                 'branch',
                 'customer',
                 'technician',
+                'handoffTechnician',
                 'items.product',
                 'followUpMaintenanceRequest',
             ]);
@@ -218,7 +231,10 @@ class DeviceWithdrawalRequestResource extends Resource
             ->label('Receive')
             ->icon('heroicon-o-check-circle')
             ->color('info')
-            ->visible(fn (DeviceWithdrawalRequest $record): bool => $record->status === DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH)
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH
+                && static::canManageBranch($record)
+            )
             ->form([
                 Forms\Components\Textarea::make('branch_notes')
                     ->label('Branch Notes')
@@ -247,7 +263,10 @@ class DeviceWithdrawalRequestResource extends Resource
             ->label('Start Repair')
             ->icon('heroicon-o-wrench-screwdriver')
             ->color('warning')
-            ->visible(fn (DeviceWithdrawalRequest $record): bool => $record->status === DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH)
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH
+                && static::canManageBranch($record)
+            )
             ->action(function (DeviceWithdrawalRequest $record): void {
                 $record->update([
                     'status' => DeviceWithdrawalRequest::STATUS_UNDER_REPAIR,
@@ -269,7 +288,10 @@ class DeviceWithdrawalRequestResource extends Resource
             ->label('Complete Repair')
             ->icon('heroicon-o-clipboard-document-check')
             ->color('success')
-            ->visible(fn (DeviceWithdrawalRequest $record): bool => $record->status === DeviceWithdrawalRequest::STATUS_UNDER_REPAIR)
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_UNDER_REPAIR
+                && static::canManageBranch($record)
+            )
             ->form([
                 Forms\Components\Textarea::make('workshop_notes')
                     ->label('Workshop Notes')
@@ -300,6 +322,7 @@ class DeviceWithdrawalRequestResource extends Resource
             ->visible(fn (DeviceWithdrawalRequest $record): bool =>
                 $record->status === DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED
                 && blank($record->follow_up_maintenance_request_id)
+                && static::canManageBranch($record)
             )
             ->form([
                 Forms\Components\TextInput::make('invoice_total')
@@ -373,5 +396,21 @@ class DeviceWithdrawalRequestResource extends Resource
                     ->success()
                     ->send();
             });
+    }
+
+    protected static function canManageBranch(DeviceWithdrawalRequest $record): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole(['super_admin', 'Super Admin'])) {
+            return true;
+        }
+
+        return filled($record->branch_id)
+            && (int) $user->branch_id === (int) $record->branch_id;
     }
 }

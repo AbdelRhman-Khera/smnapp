@@ -99,7 +99,10 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request/{id}/complete-without-payment', [TechnicianController::class, 'completeWithoutPayment']);
         Route::get('/technician/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianIndex']);
         Route::post('/maintenance-request/{id}/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianStore']);
+        Route::post('/device-withdrawals/{id}/assign-delivery-technician', [DeviceWithdrawalRequestController::class, 'assignDeliveryTechnician']);
+        Route::post('/device-withdrawals/{id}/receive-from-technician', [DeviceWithdrawalRequestController::class, 'receiveFromTechnician']);
         Route::post('/device-withdrawals/{id}/deliver-to-branch', [DeviceWithdrawalRequestController::class, 'technicianDeliverToBranch']);
+        Route::post('/device-withdrawals/{id}/deliver-to-customer', [DeviceWithdrawalRequestController::class, 'technicianDeliverToCustomer']);
 
         Route::get('/device-withdrawals', [DeviceWithdrawalRequestController::class, 'customerIndex']);
         Route::post('/device-withdrawals/{id}/approve', [DeviceWithdrawalRequestController::class, 'customerApprove']);
