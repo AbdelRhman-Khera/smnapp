@@ -14,6 +14,57 @@ use App\Services\NotificationService;
 
 class TechnicianController extends Controller
 {
+    public function index(Request $request)
+    {
+        $authTechnician = $request->user();
+
+        if (! $authTechnician instanceof Technician) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'TECHNICIAN_ONLY',
+                'message' => 'Only authenticated technicians can access technicians list.',
+                'data' => null,
+            ], 403);
+        }
+
+        if (! $authTechnician->authorized || ! $authTechnician->activated) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'TECHNICIAN_NOT_AUTHORIZED',
+                'message' => 'Technician is not authorized.',
+                'data' => null,
+            ], 403);
+        }
+
+        $technicians = Technician::query()
+            ->select([
+                'id',
+                'first_name',
+                'last_name',
+                'phone',
+                'email',
+                'rating',
+                'reviews_count',
+                'is_freelancer',
+                'sap_id',
+                'site_id',
+                'storage_location',
+            ])
+            ->where('authorized', true)
+            ->where('activated', true)
+            ->when($request->boolean('exclude_self'), fn ($query) => $query->whereKeyNot($authTechnician->id))
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIANS_FETCHED',
+            'message' => 'Technicians fetched successfully.',
+            'data' => $technicians,
+        ], 200);
+    }
+
     public function getTechnician()
     {
         $technician = Technician::find(auth()->user()->id);

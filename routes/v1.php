@@ -51,6 +51,7 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::delete('/customer/products/{productId}', [ProductController::class, 'removeProductFromCustomer']);
 
         ////// technicians
+        Route::get('/technicians', [TechnicianController::class, 'index']);
         Route::post('/technician/change-password', [TechnicianController::class, 'changePassword']);
         Route::get('/technician', [TechnicianController::class, 'getTechnician']);
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
