@@ -97,6 +97,12 @@ class DeviceWithdrawalRequestController extends Controller
             return $withdrawalRequest->fresh(['items.product', 'branch', 'maintenanceRequest']);
         });
 
+        NotificationService::notifyCustomer(
+            $withdrawalRequest->customer_id,
+            'A technician requested to withdraw a device for workshop inspection. Request #' . $withdrawalRequest->id,
+            $withdrawalRequest->maintenance_request_id
+        );
+
         return response()->json([
             'status' => 201,
             'response_code' => 'DEVICE_WITHDRAWAL_REQUEST_CREATED',
@@ -582,6 +588,14 @@ class DeviceWithdrawalRequestController extends Controller
         $withdrawalRequest->items()->update([
             'status' => $status,
         ]);
+
+        NotificationService::notifyTechnician(
+            $withdrawalRequest->technician_id,
+            $approved
+                ? 'Customer approved device withdrawal request #' . $withdrawalRequest->id
+                : 'Customer rejected device withdrawal request #' . $withdrawalRequest->id,
+            $withdrawalRequest->maintenance_request_id
+        );
 
         return response()->json([
             'status' => 200,

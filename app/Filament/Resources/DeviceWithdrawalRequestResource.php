@@ -6,7 +6,8 @@ use App\Filament\Resources\DeviceWithdrawalRequestResource\Pages;
 use App\Models\Branch;
 use App\Models\DeviceWithdrawalRequest;
 use App\Models\MaintenanceRequest;
-use App\Models\Product;
+use App\Models\Technician;
+use App\Services\NotificationService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\Grid;
@@ -126,6 +127,7 @@ class DeviceWithdrawalRequestResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
                     ->visible(fn (DeviceWithdrawalRequest $record): bool => static::canManageBranch($record)),
+                static::assignDeliveryTechnicianAction(),
                 static::receiveAtBranchAction(),
                 static::startRepairAction(),
                 static::completeRepairAction(),
@@ -252,6 +254,63 @@ class DeviceWithdrawalRequestResource extends Resource
 
                 Notification::make()
                     ->title('Device withdrawal received at branch')
+                    ->success()
+                    ->send();
+            });
+    }
+
+    protected static function assignDeliveryTechnicianAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('assign_delivery_technician')
+            ->label('Assign Delivery Tech')
+            ->icon('heroicon-o-user-plus')
+            ->color('primary')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER
+                && static::canManageBranch($record)
+            )
+            ->form([
+                Forms\Components\Select::make('technician_id')
+                    ->label('Delivery Technician')
+                    ->options(fn (DeviceWithdrawalRequest $record): array =>
+                        Technician::query()
+                            ->where('authorized', true)
+                            ->where('activated', true)
+                            ->whereKeyNot($record->technician_id)
+                            ->orderBy('first_name')
+                            ->orderBy('last_name')
+                            ->get()
+                            ->mapWithKeys(fn (Technician $technician): array => [
+                                $technician->id => trim($technician->first_name . ' ' . $technician->last_name),
+                            ])
+                            ->all()
+                    )
+                    ->searchable()
+                    ->required(),
+                Forms\Components\Textarea::make('handoff_notes')
+                    ->label('Handoff Notes')
+                    ->rows(3),
+            ])
+            ->action(function (DeviceWithdrawalRequest $record, array $data): void {
+                $record->update([
+                    'handoff_technician_id' => $data['technician_id'],
+                    'handoff_notes' => $data['handoff_notes'] ?? null,
+                    'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
+                    'assigned_to_handoff_technician_at' => now(),
+                ]);
+
+                $record->items()->update([
+                    'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
+                ]);
+
+                NotificationService::notifyTechnician(
+                    $data['technician_id'],
+                    'A branch employee assigned device withdrawal request #' . $record->id . ' to you.',
+                    $record->maintenance_request_id
+                );
+
+                Notification::make()
+                    ->title('Delivery technician assigned')
                     ->success()
                     ->send();
             });
