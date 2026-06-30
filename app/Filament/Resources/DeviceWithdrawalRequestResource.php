@@ -399,7 +399,7 @@ class DeviceWithdrawalRequestResource extends Resource
                     ->rows(3),
             ])
             ->action(function (DeviceWithdrawalRequest $record, array $data): void {
-                DB::transaction(function () use ($record, $data): void {
+                $followUp = DB::transaction(function () use ($record, $data): MaintenanceRequest {
                     $record->loadMissing(['maintenanceRequest', 'items.product']);
 
                     $followUp = MaintenanceRequest::create([
@@ -448,7 +448,15 @@ class DeviceWithdrawalRequestResource extends Resource
                     ]);
 
                     $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
+
+                    return $followUp;
                 });
+
+                NotificationService::notifyCustomer(
+                    $record->customer_id,
+                    'A follow-up maintenance request #' . $followUp->id . ' was created for your withdrawn device.',
+                    $followUp->id
+                );
 
                 Notification::make()
                     ->title('Follow-up maintenance request created')
