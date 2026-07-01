@@ -386,7 +386,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'technician_on_the_way',
+            'last_status' => 'technician_on_the_way',
         ]);
 
         NotificationService::notifyCustomer(
@@ -446,7 +446,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'in_progress',
+            'last_status' => 'in_progress',
         ]);
 
         NotificationService::notifyCustomer(
