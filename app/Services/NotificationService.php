@@ -19,11 +19,29 @@ class NotificationService
         }
     }
 
+    public static function notifyCustomerTranslated($customerId, string $translationKey, array $replace, $requestId): void
+    {
+        $customer = Customer::find($customerId);
+        if ($customer) {
+            $locale = $customer->preferred_locale === 'ar' ? 'ar' : 'en';
+            $customer->notify(new CustomerNotification(__($translationKey, $replace, $locale), $requestId, $locale));
+        }
+    }
+
     public static function notifyTechnician($technicianId, $message, $requestId)
     {
         $technician = Technician::find($technicianId);
         if ($technician) {
             $technician->notify(new TechnicianNotification($message, $requestId));
+        }
+    }
+
+    public static function notifyTechnicianTranslated($technicianId, string $translationKey, array $replace, $requestId): void
+    {
+        $technician = Technician::find($technicianId);
+        if ($technician) {
+            $locale = $technician->preferred_locale === 'ar' ? 'ar' : 'en';
+            $technician->notify(new TechnicianNotification(__($translationKey, $replace, $locale), $requestId, $locale));
         }
     }
 

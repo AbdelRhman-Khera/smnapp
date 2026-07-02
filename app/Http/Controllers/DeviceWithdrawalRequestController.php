@@ -97,9 +97,10 @@ class DeviceWithdrawalRequestController extends Controller
             return $withdrawalRequest->fresh(['items.product', 'branch', 'maintenanceRequest']);
         });
 
-        NotificationService::notifyCustomer(
+        NotificationService::notifyCustomerTranslated(
             $withdrawalRequest->customer_id,
-            'A technician requested to withdraw a device for workshop inspection. Request #' . $withdrawalRequest->id,
+            'notifications.customer.device_withdrawal_requested',
+            ['id' => $withdrawalRequest->id],
             $withdrawalRequest->maintenance_request_id
         );
 
@@ -309,9 +310,10 @@ class DeviceWithdrawalRequestController extends Controller
             'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
         ]);
 
-        NotificationService::notifyTechnician(
+        NotificationService::notifyTechnicianTranslated(
             $deliveryTechnicianId,
-            'New device withdrawal delivery request #' . $withdrawalRequest->id,
+            'notifications.technician.device_withdrawal_assigned',
+            ['id' => $withdrawalRequest->id],
             $withdrawalRequest->maintenance_request_id
         );
 
@@ -589,11 +591,12 @@ class DeviceWithdrawalRequestController extends Controller
             'status' => $status,
         ]);
 
-        NotificationService::notifyTechnician(
+        NotificationService::notifyTechnicianTranslated(
             $withdrawalRequest->technician_id,
             $approved
-                ? 'Customer approved device withdrawal request #' . $withdrawalRequest->id
-                : 'Customer rejected device withdrawal request #' . $withdrawalRequest->id,
+                ? 'notifications.technician.device_withdrawal_approved'
+                : 'notifications.technician.device_withdrawal_rejected',
+            ['id' => $withdrawalRequest->id],
             $withdrawalRequest->maintenance_request_id
         );
 

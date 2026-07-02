@@ -8,6 +8,7 @@ use App\Models\DeviceWithdrawalRequest;
 use App\Models\MaintenanceRequest;
 use App\Models\Technician;
 use App\Services\NotificationService;
+use Filament\Actions as PageActions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\Grid;
@@ -67,11 +68,15 @@ class DeviceWithdrawalRequestResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('maintenance_request_id')
                     ->label('Original Request')
+                    ->url(fn (DeviceWithdrawalRequest $record): string => MaintenanceRequestResource::getUrl('view', ['record' => $record->maintenance_request_id]))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('follow_up_maintenance_request_id')
                     ->label('Follow-up Request')
                     ->placeholder('-')
+                    ->url(fn (DeviceWithdrawalRequest $record): ?string => $record->follow_up_maintenance_request_id
+                        ? MaintenanceRequestResource::getUrl('view', ['record' => $record->follow_up_maintenance_request_id])
+                        : null)
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('customer.first_name')
@@ -125,8 +130,6 @@ class DeviceWithdrawalRequestResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make()
-                    ->visible(fn (DeviceWithdrawalRequest $record): bool => static::canManageBranch($record)),
                 static::assignDeliveryTechnicianAction(),
                 static::receiveAtBranchAction(),
                 static::startRepairAction(),
@@ -147,9 +150,13 @@ class DeviceWithdrawalRequestResource extends Resource
                             ->badge()
                             ->formatStateUsing(fn (string $state): string => DeviceWithdrawalRequest::statuses()[$state] ?? $state),
                         TextEntry::make('maintenance_request_id')
-                            ->label('Original Request'),
+                            ->label('Original Request')
+                            ->url(fn (DeviceWithdrawalRequest $record): string => MaintenanceRequestResource::getUrl('view', ['record' => $record->maintenance_request_id])),
                         TextEntry::make('follow_up_maintenance_request_id')
                             ->label('Follow-up Request')
+                            ->url(fn (DeviceWithdrawalRequest $record): ?string => $record->follow_up_maintenance_request_id
+                                ? MaintenanceRequestResource::getUrl('view', ['record' => $record->follow_up_maintenance_request_id])
+                                : null)
                             ->placeholder('-'),
                         TextEntry::make('branch.name_en')
                             ->label('Branch'),
@@ -199,7 +206,6 @@ class DeviceWithdrawalRequestResource extends Resource
         return [
             'index' => Pages\ListDeviceWithdrawalRequests::route('/'),
             'view' => Pages\ViewDeviceWithdrawalRequest::route('/{record}'),
-            'edit' => Pages\EditDeviceWithdrawalRequest::route('/{record}/edit'),
         ];
     }
 
@@ -303,9 +309,10 @@ class DeviceWithdrawalRequestResource extends Resource
                     'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
                 ]);
 
-                NotificationService::notifyTechnician(
+                NotificationService::notifyTechnicianTranslated(
                     $data['technician_id'],
-                    'A branch employee assigned device withdrawal request #' . $record->id . ' to you.',
+                    'notifications.technician.device_withdrawal_assigned_by_branch',
+                    ['id' => $record->id],
                     $record->maintenance_request_id
                 );
 
@@ -452,9 +459,10 @@ class DeviceWithdrawalRequestResource extends Resource
                     return $followUp;
                 });
 
-                NotificationService::notifyCustomer(
+                NotificationService::notifyCustomerTranslated(
                     $record->customer_id,
-                    'A follow-up maintenance request #' . $followUp->id . ' was created for your withdrawn device.',
+                    'notifications.customer.device_withdrawal_follow_up_created',
+                    ['id' => $followUp->id],
                     $followUp->id
                 );
 
@@ -462,6 +470,229 @@ class DeviceWithdrawalRequestResource extends Resource
                     ->title('Follow-up maintenance request created')
                     ->success()
                     ->send();
+            });
+    }
+
+    public static function assignDeliveryTechnicianPageAction(): PageActions\Action
+    {
+        return PageActions\Action::make('assign_delivery_technician')
+            ->label('Assign Delivery Tech')
+            ->icon('heroicon-o-user-plus')
+            ->color('primary')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_APPROVED_BY_CUSTOMER
+                && static::canManageBranch($record)
+            )
+            ->form([
+                Forms\Components\Select::make('technician_id')
+                    ->label('Delivery Technician')
+                    ->options(fn (DeviceWithdrawalRequest $record): array =>
+                        Technician::query()
+                            ->where('authorized', true)
+                            ->where('activated', true)
+                            ->whereKeyNot($record->technician_id)
+                            ->orderBy('first_name')
+                            ->orderBy('last_name')
+                            ->get()
+                            ->mapWithKeys(fn (Technician $technician): array => [
+                                $technician->id => trim($technician->first_name . ' ' . $technician->last_name),
+                            ])
+                            ->all()
+                    )
+                    ->searchable()
+                    ->required(),
+                Forms\Components\Textarea::make('handoff_notes')
+                    ->label('Handoff Notes')
+                    ->rows(3),
+            ])
+            ->action(function (DeviceWithdrawalRequest $record, array $data): void {
+                $record->update([
+                    'handoff_technician_id' => $data['technician_id'],
+                    'handoff_notes' => $data['handoff_notes'] ?? null,
+                    'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
+                    'assigned_to_handoff_technician_at' => now(),
+                ]);
+
+                $record->items()->update([
+                    'status' => DeviceWithdrawalRequest::STATUS_ASSIGNED_TO_DELIVERY_TECHNICIAN,
+                ]);
+
+                NotificationService::notifyTechnicianTranslated(
+                    $data['technician_id'],
+                    'notifications.technician.device_withdrawal_assigned_by_branch',
+                    ['id' => $record->id],
+                    $record->maintenance_request_id
+                );
+
+                Notification::make()->title('Delivery technician assigned')->success()->send();
+            });
+    }
+
+    public static function receiveAtBranchPageAction(): PageActions\Action
+    {
+        return PageActions\Action::make('receive_at_branch')
+            ->label('Receive')
+            ->icon('heroicon-o-check-circle')
+            ->color('info')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_DELIVERED_TO_BRANCH
+                && static::canManageBranch($record)
+            )
+            ->form([
+                Forms\Components\Textarea::make('branch_notes')
+                    ->label('Branch Notes')
+                    ->rows(3),
+            ])
+            ->action(function (DeviceWithdrawalRequest $record, array $data): void {
+                $record->update([
+                    'status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH,
+                    'received_by_user_id' => auth()->id(),
+                    'received_by_branch_at' => now(),
+                    'branch_notes' => $data['branch_notes'] ?? $record->branch_notes,
+                ]);
+
+                $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH]);
+
+                Notification::make()->title('Device withdrawal received at branch')->success()->send();
+            });
+    }
+
+    public static function startRepairPageAction(): PageActions\Action
+    {
+        return PageActions\Action::make('start_repair')
+            ->label('Start Repair')
+            ->icon('heroicon-o-wrench-screwdriver')
+            ->color('warning')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_RECEIVED_BY_BRANCH
+                && static::canManageBranch($record)
+            )
+            ->action(function (DeviceWithdrawalRequest $record): void {
+                $record->update([
+                    'status' => DeviceWithdrawalRequest::STATUS_UNDER_REPAIR,
+                    'repair_started_at' => now(),
+                ]);
+
+                $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_UNDER_REPAIR]);
+
+                Notification::make()->title('Repair started')->success()->send();
+            });
+    }
+
+    public static function completeRepairPageAction(): PageActions\Action
+    {
+        return PageActions\Action::make('complete_repair')
+            ->label('Complete Repair')
+            ->icon('heroicon-o-clipboard-document-check')
+            ->color('success')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_UNDER_REPAIR
+                && static::canManageBranch($record)
+            )
+            ->form([
+                Forms\Components\Textarea::make('workshop_notes')
+                    ->label('Workshop Notes')
+                    ->rows(3),
+            ])
+            ->action(function (DeviceWithdrawalRequest $record, array $data): void {
+                $record->update([
+                    'status' => DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED,
+                    'repair_completed_at' => now(),
+                    'workshop_notes' => $data['workshop_notes'] ?? $record->workshop_notes,
+                ]);
+
+                $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED]);
+
+                Notification::make()->title('Repair completed')->success()->send();
+            });
+    }
+
+    public static function createFollowUpRequestPageAction(): PageActions\Action
+    {
+        return PageActions\Action::make('create_follow_up_request')
+            ->label('Create Follow-up')
+            ->icon('heroicon-o-document-plus')
+            ->color('primary')
+            ->visible(fn (DeviceWithdrawalRequest $record): bool =>
+                $record->status === DeviceWithdrawalRequest::STATUS_REPAIR_COMPLETED
+                && blank($record->follow_up_maintenance_request_id)
+                && static::canManageBranch($record)
+            )
+            ->form([
+                Forms\Components\TextInput::make('invoice_total')
+                    ->label('Invoice Total')
+                    ->numeric()
+                    ->minValue(0)
+                    ->required(),
+                Forms\Components\Textarea::make('problem_description')
+                    ->label('Follow-up Request Description')
+                    ->default('Workshop repaired device return and installation.')
+                    ->required()
+                    ->rows(3),
+                Forms\Components\Textarea::make('invoice_notes')
+                    ->label('Invoice Notes')
+                    ->rows(3),
+            ])
+            ->action(function (DeviceWithdrawalRequest $record, array $data): void {
+                $followUp = DB::transaction(function () use ($record, $data): MaintenanceRequest {
+                    $record->loadMissing(['maintenanceRequest', 'items.product']);
+
+                    $followUp = MaintenanceRequest::create([
+                        'customer_id' => $record->customer_id,
+                        'type' => 'regular_maintenance',
+                        'address_id' => $record->maintenanceRequest?->address_id,
+                        'problem_description' => $data['problem_description'],
+                        'last_status' => 'waiting_for_payment',
+                        'created_by' => auth()->id(),
+                        'updated_by' => auth()->id(),
+                    ]);
+
+                    $sync = $record->items
+                        ->pluck('product_id')
+                        ->unique()
+                        ->mapWithKeys(fn ($productId): array => [$productId => ['quantity' => 1]])
+                        ->all();
+
+                    $followUp->products()->sync($sync);
+                    $followUp->recalculateHours();
+
+                    $followUp->statuses()->create([
+                        'status' => 'waiting_for_payment',
+                        'notes' => 'Workshop repair invoice created from device withdrawal request #' . $record->id,
+                    ]);
+
+                    $invoice = $followUp->invoices()->create([
+                        'invoice_type' => 'final',
+                        'total' => (float) $data['invoice_total'],
+                        'status' => 'pending',
+                        'notes' => [[
+                            'note' => $data['invoice_notes'] ?? null,
+                            'source' => 'device_withdrawal_request',
+                            'device_withdrawal_request_id' => $record->id,
+                            'created_at' => now()->toDateTimeString(),
+                        ]],
+                    ]);
+
+                    $followUp->update(['invoice_number' => $invoice->id]);
+
+                    $record->update([
+                        'status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED,
+                        'follow_up_maintenance_request_id' => $followUp->id,
+                    ]);
+
+                    $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
+
+                    return $followUp;
+                });
+
+                NotificationService::notifyCustomerTranslated(
+                    $record->customer_id,
+                    'notifications.customer.device_withdrawal_follow_up_created',
+                    ['id' => $followUp->id],
+                    $followUp->id
+                );
+
+                Notification::make()->title('Follow-up maintenance request created')->success()->send();
             });
     }
 

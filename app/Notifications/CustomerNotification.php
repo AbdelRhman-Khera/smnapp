@@ -17,11 +17,13 @@ class CustomerNotification extends Notification
 
     protected $message;
     protected $requestId;
+    protected $locale;
 
-    public function __construct($message, $requestId)
+    public function __construct($message, $requestId, ?string $locale = null)
     {
         $this->message = $message;
         $this->requestId = $requestId;
+        $this->locale = $locale;
     }
 
     public function via($notifiable)
@@ -33,7 +35,8 @@ class CustomerNotification extends Notification
     {
         return [
             'request_id' => $this->requestId,
-            'message' => $this->message
+            'message' => $this->message,
+            'lang' => $this->locale,
         ];
     }
 
@@ -79,11 +82,12 @@ class CustomerNotification extends Notification
         return FcmMessage::create()
             ->data([
                 'request_id' => (string) $this->requestId,
-                'message' => (string) $this->message
+                'message' => (string) $this->message,
+                'lang' => (string) ($this->locale ?? app()->getLocale()),
             ])
             ->notification(
                 FcmNotification::create()
-                    ->title(__('notifications.customer.title'))
+                    ->title(__('notifications.customer.title', [], $this->locale))
                     ->body($this->message)
             );
     }
@@ -94,7 +98,8 @@ class CustomerNotification extends Notification
     {
         return new BroadcastMessage([
             'request_id' => $this->requestId,
-            'message' => $this->message
+            'message' => $this->message,
+            'lang' => $this->locale,
         ]);
     }
 }

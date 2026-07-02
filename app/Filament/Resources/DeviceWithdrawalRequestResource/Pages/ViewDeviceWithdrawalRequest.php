@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\DeviceWithdrawalRequestResource\Pages;
 
 use App\Filament\Resources\DeviceWithdrawalRequestResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewDeviceWithdrawalRequest extends ViewRecord
@@ -13,7 +12,11 @@ class ViewDeviceWithdrawalRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            DeviceWithdrawalRequestResource::assignDeliveryTechnicianPageAction(),
+            DeviceWithdrawalRequestResource::receiveAtBranchPageAction(),
+            DeviceWithdrawalRequestResource::startRepairPageAction(),
+            DeviceWithdrawalRequestResource::completeRepairPageAction(),
+            DeviceWithdrawalRequestResource::createFollowUpRequestPageAction(),
         ];
     }
 }
