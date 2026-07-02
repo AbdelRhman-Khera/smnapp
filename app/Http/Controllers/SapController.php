@@ -214,15 +214,19 @@ class SapController extends Controller
                 ->toArray();
         }
 
+        $isVisitFeeInvoice = $invoice?->invoice_type === 'visit_fee';
+
         $payload = [
             'CUSTOMER_ID' => (string) (
-                $maintenanceRequest->technician->customer_id
-                ?? ''
+                $isVisitFeeInvoice
+                    ? '18002W03'
+                    : ($maintenanceRequest->technician->customer_id ?? '')
             ),
 
             'TECHNICIAN_ID' => (string) (
-                $maintenanceRequest->technician->sap_id
-                ?? ''
+                $isVisitFeeInvoice
+                    ? 'E2045'
+                    : ($maintenanceRequest->technician->sap_id ?? '')
             ),
 
             'ORDER_NO' => (string) ($maintenanceRequest->id),
