@@ -179,11 +179,16 @@ class SapController extends Controller
         // $url = 'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
         $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
 
-        if ($invoice?->invoice_type === 'visit_fee') {
+        $isVisitFeeInvoice = $invoice?->invoice_type === 'visit_fee';
+        $visitFeeAmountBeforeVat = $isVisitFeeInvoice
+            ? round(((float) ($invoice->total ?? 0)) / 1.15, 2)
+            : null;
+
+        if ($isVisitFeeInvoice) {
             $items = [[
                 'MATNR' => '10032',
                 'QTY' => '1',
-                'PRICE' => (string) ($invoice->total ?? 0),
+                'PRICE' => (string) $visitFeeAmountBeforeVat,
             ]];
         } else {
             $serviceItems = collect($invoice?->services ?? [])
@@ -213,8 +218,6 @@ class SapController extends Controller
                 ->values()
                 ->toArray();
         }
-
-        $isVisitFeeInvoice = $invoice?->invoice_type === 'visit_fee';
 
         $payload = [
             'CUSTOMER_ID' => (string) (
@@ -252,7 +255,7 @@ class SapController extends Controller
 
             'SITE' => (string) ($maintenanceRequest->technician->site_id ?? ''),
             'STORAGE' => (string) ($maintenanceRequest->technician->storage_location ?? ''),
-            'AMOUNT' => (string) ($invoice->total ?? ''),
+            'AMOUNT' => (string) ($isVisitFeeInvoice ? $visitFeeAmountBeforeVat : ($invoice->total ?? '')),
 
             'ITEMS' => $items,
         ];
