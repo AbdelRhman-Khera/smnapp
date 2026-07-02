@@ -24,7 +24,7 @@ class NotificationService
         $customer = Customer::find($customerId);
         if ($customer) {
             $locale = $customer->preferred_locale === 'ar' ? 'ar' : 'en';
-            $customer->notify(new CustomerNotification(__($translationKey, $replace, $locale), $requestId, $locale));
+            $customer->notify(new CustomerNotification(__($translationKey, $replace, $locale), $requestId));
         }
     }
 
@@ -41,7 +41,7 @@ class NotificationService
         $technician = Technician::find($technicianId);
         if ($technician) {
             $locale = $technician->preferred_locale === 'ar' ? 'ar' : 'en';
-            $technician->notify(new TechnicianNotification(__($translationKey, $replace, $locale), $requestId, $locale));
+            $technician->notify(new TechnicianNotification(__($translationKey, $replace, $locale), $requestId));
         }
     }
 

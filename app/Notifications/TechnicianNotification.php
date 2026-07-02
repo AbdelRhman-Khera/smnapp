@@ -16,13 +16,11 @@ class TechnicianNotification extends Notification
 {
     protected $message;
     protected $requestId;
-    protected $locale;
 
-    public function __construct($message, $requestId, ?string $locale = null)
+    public function __construct($message, $requestId)
     {
         $this->message = $message;
         $this->requestId = $requestId;
-        $this->locale = $locale;
     }
 
     public function via($notifiable)
@@ -34,8 +32,7 @@ class TechnicianNotification extends Notification
     {
         return [
             'request_id' => $this->requestId,
-            'message' => $this->message,
-            'lang' => $this->locale,
+            'message' => $this->message
         ];
     }
 
@@ -43,8 +40,7 @@ class TechnicianNotification extends Notification
     {
         return new BroadcastMessage([
             'request_id' => $this->requestId,
-            'message' => $this->message,
-            'lang' => $this->locale,
+            'message' => $this->message
         ]);
     }
 
@@ -53,11 +49,10 @@ class TechnicianNotification extends Notification
         return FcmMessage::create()
             ->data([
                 'request_id' => (string) $this->requestId,
-                'message' => (string) $this->message,
-                'lang' => (string) ($this->locale ?? app()->getLocale()),
+                'message' => (string) $this->message
             ])
             ->notification(FcmNotification::create()
-                ->title(__('notifications.technician.title', [], $this->locale))
+                ->title(__('notifications.technician.title'))
                 ->body($this->message)
             );
     }
