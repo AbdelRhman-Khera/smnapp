@@ -253,8 +253,8 @@ class SapController extends Controller
             'ITEMS' => $items,
         ];
 
-        $username = config('services.sap.user');
-        $password = config('services.sap.pass');
+        $username = config('services.sap_test.user');
+        $password = config('services.sap_test.pass');
 
         $sapRequestLog = SapRequestLog::create([
             'maintenance_request_id' => $maintenanceRequest->id,
