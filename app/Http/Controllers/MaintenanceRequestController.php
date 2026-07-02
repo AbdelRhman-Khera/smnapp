@@ -1054,10 +1054,8 @@ class MaintenanceRequestController extends Controller
                 'uploaded_at' => now(),
             ]);
 
-            if ($invoice->invoice_type !== 'visit_fee') {
-                $sapResponse = app(\App\Http\Controllers\SapController::class)
-                    ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
-            }
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
 
             return response()->json([
                 'status' => 200,
@@ -1157,10 +1155,8 @@ class MaintenanceRequestController extends Controller
         if ($request->respStatus == 'A') {
             $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->tranRef);
 
-            if ($invoice->invoice_type !== 'visit_fee') {
-                $sapResponse = app(\App\Http\Controllers\SapController::class)
-                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
-            }
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
 
             return response()->json([
                 'status' => 200,
@@ -1208,10 +1204,8 @@ class MaintenanceRequestController extends Controller
         if ($request->responseStatus == 'A') {
             $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
 
-            if ($invoice->invoice_type !== 'visit_fee') {
-                $sapResponse = app(\App\Http\Controllers\SapController::class)
-                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
-            }
+            $sapResponse = app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
 
 
             return response()->json([

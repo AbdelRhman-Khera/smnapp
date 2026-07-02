@@ -152,7 +152,24 @@ class SapController extends Controller
             'invoice.spareParts',
         ]);
 
-        if ($maintenanceRequest->sap_sync_status === 'success') {
+        $invoice = $maintenanceRequest->invoice;
+
+        if (
+            $invoice
+            && $invoice->invoice_type === 'zero_service'
+            && (float) ($invoice->total ?? 0) <= 0
+        ) {
+            return [
+                'success' => true,
+                'skipped' => true,
+                'message' => 'Zero service invoice skipped. It was not sent to SAP.',
+            ];
+        }
+
+        if (
+            $maintenanceRequest->sap_sync_status === 'success'
+            && filled($invoice?->qr_code)
+        ) {
             return [
                 'success' => true,
                 'message' => 'Already synced with SAP.',
@@ -162,32 +179,40 @@ class SapController extends Controller
         // $url = 'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
         $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
 
-        $serviceItems = collect($maintenanceRequest->invoice?->services ?? [])
-            ->filter(fn($service) => isset($service->price) && $service->price > 0)
-            ->map(function ($service) {
-                return array_filter([
-                    'MATNR' => (string) ($service->sap_id ?? ''),
-                    'QTY'   => '1',
-                    'PRICE' => isset($service->price) ? (string) $service->price : null,
-                ]);
-            });
+        if ($invoice?->invoice_type === 'visit_fee') {
+            $items = [[
+                'MATNR' => '10032',
+                'QTY' => '1',
+                'PRICE' => (string) ($invoice->total ?? 0),
+            ]];
+        } else {
+            $serviceItems = collect($invoice?->services ?? [])
+                ->filter(fn($service) => isset($service->price) && $service->price > 0)
+                ->map(function ($service) {
+                    return array_filter([
+                        'MATNR' => (string) ($service->sap_id ?? ''),
+                        'QTY'   => '1',
+                        'PRICE' => isset($service->price) ? (string) $service->price : null,
+                    ]);
+                });
 
-        $sparePartItems = collect($maintenanceRequest->invoice?->spareParts ?? [])
-            ->map(function ($sparePart) {
-                return array_filter([
-                    'MATNR' => (string) ($sparePart->sap_id ?? ''),
-                    'QTY'   => (string) ($sparePart->pivot->quantity ?? 1),
-                    'PRICE' => isset($sparePart->pivot->price)
-                        ? (string) $sparePart->pivot->price
-                        : (isset($sparePart->price) ? (string) $sparePart->price : null),
-                ]);
-            });
+            $sparePartItems = collect($invoice?->spareParts ?? [])
+                ->map(function ($sparePart) {
+                    return array_filter([
+                        'MATNR' => (string) ($sparePart->sap_id ?? ''),
+                        'QTY'   => (string) ($sparePart->pivot->quantity ?? 1),
+                        'PRICE' => isset($sparePart->pivot->price)
+                            ? (string) $sparePart->pivot->price
+                            : (isset($sparePart->price) ? (string) $sparePart->price : null),
+                    ]);
+                });
 
-        $items = $serviceItems
-            ->merge($sparePartItems)
-            // ->filter(fn($item) => !empty($item['MATNR']))
-            ->values()
-            ->toArray();
+            $items = $serviceItems
+                ->merge($sparePartItems)
+                // ->filter(fn($item) => !empty($item['MATNR']))
+                ->values()
+                ->toArray();
+        }
 
         $payload = [
             'CUSTOMER_ID' => (string) (
@@ -202,7 +227,7 @@ class SapController extends Controller
 
             'ORDER_NO' => (string) ($maintenanceRequest->id),
 
-            // 'DATE' => $maintenanceRequest->invoice?->created_at?->format('Ymd') ?? now()->format('Ymd'),
+            'DATE' => $invoice?->created_at?->format('Ymd') ?? now()->format('Ymd'),
 
             'PAYMENT_METHOD' => $paymentMethod,
 
@@ -223,7 +248,7 @@ class SapController extends Controller
 
             'SITE' => (string) ($maintenanceRequest->technician->site_id ?? ''),
             'STORAGE' => (string) ($maintenanceRequest->technician->storage_location ?? ''),
-            'AMOUNT' => (string) ($maintenanceRequest->invoice->total ?? ''),
+            'AMOUNT' => (string) ($invoice->total ?? ''),
 
             'ITEMS' => $items,
         ];
@@ -281,7 +306,7 @@ class SapController extends Controller
 
             ]);
 
-            $maintenanceRequest->invoice()->update([
+            $invoice?->update([
                 'qr_code' => $isSuccess ? $sapQr : null,
             ]);
 
