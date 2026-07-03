@@ -25,6 +25,104 @@
             .smn-collapse[open] .smn-collapse-chevron {
                 transform: rotate(180deg);
             }
+
+            .smn-widget-body {
+                background: rgba(249, 250, 251, 0.72);
+            }
+
+            .smn-panel-card,
+            .smn-invoice-summary,
+            .smn-muted-card,
+            .smn-table-panel,
+            .smn-qr-card,
+            .smn-chevron-button {
+                background: #ffffff;
+                border-color: #e5e7eb;
+            }
+
+            .smn-muted-card,
+            .smn-qr-card {
+                background: #f9fafb;
+            }
+
+            .smn-primary-card {
+                background: rgba(239, 246, 255, 0.82);
+                border-color: rgba(37, 99, 235, 0.18);
+            }
+
+            .smn-info-card {
+                background: rgba(239, 246, 255, 0.9);
+                border-color: rgba(14, 165, 233, 0.24);
+            }
+
+            .smn-warning-card {
+                background: rgba(255, 251, 235, 0.92);
+                border-color: rgba(245, 158, 11, 0.24);
+            }
+
+            .dark .smn-widget-body {
+                background: rgba(3, 7, 18, 0.34);
+            }
+
+            .dark .smn-panel-card,
+            .dark .smn-invoice-summary,
+            .dark .smn-table-panel {
+                background: #111827;
+                border-color: #374151;
+            }
+
+            .smn-table-panel thead {
+                background: #f3f4f6;
+                color: #4b5563;
+            }
+
+            .smn-table-panel tbody tr {
+                background: #ffffff;
+            }
+
+            .smn-invoice-summary:hover {
+                background: #f9fafb;
+            }
+
+            .dark .smn-table-panel thead {
+                background: #1f2937;
+                color: #d1d5db;
+            }
+
+            .dark .smn-table-panel tbody tr {
+                background: #111827;
+            }
+
+            .dark .smn-chevron-button {
+                background: #111827;
+                border-color: rgba(96, 165, 250, 0.3);
+                color: #93c5fd;
+            }
+
+            .dark .smn-muted-card,
+            .dark .smn-qr-card {
+                background: rgba(31, 41, 55, 0.82);
+                border-color: #374151;
+            }
+
+            .dark .smn-primary-card {
+                background: rgba(37, 99, 235, 0.14);
+                border-color: rgba(96, 165, 250, 0.24);
+            }
+
+            .dark .smn-info-card {
+                background: rgba(14, 165, 233, 0.12);
+                border-color: rgba(125, 211, 252, 0.24);
+            }
+
+            .dark .smn-warning-card {
+                background: rgba(245, 158, 11, 0.12);
+                border-color: rgba(251, 191, 36, 0.24);
+            }
+
+            .dark .smn-invoice-summary:hover {
+                background: #1f2937;
+            }
         </style>
 
         <details class="smn-collapse overflow-hidden rounded-xl border border-primary-100 bg-white shadow-sm dark:border-primary-500/20 dark:bg-gray-900" open>
@@ -39,14 +137,14 @@
                     </p>
                 </div>
 
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-primary-200 bg-white text-primary-700 shadow-sm transition dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300">
+                <div class="smn-chevron-button flex h-9 w-9 items-center justify-center rounded-full border text-primary-700 shadow-sm transition">
                     <svg class="smn-collapse-chevron h-5 w-5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
                     </svg>
                 </div>
             </summary>
 
-            <div class="bg-gray-50/60 p-6 dark:bg-gray-950/30 sm:p-8">
+            <div class="smn-widget-body p-6 sm:p-8">
                 @if ($invoices->isNotEmpty())
                     <div class="grid gap-6">
                         @foreach ($invoices as $invoice)
@@ -63,8 +161,8 @@
                                 $invoiceType = $invoice->invoice_type ?: 'final';
                             @endphp
 
-                            <details class="smn-collapse overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900" open>
-                                <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-6 border-b border-gray-200 bg-white px-6 py-5 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800/70 sm:px-7">
+                            <details class="smn-collapse smn-panel-card overflow-hidden rounded-xl border shadow-sm" open>
+                                <summary class="smn-invoice-summary flex cursor-pointer list-none flex-wrap items-start justify-between gap-6 border-b px-6 py-5 transition sm:px-7">
                                     <div class="min-w-0">
                                         <div class="mb-2 flex flex-wrap items-center gap-2">
                                             <span class="rounded-full px-3 py-1 text-xs font-bold ring-1 {{ $typeStyles[$invoiceType] ?? 'bg-gray-100 text-gray-700 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700' }}">
@@ -83,7 +181,7 @@
                                         </p>
                                     </div>
 
-                                    <span class="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-700 transition dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                    <span class="smn-chevron-button flex h-9 w-9 items-center justify-center rounded-full border text-gray-700 transition">
                                         <svg class="smn-collapse-chevron h-5 w-5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
                                         </svg>
@@ -102,28 +200,28 @@
                                     </div>
 
                                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                        <div class="rounded-xl border border-primary-100 bg-primary-50/80 p-5 dark:border-primary-500/20 dark:bg-primary-500/10">
+                                        <div class="smn-primary-card rounded-xl border p-5">
                                             <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">Total Amount</div>
                                             <div class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
                                                 {{ number_format((float) $invoice->total, 2) }} SAR
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="smn-muted-card rounded-xl border p-5">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Payment Method</div>
                                             <div class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $invoice->payment_method ? ucfirst($invoice->payment_method) : '-' }}
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="smn-muted-card rounded-xl border p-5">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">SAP Sales Order</div>
                                             <div class="mt-2 break-all text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $record?->sap_sales_order_no ?: '-' }}
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="smn-muted-card rounded-xl border p-5">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Invoice Date</div>
                                             <div class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $invoice->created_at?->format('Y-m-d h:i A') }}
@@ -134,13 +232,13 @@
                                     <div class="grid gap-6 lg:grid-cols-3">
                                         <div class="space-y-6 lg:col-span-2">
                                             <div class="grid gap-6 xl:grid-cols-2">
-                                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                                                <div class="smn-table-panel overflow-hidden rounded-xl border">
                                                     <div class="border-b border-gray-200 bg-gray-100 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Spare Parts</h4>
                                                     </div>
                                                     <div class="overflow-x-auto">
                                                         <table class="w-full text-sm">
-                                                            <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/70 dark:text-gray-400">
+                                                            <thead class="text-xs uppercase">
                                                                 <tr>
                                                                     <th class="px-5 py-3 text-start font-semibold">Name</th>
                                                                     <th class="px-5 py-3 text-center font-semibold">Qty</th>
@@ -164,13 +262,13 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                                                <div class="smn-table-panel overflow-hidden rounded-xl border">
                                                     <div class="border-b border-gray-200 bg-gray-100 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Services</h4>
                                                     </div>
                                                     <div class="overflow-x-auto">
                                                         <table class="w-full text-sm">
-                                                            <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/70 dark:text-gray-400">
+                                                            <thead class="text-xs uppercase">
                                                                 <tr>
                                                                     <th class="px-5 py-3 text-start font-semibold">Name</th>
                                                                     <th class="px-5 py-3 text-end font-semibold">Price</th>
@@ -194,7 +292,7 @@
                                             </div>
 
                                             @if ($paymentMethod === 'online' && $invoice->payment_details)
-                                                <div class="rounded-xl border border-info-200 bg-info-50 p-5 dark:border-info-500/25 dark:bg-info-500/10">
+                                                <div class="smn-info-card rounded-xl border p-5">
                                                     <h4 class="mb-3 font-bold text-gray-950 dark:text-white">Online Payment</h4>
                                                     <div class="grid gap-4 sm:grid-cols-2">
                                                         <div>
@@ -210,7 +308,7 @@
                                             @endif
 
                                             @if ($paymentMethod === 'remittance' && $remittanceUrl)
-                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/25 dark:bg-warning-500/10">
+                                                <div class="smn-warning-card rounded-xl border p-5">
                                                     <div class="mb-3 flex items-center justify-between gap-3">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Remittance File</h4>
                                                         <a href="{{ $remittanceUrl }}" target="_blank" class="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-300">Open</a>
@@ -224,7 +322,7 @@
                                             @endif
 
                                             @if ($paymentMethod === 'machine')
-                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/25 dark:bg-warning-500/10">
+                                                <div class="smn-warning-card rounded-xl border p-5">
                                                     <div class="mb-3 flex items-center justify-between gap-3">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Machine Payment Picture</h4>
                                                         @if ($machinePicUrl)
@@ -242,7 +340,7 @@
                                             @endif
                                         </div>
 
-                                        <aside class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <aside class="smn-qr-card rounded-xl border p-5">
                                             <h4 class="mb-4 text-center font-bold text-gray-950 dark:text-white">QR Code</h4>
 
                                             @if ($invoice->qr_code)
@@ -257,7 +355,7 @@
                                                     {{ $invoice->qr_code }}
                                                 </div>
                                             @else
-                                                <div class="rounded-lg border border-dashed border-gray-300 bg-white/70 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-400">
+                                                <div class="smn-panel-card rounded-lg border border-dashed p-6 text-center text-sm text-gray-500 dark:text-gray-400">
                                                     No QR code available.
                                                 </div>
                                             @endif
