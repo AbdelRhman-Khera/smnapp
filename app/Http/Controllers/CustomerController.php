@@ -179,6 +179,7 @@ class CustomerController extends Controller
             'first_name' => 'nullable|string|max:100',
             'last_name' => 'nullable|string|max:100',
             'email' => 'nullable|email|unique:customers,email,' . $customer->id,
+            'tax_number' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
