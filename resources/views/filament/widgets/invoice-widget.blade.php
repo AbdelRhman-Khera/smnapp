@@ -28,7 +28,7 @@
         </style>
 
         <details class="smn-collapse overflow-hidden rounded-xl border border-primary-100 bg-white shadow-sm dark:border-primary-500/20 dark:bg-gray-900" open>
-            <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 border-b border-primary-100 bg-primary-50/70 px-5 py-4 transition hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-500/10 dark:hover:bg-primary-500/15">
+            <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-6 border-b border-primary-100 bg-primary-50/70 px-6 py-5 transition hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-500/10 dark:hover:bg-primary-500/15 sm:px-8 sm:py-6">
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="h-2.5 w-2.5 rounded-full bg-primary-600 dark:bg-primary-400"></span>
@@ -46,9 +46,9 @@
                 </div>
             </summary>
 
-            <div class="bg-gray-50/60 p-5 dark:bg-gray-950/30">
+            <div class="bg-gray-50/60 p-6 dark:bg-gray-950/30 sm:p-8">
                 @if ($invoices->isNotEmpty())
-                    <div class="grid gap-5">
+                    <div class="grid gap-6">
                         @foreach ($invoices as $invoice)
                             @php
                                 $paymentMethod = strtolower((string) $invoice->payment_method);
@@ -64,7 +64,7 @@
                             @endphp
 
                             <details class="smn-collapse overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900" open>
-                                <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800/70">
+                                <summary class="flex cursor-pointer list-none flex-wrap items-start justify-between gap-6 border-b border-gray-200 bg-white px-6 py-5 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800/70 sm:px-7">
                                     <div class="min-w-0">
                                         <div class="mb-2 flex flex-wrap items-center gap-2">
                                             <span class="rounded-full px-3 py-1 text-xs font-bold ring-1 {{ $typeStyles[$invoiceType] ?? 'bg-gray-100 text-gray-700 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700' }}">
@@ -90,40 +90,40 @@
                                     </span>
                                 </summary>
 
-                                <div class="space-y-5 p-5">
+                                <div class="space-y-6 p-6 sm:p-7">
                                     <div class="flex justify-end">
                                         <a
                                             href="{{ route('admin.sales-invoices.print', $invoice) }}"
                                             target="_blank"
-                                            class="inline-flex items-center rounded-lg bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
+                                            class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
                                         >
                                             Print Invoice
                                         </a>
                                     </div>
 
                                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                                        <div class="rounded-xl border border-primary-100 bg-primary-50/80 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
+                                        <div class="rounded-xl border border-primary-100 bg-primary-50/80 p-5 dark:border-primary-500/20 dark:bg-primary-500/10">
                                             <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">Total Amount</div>
                                             <div class="mt-2 text-3xl font-bold text-gray-950 dark:text-white">
                                                 {{ number_format((float) $invoice->total, 2) }} SAR
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Payment Method</div>
                                             <div class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $invoice->payment_method ? ucfirst($invoice->payment_method) : '-' }}
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">SAP Sales Order</div>
                                             <div class="mt-2 break-all text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $record?->sap_sales_order_no ?: '-' }}
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Invoice Date</div>
                                             <div class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
                                                 {{ $invoice->created_at?->format('Y-m-d h:i A') }}
@@ -131,32 +131,32 @@
                                         </div>
                                     </div>
 
-                                    <div class="grid gap-5 lg:grid-cols-3">
-                                        <div class="space-y-5 lg:col-span-2">
-                                            <div class="grid gap-5 xl:grid-cols-2">
+                                    <div class="grid gap-6 lg:grid-cols-3">
+                                        <div class="space-y-6 lg:col-span-2">
+                                            <div class="grid gap-6 xl:grid-cols-2">
                                                 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                                                    <div class="border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+                                                    <div class="border-b border-gray-200 bg-gray-100 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Spare Parts</h4>
                                                     </div>
                                                     <div class="overflow-x-auto">
                                                         <table class="w-full text-sm">
                                                             <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/70 dark:text-gray-400">
                                                                 <tr>
-                                                                    <th class="px-4 py-3 text-start font-semibold">Name</th>
-                                                                    <th class="px-4 py-3 text-center font-semibold">Qty</th>
-                                                                    <th class="px-4 py-3 text-end font-semibold">Price</th>
+                                                                    <th class="px-5 py-3 text-start font-semibold">Name</th>
+                                                                    <th class="px-5 py-3 text-center font-semibold">Qty</th>
+                                                                    <th class="px-5 py-3 text-end font-semibold">Price</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                                                                 @forelse ($invoice->spareParts as $part)
                                                                     <tr>
-                                                                        <td class="px-4 py-3 font-semibold text-gray-950 dark:text-white">{{ $part->name }}</td>
-                                                                        <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{{ $part->pivot->quantity }}</td>
-                                                                        <td class="px-4 py-3 text-end font-semibold text-gray-950 dark:text-white">{{ number_format((float) $part->pivot->price, 2) }} SAR</td>
+                                                                        <td class="px-5 py-4 font-semibold text-gray-950 dark:text-white">{{ $part->name }}</td>
+                                                                        <td class="px-5 py-4 text-center text-gray-700 dark:text-gray-300">{{ $part->pivot->quantity }}</td>
+                                                                        <td class="px-5 py-4 text-end font-semibold text-gray-950 dark:text-white">{{ number_format((float) $part->pivot->price, 2) }} SAR</td>
                                                                     </tr>
                                                                 @empty
                                                                     <tr>
-                                                                        <td colspan="3" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No spare parts.</td>
+                                                                        <td colspan="3" class="px-5 py-7 text-center text-gray-500 dark:text-gray-400">No spare parts.</td>
                                                                     </tr>
                                                                 @endforelse
                                                             </tbody>
@@ -165,26 +165,26 @@
                                                 </div>
 
                                                 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                                                    <div class="border-b border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+                                                    <div class="border-b border-gray-200 bg-gray-100 px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Services</h4>
                                                     </div>
                                                     <div class="overflow-x-auto">
                                                         <table class="w-full text-sm">
                                                             <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800/70 dark:text-gray-400">
                                                                 <tr>
-                                                                    <th class="px-4 py-3 text-start font-semibold">Name</th>
-                                                                    <th class="px-4 py-3 text-end font-semibold">Price</th>
+                                                                    <th class="px-5 py-3 text-start font-semibold">Name</th>
+                                                                    <th class="px-5 py-3 text-end font-semibold">Price</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                                                                 @forelse ($invoice->services as $service)
                                                                     <tr>
-                                                                        <td class="px-4 py-3 font-semibold text-gray-950 dark:text-white">{{ $service->name }}</td>
-                                                                        <td class="px-4 py-3 text-end font-semibold text-gray-950 dark:text-white">{{ number_format((float) $service->price, 2) }} SAR</td>
+                                                                        <td class="px-5 py-4 font-semibold text-gray-950 dark:text-white">{{ $service->name }}</td>
+                                                                        <td class="px-5 py-4 text-end font-semibold text-gray-950 dark:text-white">{{ number_format((float) $service->price, 2) }} SAR</td>
                                                                     </tr>
                                                                 @empty
                                                                     <tr>
-                                                                        <td colspan="2" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No services.</td>
+                                                                        <td colspan="2" class="px-5 py-7 text-center text-gray-500 dark:text-gray-400">No services.</td>
                                                                     </tr>
                                                                 @endforelse
                                                             </tbody>
@@ -194,7 +194,7 @@
                                             </div>
 
                                             @if ($paymentMethod === 'online' && $invoice->payment_details)
-                                                <div class="rounded-xl border border-info-200 bg-info-50 p-4 dark:border-info-500/25 dark:bg-info-500/10">
+                                                <div class="rounded-xl border border-info-200 bg-info-50 p-5 dark:border-info-500/25 dark:bg-info-500/10">
                                                     <h4 class="mb-3 font-bold text-gray-950 dark:text-white">Online Payment</h4>
                                                     <div class="grid gap-4 sm:grid-cols-2">
                                                         <div>
@@ -210,7 +210,7 @@
                                             @endif
 
                                             @if ($paymentMethod === 'remittance' && $remittanceUrl)
-                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/25 dark:bg-warning-500/10">
+                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/25 dark:bg-warning-500/10">
                                                     <div class="mb-3 flex items-center justify-between gap-3">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Remittance File</h4>
                                                         <a href="{{ $remittanceUrl }}" target="_blank" class="text-sm font-semibold text-primary-600 hover:text-primary-500 dark:text-primary-300">Open</a>
@@ -224,7 +224,7 @@
                                             @endif
 
                                             @if ($paymentMethod === 'machine')
-                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/25 dark:bg-warning-500/10">
+                                                <div class="rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-500/25 dark:bg-warning-500/10">
                                                     <div class="mb-3 flex items-center justify-between gap-3">
                                                         <h4 class="font-bold text-gray-950 dark:text-white">Machine Payment Picture</h4>
                                                         @if ($machinePicUrl)
@@ -242,7 +242,7 @@
                                             @endif
                                         </div>
 
-                                        <aside class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                        <aside class="rounded-xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                             <h4 class="mb-4 text-center font-bold text-gray-950 dark:text-white">QR Code</h4>
 
                                             @if ($invoice->qr_code)

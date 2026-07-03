@@ -17,7 +17,7 @@
 
         <x-filament::card>
             <details class="smn-collapse overflow-hidden rounded-xl border border-primary-100 bg-white shadow-sm dark:border-primary-500/20 dark:bg-gray-900" open>
-                <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 border-b border-primary-100 bg-primary-50/70 px-5 py-4 transition hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-500/10 dark:hover:bg-primary-500/15">
+                <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-6 border-b border-primary-100 bg-primary-50/70 px-6 py-5 transition hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-500/10 dark:hover:bg-primary-500/15 sm:px-8 sm:py-6">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
                             <span class="h-2.5 w-2.5 rounded-full bg-primary-600 dark:bg-primary-400"></span>
@@ -35,28 +35,28 @@
                     </div>
                 </summary>
 
-                <div class="space-y-5 bg-gray-50/60 p-5 dark:bg-gray-950/30">
+                <div class="space-y-6 bg-gray-50/60 p-6 dark:bg-gray-950/30 sm:p-8">
                     @if ($sourceWithdrawal)
                         <section class="overflow-hidden rounded-xl border border-primary-200 bg-white shadow-sm dark:border-primary-500/25 dark:bg-gray-900">
-                            <div class="flex flex-wrap items-start justify-between gap-4 border-b border-primary-100 bg-primary-50 px-5 py-4 dark:border-primary-500/20 dark:bg-primary-500/10">
+                            <div class="flex flex-wrap items-start justify-between gap-6 border-b border-primary-100 bg-primary-50 px-6 py-5 dark:border-primary-500/20 dark:bg-primary-500/10 sm:px-7">
                                 <div class="min-w-0">
                                     <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">This request is a follow-up</div>
-                                    <h3 class="mt-1 text-lg font-bold text-gray-950 dark:text-white">
+                                    <h3 class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
                                         Source Withdrawal #{{ $sourceWithdrawal->id }}
                                     </h3>
                                 </div>
 
-                                <div class="flex flex-wrap gap-2">
+                                <div class="flex flex-wrap gap-3">
                                     <a
                                         href="{{ \App\Filament\Resources\DeviceWithdrawalRequestResource::getUrl('view', ['record' => $sourceWithdrawal->id]) }}"
-                                        class="inline-flex items-center rounded-lg bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
+                                        class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
                                     >
                                         Open Withdrawal
                                     </a>
                                     @if ($sourceWithdrawal->maintenance_request_id)
                                         <a
                                             href="{{ \App\Filament\Resources\MaintenanceRequestResource::getUrl('view', ['record' => $sourceWithdrawal->maintenance_request_id]) }}"
-                                            class="inline-flex items-center rounded-lg border border-primary-200 bg-white px-3.5 py-2 text-sm font-semibold text-primary-700 transition hover:bg-primary-50 dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300 dark:hover:bg-primary-500/10"
+                                            class="inline-flex items-center rounded-lg border border-primary-200 bg-white px-4 py-2.5 text-sm font-semibold text-primary-700 transition hover:bg-primary-50 dark:border-primary-500/30 dark:bg-gray-900 dark:text-primary-300 dark:hover:bg-primary-500/10"
                                         >
                                             Original Request #{{ $sourceWithdrawal->maintenance_request_id }}
                                         </a>
@@ -64,24 +64,24 @@
                                 </div>
                             </div>
 
-                            <div class="grid gap-3 p-5 md:grid-cols-4">
-                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                            <div class="grid gap-4 p-6 md:grid-cols-4 sm:p-7">
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                     <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Status</div>
                                     <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">
                                         {{ \App\Models\DeviceWithdrawalRequest::statuses()[$sourceWithdrawal->status] ?? $sourceWithdrawal->status }}
                                     </div>
                                 </div>
-                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                     <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Branch</div>
                                     <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">{{ $sourceWithdrawal->branch?->name_en ?: '-' }}</div>
                                 </div>
-                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                     <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Technician</div>
                                     <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">
                                         {{ trim(($sourceWithdrawal->technician?->first_name ?? '') . ' ' . ($sourceWithdrawal->technician?->last_name ?? '')) ?: '-' }}
                                     </div>
                                 </div>
-                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                     <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Devices</div>
                                     <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">{{ $sourceWithdrawal->items->count() }}</div>
                                 </div>
@@ -90,26 +90,26 @@
                     @endif
 
                     @if ($withdrawalRequests->isNotEmpty())
-                        <div class="grid gap-4">
+                        <div class="grid gap-5">
                             @foreach ($withdrawalRequests as $withdrawal)
                                 <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
-                                    <div class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-900">
+                                    <div class="flex flex-wrap items-start justify-between gap-6 border-b border-gray-200 bg-white px-6 py-5 dark:border-gray-700 dark:bg-gray-900 sm:px-7">
                                         <div class="min-w-0">
                                             <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">Withdrawal Request</div>
-                                            <h3 class="mt-1 text-xl font-bold text-gray-950 dark:text-white">Withdrawal #{{ $withdrawal->id }}</h3>
+                                            <h3 class="mt-2 text-xl font-bold text-gray-950 dark:text-white">Withdrawal #{{ $withdrawal->id }}</h3>
                                         </div>
 
-                                        <div class="flex flex-wrap gap-2">
+                                        <div class="flex flex-wrap gap-3">
                                             <a
                                                 href="{{ \App\Filament\Resources\DeviceWithdrawalRequestResource::getUrl('view', ['record' => $withdrawal->id]) }}"
-                                                class="inline-flex items-center rounded-lg bg-primary-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
+                                                class="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500"
                                             >
                                                 Open Withdrawal
                                             </a>
                                             @if ($withdrawal->follow_up_maintenance_request_id)
                                                 <a
                                                     href="{{ \App\Filament\Resources\MaintenanceRequestResource::getUrl('view', ['record' => $withdrawal->follow_up_maintenance_request_id]) }}"
-                                                    class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2 text-sm font-semibold text-gray-800 transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                                                    class="inline-flex items-center rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
                                                 >
                                                     Follow-up #{{ $withdrawal->follow_up_maintenance_request_id }}
                                                 </a>
@@ -117,31 +117,31 @@
                                         </div>
                                     </div>
 
-                                    <div class="space-y-5 p-5">
-                                        <div class="grid gap-3 md:grid-cols-5">
-                                            <div class="rounded-lg border border-primary-100 bg-primary-50/70 p-4 dark:border-primary-500/20 dark:bg-primary-500/10">
+                                    <div class="space-y-6 p-6 sm:p-7">
+                                        <div class="grid gap-4 md:grid-cols-5">
+                                            <div class="rounded-lg border border-primary-100 bg-primary-50/70 p-5 dark:border-primary-500/20 dark:bg-primary-500/10">
                                                 <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">Status</div>
                                                 <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">
                                                     {{ \App\Models\DeviceWithdrawalRequest::statuses()[$withdrawal->status] ?? $withdrawal->status }}
                                                 </div>
                                             </div>
-                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                                 <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Branch</div>
                                                 <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">{{ $withdrawal->branch?->name_en ?: '-' }}</div>
                                             </div>
-                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                                 <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Technician</div>
                                                 <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">
                                                     {{ trim(($withdrawal->technician?->first_name ?? '') . ' ' . ($withdrawal->technician?->last_name ?? '')) ?: '-' }}
                                                 </div>
                                             </div>
-                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                                 <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Delivery Tech</div>
                                                 <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">
                                                     {{ trim(($withdrawal->handoffTechnician?->first_name ?? '') . ' ' . ($withdrawal->handoffTechnician?->last_name ?? '')) ?: '-' }}
                                                 </div>
                                             </div>
-                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/70">
+                                            <div class="rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/70">
                                                 <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Devices</div>
                                                 <div class="mt-1 text-base font-bold text-gray-950 dark:text-white">{{ $withdrawal->items->count() }}</div>
                                             </div>
@@ -151,19 +151,19 @@
                                             <table class="w-full text-sm">
                                                 <thead class="bg-gray-100 text-xs uppercase text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                                                     <tr>
-                                                        <th class="px-4 py-3 text-start font-semibold">Product</th>
-                                                        <th class="px-4 py-3 text-start font-semibold">Serial</th>
-                                                        <th class="px-4 py-3 text-start font-semibold">Status</th>
-                                                        <th class="px-4 py-3 text-start font-semibold">Notes</th>
+                                                        <th class="px-5 py-3 text-start font-semibold">Product</th>
+                                                        <th class="px-5 py-3 text-start font-semibold">Serial</th>
+                                                        <th class="px-5 py-3 text-start font-semibold">Status</th>
+                                                        <th class="px-5 py-3 text-start font-semibold">Notes</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                                                     @foreach ($withdrawal->items as $item)
                                                         <tr class="bg-white dark:bg-gray-900">
-                                                            <td class="px-4 py-3 font-semibold text-gray-950 dark:text-white">{{ $item->product?->name ?: '-' }}</td>
-                                                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $item->serial_number ?: '-' }}</td>
-                                                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $item->status ?: '-' }}</td>
-                                                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $item->notes ?: '-' }}</td>
+                                                            <td class="px-5 py-4 font-semibold text-gray-950 dark:text-white">{{ $item->product?->name ?: '-' }}</td>
+                                                            <td class="px-5 py-4 text-gray-700 dark:text-gray-300">{{ $item->serial_number ?: '-' }}</td>
+                                                            <td class="px-5 py-4 text-gray-700 dark:text-gray-300">{{ $item->status ?: '-' }}</td>
+                                                            <td class="px-5 py-4 text-gray-700 dark:text-gray-300">{{ $item->notes ?: '-' }}</td>
                                                         </tr>
                                                     @endforeach
                                                 </tbody>
