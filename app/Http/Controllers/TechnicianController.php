@@ -746,11 +746,11 @@ class TechnicianController extends Controller
             ], 403);
         }
 
-        if ($maintenanceRequest->current_status->status != 'in_progress') {
+        if (! in_array($maintenanceRequest->current_status->status, ['in_progress', 'waiting_for_payment'], true)) {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVALID_STATUS',
-                'message' => 'The request is not in progress.',
+                'message' => 'The request is not in progress or waiting for payment.',
             ], 400);
         }
 
@@ -768,6 +768,26 @@ class TechnicianController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        $paidInvoice = $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', '!=', 'pending')
+            ->exists();
+
+        if ($paidInvoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_ALREADY_PAID',
+                'message' => 'The invoice has already been paid and the request cannot be completed without payment.',
+            ], 400);
+        }
+
+        $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', 'pending')
+            ->get()
+            ->each
+            ->delete();
 
         $invoice = $this->createZeroServiceInvoice(
             $maintenanceRequest,
