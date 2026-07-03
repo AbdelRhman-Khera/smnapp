@@ -18,7 +18,10 @@
                 background: rgba(249, 250, 251, 0.72);
             }
 
+            .smn-outer-panel,
+            .smn-widget-summary,
             .smn-panel-card,
+            .smn-section-header,
             .smn-muted-card,
             .smn-table-panel,
             .smn-chevron-button,
@@ -31,6 +34,11 @@
                 background: #f9fafb;
             }
 
+            .smn-widget-summary {
+                background: rgba(239, 246, 255, 0.78);
+                border-color: rgba(37, 99, 235, 0.18);
+            }
+
             .smn-primary-card {
                 background: rgba(239, 246, 255, 0.82);
                 border-color: rgba(37, 99, 235, 0.18);
@@ -40,10 +48,18 @@
                 background: rgba(3, 7, 18, 0.34);
             }
 
+            .dark .smn-outer-panel,
+            .dark .smn-widget-summary,
             .dark .smn-panel-card,
+            .dark .smn-section-header,
             .dark .smn-table-panel {
                 background: #111827;
                 border-color: #374151;
+            }
+
+            .dark .smn-widget-summary {
+                background: rgba(37, 99, 235, 0.12);
+                border-color: rgba(96, 165, 250, 0.22);
             }
 
             .smn-table-panel thead {
@@ -96,8 +112,8 @@
         </style>
 
         <x-filament::card>
-            <details class="smn-collapse overflow-hidden rounded-xl border border-primary-100 bg-white shadow-sm dark:border-primary-500/20 dark:bg-gray-900" open>
-                <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-6 border-b border-primary-100 bg-primary-50/70 px-6 py-5 transition hover:bg-primary-50 dark:border-primary-500/20 dark:bg-primary-500/10 dark:hover:bg-primary-500/15 sm:px-8 sm:py-6">
+            <details class="smn-collapse smn-outer-panel overflow-hidden rounded-xl border shadow-sm" open>
+                <summary class="smn-widget-summary flex cursor-pointer list-none flex-wrap items-center justify-between gap-6 border-b px-6 py-5 transition sm:px-8 sm:py-6">
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
                             <span class="h-2.5 w-2.5 rounded-full bg-primary-600 dark:bg-primary-400"></span>
@@ -118,7 +134,7 @@
                 <div class="smn-widget-body space-y-6 p-6 sm:p-8">
                     @if ($sourceWithdrawal)
                         <section class="smn-panel-card overflow-hidden rounded-xl border border-primary-200 shadow-sm dark:border-primary-500/25">
-                            <div class="flex flex-wrap items-start justify-between gap-6 border-b border-primary-100 bg-primary-50 px-6 py-5 dark:border-primary-500/20 dark:bg-primary-500/10 sm:px-7">
+                            <div class="smn-section-header flex flex-wrap items-start justify-between gap-6 border-b px-6 py-5 sm:px-7">
                                 <div class="min-w-0">
                                     <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">This request is a follow-up</div>
                                     <h3 class="mt-2 text-lg font-bold text-gray-950 dark:text-white">
@@ -136,7 +152,7 @@
                                     @if ($sourceWithdrawal->maintenance_request_id)
                                         <a
                                             href="{{ \App\Filament\Resources\MaintenanceRequestResource::getUrl('view', ['record' => $sourceWithdrawal->maintenance_request_id]) }}"
-                                            class="smn-secondary-button inline-flex items-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition hover:bg-primary-50 dark:hover:bg-primary-500/10"
+                                            class="smn-secondary-button inline-flex items-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition"
                                         >
                                             Original Request #{{ $sourceWithdrawal->maintenance_request_id }}
                                         </a>
@@ -173,7 +189,7 @@
                         <div class="grid gap-5">
                             @foreach ($withdrawalRequests as $withdrawal)
                                 <section class="smn-panel-card overflow-hidden rounded-xl border shadow-sm">
-                                    <div class="flex flex-wrap items-start justify-between gap-6 border-b border-gray-200 bg-white px-6 py-5 dark:border-gray-700 dark:bg-gray-900 sm:px-7">
+                                    <div class="smn-section-header flex flex-wrap items-start justify-between gap-6 border-b px-6 py-5 sm:px-7">
                                         <div class="min-w-0">
                                             <div class="text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">Withdrawal Request</div>
                                             <h3 class="mt-2 text-xl font-bold text-gray-950 dark:text-white">Withdrawal #{{ $withdrawal->id }}</h3>
@@ -189,7 +205,7 @@
                                             @if ($withdrawal->follow_up_maintenance_request_id)
                                                 <a
                                                     href="{{ \App\Filament\Resources\MaintenanceRequestResource::getUrl('view', ['record' => $withdrawal->follow_up_maintenance_request_id]) }}"
-                                                    class="smn-secondary-button inline-flex items-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition hover:bg-white dark:hover:bg-gray-700"
+                                                    class="smn-secondary-button inline-flex items-center rounded-lg border px-4 py-2.5 text-sm font-semibold transition"
                                                 >
                                                     Follow-up #{{ $withdrawal->follow_up_maintenance_request_id }}
                                                 </a>
