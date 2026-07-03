@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MaintenanceRequestResource\Pages;
 
 use App\Filament\Resources\MaintenanceRequestResource;
 use App\Filament\Widgets\AppointmentWidget;
+use App\Filament\Widgets\DeviceWithdrawalDetailsWidget;
 use App\Filament\Widgets\FeedbackWidget;
 use App\Filament\Widgets\InvoiceWidget;
 use Filament\Actions;
@@ -42,6 +43,7 @@ class ViewMaintenanceRequest extends ViewRecord
         return [
             StatusHistoryWidget::class,
             AppointmentWidget::class,
+            DeviceWithdrawalDetailsWidget::class,
             InvoiceWidget::class,
             FeedbackWidget::class,
         ];

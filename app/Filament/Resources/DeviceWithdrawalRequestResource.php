@@ -6,6 +6,8 @@ use App\Filament\Resources\DeviceWithdrawalRequestResource\Pages;
 use App\Models\Branch;
 use App\Models\DeviceWithdrawalRequest;
 use App\Models\MaintenanceRequest;
+use App\Models\Service;
+use App\Models\SparePart;
 use App\Models\Technician;
 use App\Services\NotificationService;
 use Filament\Actions as PageActions;
@@ -390,74 +392,9 @@ class DeviceWithdrawalRequestResource extends Resource
                 && blank($record->follow_up_maintenance_request_id)
                 && static::canManageBranch($record)
             )
-            ->form([
-                Forms\Components\TextInput::make('invoice_total')
-                    ->label('Invoice Total')
-                    ->numeric()
-                    ->minValue(0)
-                    ->required(),
-                Forms\Components\Textarea::make('problem_description')
-                    ->label('Follow-up Request Description')
-                    ->default('Workshop repaired device return and installation.')
-                    ->required()
-                    ->rows(3),
-                Forms\Components\Textarea::make('invoice_notes')
-                    ->label('Invoice Notes')
-                    ->rows(3),
-            ])
+            ->form(static::followUpRequestForm())
             ->action(function (DeviceWithdrawalRequest $record, array $data): void {
-                $followUp = DB::transaction(function () use ($record, $data): MaintenanceRequest {
-                    $record->loadMissing(['maintenanceRequest', 'items.product']);
-
-                    $followUp = MaintenanceRequest::create([
-                        'customer_id' => $record->customer_id,
-                        'type' => 'regular_maintenance',
-                        'address_id' => $record->maintenanceRequest?->address_id,
-                        'problem_description' => $data['problem_description'],
-                        'last_status' => 'waiting_for_payment',
-                        'created_by' => auth()->id(),
-                        'updated_by' => auth()->id(),
-                    ]);
-
-                    $sync = $record->items
-                        ->pluck('product_id')
-                        ->unique()
-                        ->mapWithKeys(fn ($productId): array => [$productId => ['quantity' => 1]])
-                        ->all();
-
-                    $followUp->products()->sync($sync);
-                    $followUp->recalculateHours();
-
-                    $followUp->statuses()->create([
-                        'status' => 'waiting_for_payment',
-                        'notes' => 'Workshop repair invoice created from device withdrawal request #' . $record->id,
-                    ]);
-
-                    $invoice = $followUp->invoices()->create([
-                        'invoice_type' => 'final',
-                        'total' => (float) $data['invoice_total'],
-                        'status' => 'pending',
-                        'notes' => [
-                            [
-                                'note' => $data['invoice_notes'] ?? null,
-                                'source' => 'device_withdrawal_request',
-                                'device_withdrawal_request_id' => $record->id,
-                                'created_at' => now()->toDateTimeString(),
-                            ],
-                        ],
-                    ]);
-
-                    $followUp->update(['invoice_number' => $invoice->id]);
-
-                    $record->update([
-                        'status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED,
-                        'follow_up_maintenance_request_id' => $followUp->id,
-                    ]);
-
-                    $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
-
-                    return $followUp;
-                });
+                $followUp = static::createFollowUpRequest($record, $data);
 
                 NotificationService::notifyCustomerTranslated(
                     $record->customer_id,
@@ -618,72 +555,9 @@ class DeviceWithdrawalRequestResource extends Resource
                 && blank($record->follow_up_maintenance_request_id)
                 && static::canManageBranch($record)
             )
-            ->form([
-                Forms\Components\TextInput::make('invoice_total')
-                    ->label('Invoice Total')
-                    ->numeric()
-                    ->minValue(0)
-                    ->required(),
-                Forms\Components\Textarea::make('problem_description')
-                    ->label('Follow-up Request Description')
-                    ->default('Workshop repaired device return and installation.')
-                    ->required()
-                    ->rows(3),
-                Forms\Components\Textarea::make('invoice_notes')
-                    ->label('Invoice Notes')
-                    ->rows(3),
-            ])
+            ->form(static::followUpRequestForm())
             ->action(function (DeviceWithdrawalRequest $record, array $data): void {
-                $followUp = DB::transaction(function () use ($record, $data): MaintenanceRequest {
-                    $record->loadMissing(['maintenanceRequest', 'items.product']);
-
-                    $followUp = MaintenanceRequest::create([
-                        'customer_id' => $record->customer_id,
-                        'type' => 'regular_maintenance',
-                        'address_id' => $record->maintenanceRequest?->address_id,
-                        'problem_description' => $data['problem_description'],
-                        'last_status' => 'waiting_for_payment',
-                        'created_by' => auth()->id(),
-                        'updated_by' => auth()->id(),
-                    ]);
-
-                    $sync = $record->items
-                        ->pluck('product_id')
-                        ->unique()
-                        ->mapWithKeys(fn ($productId): array => [$productId => ['quantity' => 1]])
-                        ->all();
-
-                    $followUp->products()->sync($sync);
-                    $followUp->recalculateHours();
-
-                    $followUp->statuses()->create([
-                        'status' => 'waiting_for_payment',
-                        'notes' => 'Workshop repair invoice created from device withdrawal request #' . $record->id,
-                    ]);
-
-                    $invoice = $followUp->invoices()->create([
-                        'invoice_type' => 'final',
-                        'total' => (float) $data['invoice_total'],
-                        'status' => 'pending',
-                        'notes' => [[
-                            'note' => $data['invoice_notes'] ?? null,
-                            'source' => 'device_withdrawal_request',
-                            'device_withdrawal_request_id' => $record->id,
-                            'created_at' => now()->toDateTimeString(),
-                        ]],
-                    ]);
-
-                    $followUp->update(['invoice_number' => $invoice->id]);
-
-                    $record->update([
-                        'status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED,
-                        'follow_up_maintenance_request_id' => $followUp->id,
-                    ]);
-
-                    $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
-
-                    return $followUp;
-                });
+                $followUp = static::createFollowUpRequest($record, $data);
 
                 NotificationService::notifyCustomerTranslated(
                     $record->customer_id,
@@ -694,6 +568,202 @@ class DeviceWithdrawalRequestResource extends Resource
 
                 Notification::make()->title('Follow-up maintenance request created')->success()->send();
             });
+    }
+
+    protected static function followUpRequestForm(): array
+    {
+        return [
+            Forms\Components\Select::make('follow_up_kind')
+                ->label('Follow-up Type')
+                ->options([
+                    'paid' => 'Regular request with invoice',
+                    'warranty' => 'Warranty request without invoice',
+                ])
+                ->default('paid')
+                ->live()
+                ->required(),
+            Forms\Components\Textarea::make('problem_description')
+                ->label('Follow-up Request Description')
+                ->default('Workshop repaired device return and installation.')
+                ->required()
+                ->rows(3)
+                ->columnSpanFull(),
+            Forms\Components\Repeater::make('services_items')
+                ->label('Services')
+                ->schema([
+                    Forms\Components\Select::make('service_id')
+                        ->label('Service')
+                        ->options(fn (): array => Service::query()
+                            ->active()
+                            ->orderBy('name_en')
+                            ->get()
+                            ->mapWithKeys(fn (Service $service): array => [
+                                $service->id => ($service->name_en ?: $service->name_ar) . ' - ' . number_format((float) $service->price, 2) . ' SAR',
+                            ])
+                            ->all())
+                        ->searchable()
+                        ->required(),
+                ])
+                ->defaultItems(0)
+                ->addActionLabel('Add Service')
+                ->visible(fn (Forms\Get $get): bool => $get('follow_up_kind') === 'paid')
+                ->columns(1)
+                ->columnSpanFull(),
+            Forms\Components\Repeater::make('spare_parts_items')
+                ->label('Spare Parts')
+                ->schema([
+                    Forms\Components\Select::make('spare_part_id')
+                        ->label('Spare Part')
+                        ->options(fn (): array => SparePart::query()
+                            ->active()
+                            ->orderBy('name_en')
+                            ->get()
+                            ->mapWithKeys(fn (SparePart $part): array => [
+                                $part->id => ($part->name_en ?: $part->name_ar) . ' - ' . number_format((float) $part->price, 2) . ' SAR',
+                            ])
+                            ->all())
+                        ->searchable()
+                        ->required(),
+                    Forms\Components\TextInput::make('quantity')
+                        ->label('Qty')
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(1)
+                        ->required(),
+                    Forms\Components\TextInput::make('price')
+                        ->label('Unit Price')
+                        ->numeric()
+                        ->minValue(0)
+                        ->helperText('Leave empty to use the spare part default price.'),
+                ])
+                ->addActionLabel('Add Spare Part')
+                ->visible(fn (Forms\Get $get): bool => $get('follow_up_kind') === 'paid')
+                ->columns(3)
+                ->columnSpanFull(),
+            Forms\Components\Textarea::make('invoice_notes')
+                ->label('Invoice Notes')
+                ->rows(3)
+                ->visible(fn (Forms\Get $get): bool => $get('follow_up_kind') === 'paid')
+                ->columnSpanFull(),
+        ];
+    }
+
+    protected static function createFollowUpRequest(DeviceWithdrawalRequest $record, array $data): MaintenanceRequest
+    {
+        return DB::transaction(function () use ($record, $data): MaintenanceRequest {
+            $record->loadMissing(['maintenanceRequest', 'items.product']);
+
+            $isWarranty = ($data['follow_up_kind'] ?? 'paid') === 'warranty';
+            $status = $isWarranty ? 'pending' : 'waiting_for_payment';
+
+            $followUp = MaintenanceRequest::create([
+                'customer_id' => $record->customer_id,
+                'type' => $isWarranty ? 'warranty' : 'regular_maintenance',
+                'warranty_source_request_id' => $isWarranty ? $record->maintenance_request_id : null,
+                'address_id' => $record->maintenanceRequest?->address_id,
+                'problem_description' => $data['problem_description'],
+                'last_status' => $status,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
+            ]);
+
+            $sync = $record->items
+                ->pluck('product_id')
+                ->unique()
+                ->mapWithKeys(fn ($productId): array => [$productId => ['quantity' => 1]])
+                ->all();
+
+            $followUp->products()->sync($sync);
+            $followUp->recalculateHours();
+
+            $followUp->statuses()->create([
+                'status' => $status,
+                'notes' => $isWarranty
+                    ? 'Workshop warranty follow-up created from device withdrawal request #' . $record->id
+                    : 'Workshop repair invoice created from device withdrawal request #' . $record->id,
+            ]);
+
+            if (! $isWarranty) {
+                $invoice = $followUp->invoices()->create([
+                    'invoice_type' => 'final',
+                    'total' => static::calculateFollowUpInvoiceTotal($data),
+                    'status' => 'pending',
+                    'notes' => [[
+                        'note' => $data['invoice_notes'] ?? null,
+                        'source' => 'device_withdrawal_request',
+                        'device_withdrawal_request_id' => $record->id,
+                        'created_at' => now()->toDateTimeString(),
+                    ]],
+                ]);
+
+                $invoice->services()->sync(
+                    collect($data['services_items'] ?? [])
+                        ->pluck('service_id')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all()
+                );
+
+                $invoice->spareParts()->sync(
+                    collect($data['spare_parts_items'] ?? [])
+                        ->filter(fn (array $item): bool => filled($item['spare_part_id'] ?? null))
+                        ->mapWithKeys(function (array $item): array {
+                            $part = SparePart::find($item['spare_part_id']);
+                            $price = filled($item['price'] ?? null)
+                                ? (float) $item['price']
+                                : (float) ($part?->price ?? 0);
+
+                            return [
+                                $item['spare_part_id'] => [
+                                    'quantity' => (int) ($item['quantity'] ?? 1),
+                                    'price' => $price,
+                                ],
+                            ];
+                        })
+                        ->all()
+                );
+
+                $followUp->update(['invoice_number' => $invoice->id]);
+            }
+
+            $record->update([
+                'status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED,
+                'follow_up_maintenance_request_id' => $followUp->id,
+            ]);
+
+            $record->items()->update(['status' => DeviceWithdrawalRequest::STATUS_FOLLOW_UP_REQUEST_CREATED]);
+
+            return $followUp;
+        });
+    }
+
+    protected static function calculateFollowUpInvoiceTotal(array $data): float
+    {
+        $servicesTotal = Service::query()
+            ->whereIn(
+                'id',
+                collect($data['services_items'] ?? [])
+                    ->pluck('service_id')
+                    ->filter()
+                    ->unique()
+                    ->all()
+            )
+            ->sum('price');
+
+        $sparePartsTotal = collect($data['spare_parts_items'] ?? [])
+            ->filter(fn (array $item): bool => filled($item['spare_part_id'] ?? null))
+            ->sum(function (array $item): float {
+                $part = SparePart::find($item['spare_part_id']);
+                $price = filled($item['price'] ?? null)
+                    ? (float) $item['price']
+                    : (float) ($part?->price ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+
+                return $price * max(1, $quantity);
+            });
+
+        return (float) $servicesTotal + (float) $sparePartsTotal;
     }
 
     protected static function canManageBranch(DeviceWithdrawalRequest $record): bool
