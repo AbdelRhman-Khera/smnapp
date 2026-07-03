@@ -35,9 +35,38 @@ class StatusHistoryWidget extends BaseWidget
     protected function getTableColumns(): array
     {
         return [
-            Tables\Columns\TextColumn::make('status')->label('Status')->sortable(),
-            Tables\Columns\TextColumn::make('notes')->label('Notes')->limit(50),
-            Tables\Columns\TextColumn::make('created_at')->label('Updated At')->dateTime()->sortable(),
+            Tables\Columns\TextColumn::make('status')
+                ->label('Status')
+                ->badge()
+                ->color(fn (?string $state): string => match ($state) {
+                    'pending' => 'gray',
+                    'visit_payment_pending' => 'warning',
+                    'service_paid' => 'success',
+                    'technician_assigned' => 'info',
+                    'technician_on_the_way' => 'warning',
+                    'technician_arrived' => 'primary',
+                    'in_progress' => 'warning',
+                    'waiting_for_payment' => 'danger',
+                    'waiting_for_technician_confirm_payment' => 'danger',
+                    'completed' => 'success',
+                    'canceled' => 'danger',
+                    default => 'gray',
+                })
+                ->formatStateUsing(fn (?string $state): string => $state
+                    ? str($state)->replace('_', ' ')->title()->toString()
+                    : '-')
+                ->sortable(),
+            Tables\Columns\TextColumn::make('notes')
+                ->label('Notes')
+                ->wrap()
+                ->placeholder('No notes')
+                ->extraCellAttributes([
+                    'class' => 'max-w-xl whitespace-normal break-words',
+                ]),
+            Tables\Columns\TextColumn::make('created_at')
+                ->label('Updated At')
+                ->dateTime('Y-m-d h:i A')
+                ->sortable(),
         ];
     }
 
