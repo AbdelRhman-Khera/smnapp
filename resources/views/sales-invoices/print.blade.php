@@ -120,6 +120,9 @@
                     {{ $address?->city?->name_en ?: $address?->city?->name_ar ?: '-' }}
                 </div>
                 <div class="phone"><b>Phone:</b> {{ $customer?->phone ?: '-' }}</div>
+                @if ($customer?->tax_number)
+                    <div class="phone"><b>Tax Number:</b> {{ $customer->tax_number }}</div>
+                @endif
             </div>
             <div class="inv-info">
                 <div class="line"><span class="k">Invoice#</span><span class="v">{{ $invoice->id }}</span></div>

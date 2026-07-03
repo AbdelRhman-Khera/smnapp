@@ -36,6 +36,9 @@ class CustomerResource extends Resource
                     ->required()
                     ->maxLength(15),
                 Forms\Components\TextInput::make('email')->unique('customers', 'email', ignoreRecord: true)->email()->maxLength(100),
+                Forms\Components\TextInput::make('tax_number')
+                    ->label('Tax Number')
+                    ->maxLength(50),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
@@ -65,6 +68,10 @@ class CustomerResource extends Resource
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('tax_number')
+                    ->label('Tax Number')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('city')
