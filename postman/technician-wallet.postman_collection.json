@@ -1,0 +1,475 @@
+{
+	"info": {
+		"_postman_id": "7f3e9b10-2c4a-4d5e-9f1a-technician-wallet",
+		"name": "SMN - Technician Wallet",
+		"description": "Tests for the technician wallet feature: wallet summary, payout requests, payout history, and the date-filtered requests summary.\n\nRun order:\n1. Technician Login (saves token automatically)\n2. Get Wallet\n3. Create Payout Request\n4. Create Payout Request (Duplicate - expect 400)\n5. Get Payout Requests History\n6. Requests Summary (date filter)\n7. Requests Summary (invalid dates - expect 422)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost/new/smnapp/public",
+			"type": "string"
+		},
+		{
+			"key": "technician_phone",
+			"value": "0500000000",
+			"type": "string"
+		},
+		{
+			"key": "technician_password",
+			"value": "password",
+			"type": "string"
+		},
+		{
+			"key": "technician_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{technician_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "1. Technician Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Login successful and token returned', function () {",
+							"    const json = pm.response.json();",
+							"    pm.expect(json.response_code).to.eql('LOGIN_SUCCESS');",
+							"    pm.expect(json.data.token).to.be.a('string').and.not.empty;",
+							"    pm.collectionVariables.set('technician_token', json.data.token);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "phone",
+							"value": "{{technician_phone}}",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "{{technician_password}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/login",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "login"]
+				}
+			}
+		},
+		{
+			"name": "2. Get Wallet",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"const json = pm.response.json();",
+							"",
+							"pm.test('Response code is TECHNICIAN_WALLET', function () {",
+							"    pm.expect(json.response_code).to.eql('TECHNICIAN_WALLET');",
+							"});",
+							"",
+							"pm.test('Wallet object has all balance fields', function () {",
+							"    const wallet = json.data.wallet;",
+							"    pm.expect(wallet).to.have.property('available_balance').that.is.a('number');",
+							"    pm.expect(wallet).to.have.property('requested_balance').that.is.a('number');",
+							"    pm.expect(wallet).to.have.property('total_paid').that.is.a('number');",
+							"    pm.expect(wallet).to.have.property('pending_requests_count').that.is.a('number');",
+							"    pm.expect(wallet).to.have.property('pending_by_type').that.is.an('array');",
+							"    pm.expect(wallet).to.have.property('has_pending_payout_request').that.is.a('boolean');",
+							"});",
+							"",
+							"pm.test('Fees list contains the 4 maintenance types', function () {",
+							"    const types = json.data.fees.map(f => f.type);",
+							"    pm.expect(types).to.include.members(['new_installation', 'regular_maintenance', 'emergency_maintenance', 'warranty']);",
+							"});",
+							"",
+							"pm.test('Earnings list is paginated', function () {",
+							"    pm.expect(json.data.earnings).to.have.property('data').that.is.an('array');",
+							"    pm.expect(json.data.earnings).to.have.property('total');",
+							"});",
+							"",
+							"pm.test('Pending by type rows have type, count and total', function () {",
+							"    json.data.wallet.pending_by_type.forEach(function (row) {",
+							"        pm.expect(row).to.have.property('request_type');",
+							"        pm.expect(row).to.have.property('count');",
+							"        pm.expect(row).to.have.property('total');",
+							"    });",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/wallet?per_page=10&page=1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "wallet"],
+					"query": [
+						{
+							"key": "per_page",
+							"value": "10"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "3. Create Payout Request",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const json = pm.response.json();",
+							"",
+							"pm.test('Payout created (200) or correctly refused (400)', function () {",
+							"    pm.expect([200, 400]).to.include(pm.response.code);",
+							"});",
+							"",
+							"if (pm.response.code === 200) {",
+							"    pm.test('Response code is PAYOUT_REQUEST_CREATED', function () {",
+							"        pm.expect(json.response_code).to.eql('PAYOUT_REQUEST_CREATED');",
+							"    });",
+							"",
+							"    const payout = json.data.payout_request;",
+							"",
+							"    pm.test('Payout request is pending with a positive total', function () {",
+							"        pm.expect(payout.status).to.eql('pending');",
+							"        pm.expect(payout.total_amount).to.be.above(0);",
+							"        pm.expect(payout.requests_count).to.be.above(0);",
+							"    });",
+							"",
+							"    pm.test('Earnings are attached, locked and match the totals', function () {",
+							"        pm.expect(payout.earnings).to.be.an('array').with.lengthOf(payout.requests_count);",
+							"        let sum = 0;",
+							"        payout.earnings.forEach(function (earning) {",
+							"            pm.expect(earning.status).to.eql('requested');",
+							"            pm.expect(earning.payout_request_id).to.eql(payout.id);",
+							"            pm.expect(earning).to.have.property('maintenance_request_id');",
+							"            pm.expect(earning).to.have.property('request_type');",
+							"            sum += earning.amount;",
+							"        });",
+							"        pm.expect(sum).to.be.closeTo(payout.total_amount, 0.01);",
+							"    });",
+							"",
+							"    pm.collectionVariables.set('last_payout_id', payout.id);",
+							"} else {",
+							"    pm.test('Refusal reason is a known response code', function () {",
+							"        pm.expect(['PAYOUT_REQUEST_ALREADY_PENDING', 'NO_AVAILABLE_BALANCE']).to.include(json.response_code);",
+							"    });",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "notes",
+							"value": "Payout request from Postman test",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/wallet/payout-request",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "wallet", "payout-request"]
+				}
+			}
+		},
+		{
+			"name": "4. Create Payout Request (Duplicate - expect 400)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Duplicate payout is refused', function () {",
+							"    const json = pm.response.json();",
+							"    pm.expect(['PAYOUT_REQUEST_ALREADY_PENDING', 'NO_AVAILABLE_BALANCE']).to.include(json.response_code);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "notes",
+							"value": "Duplicate payout attempt",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/wallet/payout-request",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "wallet", "payout-request"]
+				}
+			}
+		},
+		{
+			"name": "5. Get Payout Requests History",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"const json = pm.response.json();",
+							"",
+							"pm.test('Response code is TECHNICIAN_PAYOUT_REQUESTS', function () {",
+							"    pm.expect(json.response_code).to.eql('TECHNICIAN_PAYOUT_REQUESTS');",
+							"});",
+							"",
+							"pm.test('History is paginated', function () {",
+							"    pm.expect(json.data.payout_requests).to.have.property('data').that.is.an('array');",
+							"    pm.expect(json.data.payout_requests).to.have.property('total');",
+							"});",
+							"",
+							"pm.test('Each payout has status, totals and attached earnings', function () {",
+							"    json.data.payout_requests.data.forEach(function (payout) {",
+							"        pm.expect(['pending', 'approved', 'rejected']).to.include(payout.status);",
+							"        pm.expect(payout).to.have.property('total_amount');",
+							"        pm.expect(payout).to.have.property('requests_count');",
+							"        pm.expect(payout.earnings).to.be.an('array');",
+							"    });",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/wallet/payout-requests?per_page=10&page=1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "wallet", "payout-requests"],
+					"query": [
+						{
+							"key": "per_page",
+							"value": "10"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "6. Requests Summary (date filter)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const today = new Date();",
+							"const monthAgo = new Date();",
+							"monthAgo.setDate(today.getDate() - 30);",
+							"pm.collectionVariables.set('from_date', monthAgo.toISOString().slice(0, 10));",
+							"pm.collectionVariables.set('to_date', today.toISOString().slice(0, 10));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"const json = pm.response.json();",
+							"",
+							"pm.test('Response code is TECHNICIAN_REQUESTS_SUMMARY', function () {",
+							"    pm.expect(json.response_code).to.eql('TECHNICIAN_REQUESTS_SUMMARY');",
+							"});",
+							"",
+							"pm.test('Applied date filters are echoed back', function () {",
+							"    pm.expect(json.data.filters.from_date).to.eql(pm.collectionVariables.get('from_date'));",
+							"    pm.expect(json.data.filters.to_date).to.eql(pm.collectionVariables.get('to_date'));",
+							"});",
+							"",
+							"pm.test('Counts are consistent', function () {",
+							"    pm.expect(json.data.total_requests).to.eql(json.data.completed_requests + json.data.ongoing_requests);",
+							"});",
+							"",
+							"pm.test('All returned requests are inside the date range', function () {",
+							"    const from = new Date(pm.collectionVariables.get('from_date'));",
+							"    const to = new Date(pm.collectionVariables.get('to_date'));",
+							"    to.setHours(23, 59, 59, 999);",
+							"    json.data.all_requests.data.forEach(function (request) {",
+							"        const created = new Date(request.created_at);",
+							"        pm.expect(created >= from && created <= to, 'request #' + request.id + ' outside range').to.be.true;",
+							"    });",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/requests-summary?from_date={{from_date}}&to_date={{to_date}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "requests-summary"],
+					"query": [
+						{
+							"key": "from_date",
+							"value": "{{from_date}}"
+						},
+						{
+							"key": "to_date",
+							"value": "{{to_date}}"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "7. Requests Summary (invalid dates - expect 422)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status code is 422', function () {",
+							"    pm.response.to.have.status(422);",
+							"});",
+							"",
+							"pm.test('Validation error returned', function () {",
+							"    const json = pm.response.json();",
+							"    pm.expect(json.response_code).to.eql('VALIDATION_ERROR');",
+							"    pm.expect(json.errors).to.have.property('to_date');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/v1/technician/requests-summary?from_date=2026-07-01&to_date=2026-06-01",
+					"host": ["{{base_url}}"],
+					"path": ["api", "v1", "technician", "requests-summary"],
+					"query": [
+						{
+							"key": "from_date",
+							"value": "2026-07-01"
+						},
+						{
+							"key": "to_date",
+							"value": "2026-06-01"
+						}
+					]
+				}
+			}
+		}
+	]
+}

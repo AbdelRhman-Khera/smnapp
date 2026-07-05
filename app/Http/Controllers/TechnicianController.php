@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
+use App\Models\Setting;
 use App\Models\Slot;
 use App\Models\Technician;
+use App\Models\TechnicianEarning;
+use App\Models\TechnicianPayoutRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -176,23 +180,51 @@ class TechnicianController extends Controller
     {
         $technician = Technician::with(['districts', 'products'])->find(auth()->user()->id);
 
+        $validator = Validator::make($request->all(), [
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $applyDateFilter = function ($query, string $column = 'created_at') use ($fromDate, $toDate) {
+            if ($fromDate) {
+                $query->whereDate($column, '>=', $fromDate);
+            }
+            if ($toDate) {
+                $query->whereDate($column, '<=', $toDate);
+            }
+
+            return $query;
+        };
+
         // Count all maintenance requests assigned to the technician
-        $totalRequests = MaintenanceRequest::where('technician_id', $technician->id)->count();
+        $totalRequests = $applyDateFilter(MaintenanceRequest::where('technician_id', $technician->id))->count();
 
         // Count requests by type
-        $requestsByType = MaintenanceRequest::where('technician_id', $technician->id)
+        $requestsByType = $applyDateFilter(MaintenanceRequest::where('technician_id', $technician->id))
             ->select('type', \DB::raw('count(*) as count'))
             ->groupBy('type')
             ->get();
 
         // Count requests by current status (latest status only)
-        $requestsByStatus = \DB::table('maintenance_requests')
+        $requestsByStatus = $applyDateFilter(\DB::table('maintenance_requests')
             ->join('request_statuses', function ($join) {
                 $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
                     ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
             })
             ->select('request_statuses.status', \DB::raw('count(*) as count'))
-            ->where('maintenance_requests.technician_id', $technician->id)
+            ->where('maintenance_requests.technician_id', $technician->id), 'maintenance_requests.created_at')
             ->groupBy('request_statuses.status')
             ->get();
 
@@ -218,20 +250,20 @@ class TechnicianController extends Controller
         $page = $request->input('page', 1);
 
         // Get all requests (history) with slot info
-        $allRequests = MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
+        $allRequests = $applyDateFilter(MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
             $query->latest();
         }, 'slot'])
-            ->where('technician_id', $technician->id)
+            ->where('technician_id', $technician->id))
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
         // Count completed and ongoing requests
-        $completedRequests = \DB::table('maintenance_requests')
+        $completedRequests = $applyDateFilter(\DB::table('maintenance_requests')
             ->join('request_statuses', function ($join) {
                 $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
                     ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
             })
             ->where('maintenance_requests.technician_id', $technician->id)
-            ->where('request_statuses.status', 'completed')
+            ->where('request_statuses.status', 'completed'), 'maintenance_requests.created_at')
             ->count();
 
         $ongoingRequests = $totalRequests - $completedRequests;
@@ -249,8 +281,155 @@ class TechnicianController extends Controller
                 'ongoing_requests' => $ongoingRequests,
                 'next_request' => $nextRequest,
                 'all_requests' => $allRequests,
+                'filters' => [
+                    'from_date' => $fromDate,
+                    'to_date' => $toDate,
+                ],
             ],
         ]);
+    }
+
+    public function getWallet(Request $request)
+    {
+        $technician = $request->user();
+
+        $baseQuery = TechnicianEarning::where('technician_id', $technician->id);
+
+        $availableBalance = (float) (clone $baseQuery)->where('status', 'pending')->sum('amount');
+        $requestedBalance = (float) (clone $baseQuery)->where('status', 'requested')->sum('amount');
+        $totalPaid = (float) (clone $baseQuery)->where('status', 'paid')->sum('amount');
+
+        $pendingByType = (clone $baseQuery)
+            ->where('status', 'pending')
+            ->select('request_type', DB::raw('count(*) as count'), DB::raw('sum(amount) as total'))
+            ->groupBy('request_type')
+            ->get();
+
+        $earnings = TechnicianEarning::with('maintenanceRequest:id,type,last_status,created_at')
+            ->where('technician_id', $technician->id)
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 10));
+
+        $hasPendingPayoutRequest = TechnicianPayoutRequest::where('technician_id', $technician->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIAN_WALLET',
+            'message' => 'Technician wallet retrieved successfully.',
+            'data' => [
+                'wallet' => [
+                    'available_balance' => $availableBalance,
+                    'requested_balance' => $requestedBalance,
+                    'total_paid' => $totalPaid,
+                    'pending_requests_count' => (clone $baseQuery)->where('status', 'pending')->count(),
+                    'pending_by_type' => $pendingByType,
+                    'has_pending_payout_request' => $hasPendingPayoutRequest,
+                ],
+                'fees' => Setting::technicianMaintenanceFees(),
+                'earnings' => $earnings,
+            ],
+        ], 200);
+    }
+
+    public function requestPayout(Request $request)
+    {
+        $technician = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $hasPendingPayoutRequest = TechnicianPayoutRequest::where('technician_id', $technician->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingPayoutRequest) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PAYOUT_REQUEST_ALREADY_PENDING',
+                'message' => 'You already have a pending payout request.',
+            ], 400);
+        }
+
+        $payoutRequest = DB::transaction(function () use ($technician, $request) {
+            $pendingEarnings = TechnicianEarning::where('technician_id', $technician->id)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->get();
+
+            $totalAmount = (float) $pendingEarnings->sum('amount');
+
+            if ($pendingEarnings->isEmpty() || $totalAmount <= 0) {
+                return null;
+            }
+
+            $payoutRequest = TechnicianPayoutRequest::create([
+                'technician_id' => $technician->id,
+                'total_amount' => $totalAmount,
+                'requests_count' => $pendingEarnings->count(),
+                'status' => 'pending',
+                'notes' => $request->notes,
+            ]);
+
+            TechnicianEarning::whereIn('id', $pendingEarnings->pluck('id'))->update([
+                'status' => 'requested',
+                'payout_request_id' => $payoutRequest->id,
+            ]);
+
+            return $payoutRequest;
+        });
+
+        if (! $payoutRequest) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'NO_AVAILABLE_BALANCE',
+                'message' => 'There is no available balance to request a payout.',
+            ], 400);
+        }
+
+        NotificationService::notifyAdmins(
+            "Technician {$technician->name} requested a payout of " . number_format($payoutRequest->total_amount, 2) . " SAR (payout request #{$payoutRequest->id}).",
+            null
+        );
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'PAYOUT_REQUEST_CREATED',
+            'message' => 'Payout request created successfully.',
+            'data' => [
+                'payout_request' => $payoutRequest->load('earnings.maintenanceRequest:id,type,last_status,created_at'),
+            ],
+        ], 200);
+    }
+
+    public function getPayoutRequests(Request $request)
+    {
+        $technician = $request->user();
+
+        $payoutRequests = TechnicianPayoutRequest::with('earnings.maintenanceRequest:id,type,last_status,created_at')
+            ->where('technician_id', $technician->id)
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 10));
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIAN_PAYOUT_REQUESTS',
+            'message' => 'Payout requests retrieved successfully.',
+            'data' => [
+                'payout_requests' => $payoutRequests,
+            ],
+        ], 200);
     }
 
     public function getAllRequests(Request $request)

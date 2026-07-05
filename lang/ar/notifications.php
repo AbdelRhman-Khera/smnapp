@@ -22,5 +22,7 @@ return [
         'device_withdrawal_rejected' => 'رفض العميل طلب سحب الجهاز رقم #:id.',
         'device_withdrawal_assigned' => 'تم تحويل طلب تسليم جهاز مسحوب رقم #:id إليك.',
         'device_withdrawal_assigned_by_branch' => 'قام موظف الفرع بتحويل طلب سحب الجهاز رقم #:id إليك.',
+        'payout_approved' => 'تمت الموافقة على طلب صرف المستحقات رقم #:id. سيتم تحويل :amount ريال لك.',
+        'payout_rejected' => 'تم رفض طلب صرف المستحقات رقم #:id. تمت إعادة المبلغ إلى رصيد محفظتك.',
     ],
 ];

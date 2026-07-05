@@ -48,4 +48,18 @@ class Setting extends Model
             ->values()
             ->all();
     }
+
+    public static function technicianMaintenanceFees(): array
+    {
+        return collect(static::getValue('technician_maintenance_fees', []))
+            ->values()
+            ->all();
+    }
+
+    public static function technicianFeeFor(?string $type): float
+    {
+        $fee = collect(static::technicianMaintenanceFees())->firstWhere('type', $type);
+
+        return (float) ($fee['fee'] ?? 0);
+    }
 }

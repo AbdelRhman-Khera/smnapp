@@ -22,5 +22,7 @@ return [
         'device_withdrawal_rejected' => 'Customer rejected device withdrawal request #:id.',
         'device_withdrawal_assigned' => 'New device withdrawal delivery request #:id.',
         'device_withdrawal_assigned_by_branch' => 'A branch employee assigned device withdrawal request #:id to you.',
+        'payout_approved' => 'Your payout request #:id has been approved. :amount SAR will be transferred to you.',
+        'payout_rejected' => 'Your payout request #:id has been rejected. The amount is back in your wallet balance.',
     ],
 ];

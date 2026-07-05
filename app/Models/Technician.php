@@ -78,6 +78,16 @@ class Technician extends Authenticatable
         return $this->hasMany(MaintenanceRequest::class);
     }
 
+    public function earnings()
+    {
+        return $this->hasMany(TechnicianEarning::class);
+    }
+
+    public function payoutRequests()
+    {
+        return $this->hasMany(TechnicianPayoutRequest::class);
+    }
+
     public function getNameAttribute()
     {
         return $this->first_name . ' ' . $this->last_name;

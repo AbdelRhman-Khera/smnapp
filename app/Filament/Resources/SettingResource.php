@@ -69,6 +69,7 @@ class SettingResource extends Resource
                             ->required()
                             ->options([
                                 'payment_methods' => 'Payment Methods',
+                                'technician_fees' => 'Technician Fees',
                                 'json' => 'JSON',
                             ])
                             ->default('json')
@@ -118,6 +119,43 @@ class SettingResource extends Resource
                     ])
                     ->visible(fn (Forms\Get $get): bool => $get('type') === 'payment_methods'),
 
+                Forms\Components\Section::make('Technician Maintenance Fees')
+                    ->description('Fee credited to the technician wallet for each completed request, by request type.')
+                    ->schema([
+                        Forms\Components\Repeater::make('value')
+                            ->hiddenLabel()
+                            ->schema([
+                                Forms\Components\Select::make('type')
+                                    ->required()
+                                    ->options([
+                                        'new_installation' => 'New Installation',
+                                        'regular_maintenance' => 'Regular Maintenance',
+                                        'emergency_maintenance' => 'Emergency Maintenance',
+                                        'warranty' => 'Warranty',
+                                    ])
+                                    ->distinct(),
+
+                                Forms\Components\TextInput::make('label_en')
+                                    ->label('English Label')
+                                    ->maxLength(100),
+
+                                Forms\Components\TextInput::make('label_ar')
+                                    ->label('Arabic Label')
+                                    ->maxLength(100),
+
+                                Forms\Components\TextInput::make('fee')
+                                    ->label('Fee (SAR)')
+                                    ->required()
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->default(0),
+                            ])
+                            ->columns(4)
+                            ->reorderable()
+                            ->defaultItems(0),
+                    ])
+                    ->visible(fn (Forms\Get $get): bool => $get('type') === 'technician_fees'),
+
                 Forms\Components\Section::make('JSON Value')
                     ->schema([
                         Forms\Components\KeyValue::make('value')
@@ -125,7 +163,7 @@ class SettingResource extends Resource
                             ->keyLabel('Key')
                             ->valueLabel('Value'),
                     ])
-                    ->visible(fn (Forms\Get $get): bool => $get('type') !== 'payment_methods'),
+                    ->visible(fn (Forms\Get $get): bool => ! in_array($get('type'), ['payment_methods', 'technician_fees'], true)),
 
                 Forms\Components\Textarea::make('description')
                     ->columnSpanFull(),

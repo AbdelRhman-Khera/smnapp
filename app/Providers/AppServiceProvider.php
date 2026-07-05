@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\MaintenanceRequest;
+use App\Observers\MaintenanceRequestObserver;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        MaintenanceRequest::observe(MaintenanceRequestObserver::class);
 
         Livewire::setScriptRoute(function ($handle) {
             return Route::get('/vendor/livewire/livewire.js', $handle)->middleware('web');

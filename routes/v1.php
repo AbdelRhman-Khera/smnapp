@@ -57,6 +57,9 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
         Route::get('/technician/requests-summary', [TechnicianController::class, 'getRequestsSummary']);
         Route::get('/technician/requests', [TechnicianController::class, 'getAllRequests']);
+        Route::get('/technician/wallet', [TechnicianController::class, 'getWallet']);
+        Route::post('/technician/wallet/payout-request', [TechnicianController::class, 'requestPayout']);
+        Route::get('/technician/wallet/payout-requests', [TechnicianController::class, 'getPayoutRequests']);
         Route::post('/technician/update-fcm-token', [TechnicianController::class, 'updateFcmToken']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
