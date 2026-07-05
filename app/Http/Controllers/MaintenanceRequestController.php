@@ -373,7 +373,7 @@ class MaintenanceRequestController extends Controller
         }
 
         return $maintenanceRequest->invoices()
-            ->where('invoice_type', 'final')
+            ->whereIn('invoice_type', ['final', 'workshop'])
             ->where('status', 'pending')
             ->latest()
             ->first();
@@ -401,7 +401,7 @@ class MaintenanceRequestController extends Controller
                 return;
             }
 
-            if ($maintenanceRequest->workshopWithdrawalSource()->exists()) {
+            if ($invoice->invoice_type === 'workshop') {
                 $maintenanceRequest->statuses()->create([
                     'status' => 'service_paid',
                     'notes' => 'Workshop repair invoice paid. Request is ready for appointment booking.',

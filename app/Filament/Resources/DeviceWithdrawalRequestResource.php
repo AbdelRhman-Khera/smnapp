@@ -685,7 +685,7 @@ class DeviceWithdrawalRequestResource extends Resource
 
             if (! $isWarranty) {
                 $invoice = $followUp->invoices()->create([
-                    'invoice_type' => 'final',
+                    'invoice_type' => 'workshop',
                     'total' => static::calculateFollowUpInvoiceTotal($data),
                     'status' => 'pending',
                     'notes' => [[

@@ -27,7 +27,7 @@ class InvoiceWidget extends Widget
         $this->record = $record;
         $this->invoices = Invoice::with(['services', 'spareParts'])
             ->where('maintenance_request_id', $record->id)
-            ->orderByRaw("FIELD(invoice_type, 'visit_fee', 'final', 'zero_service')")
+            ->orderByRaw("FIELD(invoice_type, 'visit_fee', 'workshop', 'final', 'zero_service')")
             ->latest()
             ->get();
         $this->invoice = $this->invoices->first();

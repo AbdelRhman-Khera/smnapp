@@ -417,7 +417,7 @@ class SimulationController extends Controller
     {
         return DB::transaction(function () use ($request): MaintenanceRequest {
             $invoice = $request->invoices()
-                ->where('invoice_type', 'final')
+                ->whereIn('invoice_type', ['final', 'workshop'])
                 ->where('status', 'pending')
                 ->latest()
                 ->firstOrFail();
@@ -428,7 +428,7 @@ class SimulationController extends Controller
                 'payment_details' => ['simulation' => true, 'paid_at' => now()->toDateTimeString()],
             ]);
 
-            if ($request->workshopWithdrawalSource()->exists()) {
+            if ($invoice->invoice_type === 'workshop') {
                 $request->statuses()->create(['status' => 'service_paid', 'notes' => 'Workshop repair invoice paid through simulation.']);
                 $request->update(['last_status' => 'service_paid']);
 
@@ -626,7 +626,7 @@ class SimulationController extends Controller
             $followUp->statuses()->create(['status' => 'waiting_for_payment', 'notes' => 'Workshop follow-up created through simulation.']);
 
             $invoice = $followUp->invoices()->create([
-                'invoice_type' => 'final',
+                'invoice_type' => 'workshop',
                 'total' => (float) $data['invoice_total'],
                 'status' => 'pending',
                 'notes' => [[
@@ -684,7 +684,20 @@ class SimulationController extends Controller
     public function completeWithoutPayment(MaintenanceRequest $request): MaintenanceRequest
     {
         return DB::transaction(function () use ($request): MaintenanceRequest {
-            abort_unless($request->last_status === 'in_progress', 422, 'Request must be in progress.');
+            abort_unless(in_array($request->last_status, ['in_progress', 'waiting_for_payment'], true), 422, 'Request must be in progress or waiting for payment.');
+
+            abort_if(
+                $request->invoices()->where('invoice_type', 'final')->where('status', '!=', 'pending')->exists(),
+                422,
+                'The final invoice has already been paid.'
+            );
+
+            $request->invoices()
+                ->where('invoice_type', 'final')
+                ->where('status', 'pending')
+                ->get()
+                ->each
+                ->delete();
 
             $invoice = $request->invoices()->firstOrCreate(
                 ['invoice_type' => 'zero_service', 'status' => 'completed'],
