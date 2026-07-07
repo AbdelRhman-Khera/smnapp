@@ -80,7 +80,9 @@ class TechnicianAppointments extends ListRecords
                         ? $record->customer->first_name . ' ' . $record->customer->last_name
                         : '-'),
 
-                TextColumn::make('customer.phone')->label('Phone'),
+                TextColumn::make('customer.phone')
+                    ->label('Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state)),
 
                 TextColumn::make('address.city.name_ar')->label('City'),
                 TextColumn::make('address.district.name_ar')->label('District'),

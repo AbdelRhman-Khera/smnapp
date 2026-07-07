@@ -27,6 +27,7 @@ return new class extends Migration
             $table->foreignId('technician_id')->constrained()->cascadeOnDelete();
             $table->foreignId('maintenance_request_id')->unique()->constrained()->cascadeOnDelete();
             $table->string('request_type', 50);
+            $table->unsignedInteger('devices_count')->default(1);
             $table->decimal('amount', 10, 2)->default(0);
             $table->enum('status', ['pending', 'requested', 'paid'])->default('pending')->index();
             $table->foreignId('payout_request_id')->nullable()->constrained('technician_payout_requests')->nullOnDelete();

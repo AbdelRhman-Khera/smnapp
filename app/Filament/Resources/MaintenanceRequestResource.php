@@ -47,6 +47,7 @@ class MaintenanceRequestResource extends Resource
 
                 Select::make('customer_id')
                     ->relationship('customer', 'phone')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => \App\Support\CustomerPhone::optionLabel($record))
                     ->searchable()
                     ->required()
                     ->reactive(),
@@ -239,6 +240,7 @@ class MaintenanceRequestResource extends Resource
                     }),
                 TextColumn::make('customer.phone')
                     ->label('Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->whereHas('customer', function (Builder $customerQuery) use ($search) {
                             $customerQuery->where('phone', 'like', "%{$search}%");

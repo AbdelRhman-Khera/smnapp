@@ -15,6 +15,7 @@ class TechnicianEarning extends Model
         'technician_id',
         'maintenance_request_id',
         'request_type',
+        'devices_count',
         'amount',
         'status',
         'payout_request_id',

@@ -31,6 +31,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
             ->schema([
                 Select::make('customer_id')
                     ->relationship('customer', 'phone')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => \App\Support\CustomerPhone::optionLabel($record))
                     ->required()
                     ->default(fn ($livewire) => $livewire->ownerRecord->id)
                     ->disabled(),
@@ -117,6 +118,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
                     }),
                 TextColumn::make('customer.phone')
                     ->label('Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('type')

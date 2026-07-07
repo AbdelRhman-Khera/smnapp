@@ -18,12 +18,15 @@ class MaintenanceRequestObserver
             return;
         }
 
+        $devicesCount = max(1, (int) $maintenanceRequest->products()->sum('maintenance_request_product.quantity'));
+
         TechnicianEarning::firstOrCreate(
             ['maintenance_request_id' => $maintenanceRequest->id],
             [
                 'technician_id' => $maintenanceRequest->technician_id,
                 'request_type' => $maintenanceRequest->type,
-                'amount' => Setting::technicianFeeFor($maintenanceRequest->type),
+                'devices_count' => $devicesCount,
+                'amount' => Setting::technicianFeeFor($maintenanceRequest->type) * $devicesCount,
                 'status' => 'pending',
             ]
         );

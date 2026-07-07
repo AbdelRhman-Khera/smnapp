@@ -514,10 +514,10 @@ class ActivityLogResource extends Resource
         $label = match ($class) {
             User::class => $record->name ?: ('User #' . $id),
             Technician::class => trim(($record->first_name ?? '') . ' ' . ($record->last_name ?? '')) . ($record->phone ? " ({$record->phone})" : ''),
-            Customer::class => trim(($record->first_name ?? '') . ' ' . ($record->last_name ?? '')) . ($record->phone ? " ({$record->phone})" : ''),
+            Customer::class => trim(($record->first_name ?? '') . ' ' . ($record->last_name ?? '')) . ($record->phone ? ' (' . \App\Support\CustomerPhone::display($record->phone) . ')' : ''),
             City::class, District::class, Category::class, Product::class, Service::class, SparePart::class, Branch::class => ($record->name_ar ?? $record->name_en ?? $record->name ?? null) . ' #' . $id,
             Address::class => ($record->name ?? 'Address') . ' #' . $id,
-            MaintenanceRequest::class => 'Maintenance Request #' . $id . ($record->customer?->phone ? " ({$record->customer->phone})" : ''),
+            MaintenanceRequest::class => 'Maintenance Request #' . $id . ($record->customer?->phone ? ' (' . \App\Support\CustomerPhone::display($record->customer->phone) . ')' : ''),
             Invoice::class => 'Invoice #' . $id . ($record->maintenance_request_id ? " / Request #{$record->maintenance_request_id}" : ''),
             Feedback::class => 'Feedback #' . $id . ($record->maintenance_request_id ? " / Request #{$record->maintenance_request_id}" : ''),
             RequestStatus::class => ($record->status ?? 'Status') . ($record->maintenance_request_id ? " / Request #{$record->maintenance_request_id}" : ''),

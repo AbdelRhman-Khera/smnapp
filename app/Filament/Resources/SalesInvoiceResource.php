@@ -178,6 +178,7 @@ class SalesInvoiceResource extends Resource
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.customer.phone')
                     ->label('Customer Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable()
                     ->placeholder('-'),
 

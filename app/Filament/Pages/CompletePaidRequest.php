@@ -159,7 +159,7 @@ class CompletePaidRequest extends Page implements HasForms
             ($request->customer?->last_name ?? '')
         ) ?: 'No customer';
 
-        $phone = $request->customer?->phone ?: '-';
+        $phone = \App\Support\CustomerPhone::display($request->customer?->phone) ?: '-';
         $total = number_format((float) ($request->invoice?->total ?? 0), 2);
 
         return "#{$request->id} | {$customerName} | {$phone} | {$total} SAR";

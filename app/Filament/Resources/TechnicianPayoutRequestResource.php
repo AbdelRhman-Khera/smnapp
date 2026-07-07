@@ -200,7 +200,7 @@ class TechnicianPayoutRequestResource extends Resource
                         RepeatableEntry::make('earnings')
                             ->hiddenLabel()
                             ->schema([
-                                Grid::make(4)
+                                Grid::make(5)
                                     ->schema([
                                         TextEntry::make('maintenance_request_id')
                                             ->label('Request #'),
@@ -208,6 +208,9 @@ class TechnicianPayoutRequestResource extends Resource
                                         TextEntry::make('request_type')
                                             ->label('Type')
                                             ->badge(),
+
+                                        TextEntry::make('devices_count')
+                                            ->label('Devices'),
 
                                         TextEntry::make('amount')
                                             ->label('Amount (SAR)')

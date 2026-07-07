@@ -36,7 +36,31 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->sidebarFullyCollapsibleOnDesktop()
+            ->brandLogo(asset('assets/logo.png'))
+            ->brandLogoHeight('2.75rem')
+            ->favicon(asset('assets/fav.png'))
+            ->renderHook(
+                'panels::styles.after',
+                fn (): string => '<style>
+                    .fi-simple-layout {
+                        min-height: 100dvh;
+                        background-image: url(\'' . asset('assets/Bg.jpg') . '\');
+                        background-size: 100% 100%;
+                        background-position: center;
+                        background-repeat: no-repeat;
+                        background-attachment: fixed;
+                    }
+                    .fi-simple-main {
+                        background-color: rgb(255 255 255 / 0.92);
+                        backdrop-filter: blur(6px);
+                    }
+                    .dark .fi-simple-main {
+                        background-color: rgb(24 24 27 / 0.92);
+                        backdrop-filter: blur(6px);
+                    }
+                </style>'
+            )
+            ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::hex('#1C4199'),
             ])

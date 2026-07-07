@@ -66,7 +66,7 @@ class PushNotificationCampaignResource extends Resource
                                 ->orderBy('first_name')
                                 ->get()
                                 ->mapWithKeys(fn (Customer $customer): array => [
-                                    $customer->id => trim($customer->first_name . ' ' . $customer->last_name) . ' - ' . $customer->phone,
+                                    $customer->id => \App\Support\CustomerPhone::optionLabel($customer),
                                 ])
                                 ->all(),
                             default => [],
