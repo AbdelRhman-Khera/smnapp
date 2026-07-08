@@ -12,9 +12,12 @@ class MostActiveDistrictsChart extends PermissionedApexChartWidget
 
     protected function getOptions(): array
     {
-        $data = DB::table('maintenance_requests')
-            ->join('addresses', 'maintenance_requests.address_id', '=', 'addresses.id')
-            ->join('districts', 'addresses.district_id', '=', 'districts.id')
+        $data = $this->applyDateFilter(
+            DB::table('maintenance_requests')
+                ->join('addresses', 'maintenance_requests.address_id', '=', 'addresses.id')
+                ->join('districts', 'addresses.district_id', '=', 'districts.id'),
+            'maintenance_requests.created_at'
+        )
             ->selectRaw('districts.name_en as district, COUNT(*) as total')
             ->groupBy('districts.name_en')
             ->orderByDesc('total')
@@ -22,17 +25,15 @@ class MostActiveDistrictsChart extends PermissionedApexChartWidget
             ->get();
 
         return [
-            'chart' => ['type' => 'bar'],
+            'chart' => ['type' => 'bar', 'height' => 320],
             'series' => [[
                 'name' => 'Requests',
                 'data' => $data->pluck('total')->toArray(),
             ]],
             'xaxis' => ['categories' => $data->pluck('district')->toArray()],
+            'colors' => ['#6366f1'],
+            'plotOptions' => ['bar' => ['borderRadius' => 4, 'columnWidth' => '55%']],
+            'dataLabels' => ['enabled' => false],
         ];
-        // return [
-        //     'chart' => ['type' => 'bar'],
-        //     'series' => [['name' => 'Test', 'data' => [10, 20, 30]]],
-        //     'xaxis' => ['categories' => ['A', 'B', 'C']],
-        // ];
     }
 }

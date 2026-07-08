@@ -18,6 +18,10 @@ class MaintenanceRequestObserver
             return;
         }
 
+        if (! $maintenanceRequest->technician()->where('is_freelancer', true)->exists()) {
+            return;
+        }
+
         $devicesCount = max(1, (int) $maintenanceRequest->products()->sum('maintenance_request_product.quantity'));
 
         TechnicianEarning::firstOrCreate(

@@ -12,13 +12,22 @@ class MaintenanceRequestTypesChart extends PermissionedApexChartWidget
 
     protected function getOptions(): array
     {
-        $types = ['new_installation', 'regular_maintenance', 'emergency_maintenance', 'warranty'];
-        $series = collect($types)->map(fn($type) => MaintenanceRequest::where('type', $type)->count());
+        $types = [
+            'new_installation' => 'New Installation',
+            'regular_maintenance' => 'Regular Maintenance',
+            'emergency_maintenance' => 'Emergency Maintenance',
+            'warranty' => 'Warranty',
+        ];
+
+        $series = collect($types)
+            ->map(fn (string $label, string $type): int => $this->applyDateFilter(MaintenanceRequest::where('type', $type))->count());
 
         return [
-            'chart' => ['type' => 'pie'],
-            'series' => $series->toArray(),
-            'labels' => $types,
+            'chart' => ['type' => 'pie', 'height' => 320],
+            'series' => $series->values()->toArray(),
+            'labels' => array_values($types),
+            'colors' => ['#1C4199', '#22c55e', '#ef4444', '#f59e0b'],
+            'legend' => ['position' => 'bottom'],
         ];
     }
 }

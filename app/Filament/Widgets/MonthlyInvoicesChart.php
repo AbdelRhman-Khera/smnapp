@@ -12,17 +12,22 @@ class MonthlyInvoicesChart extends PermissionedApexChartWidget
 
     protected function getOptions(): array
     {
-        $data = Invoice::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+        $data = $this->applyDateFilter(Invoice::query())
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count")
             ->groupBy('month')
+            ->orderBy('month')
             ->pluck('count', 'month');
 
         return [
-            'chart' => ['type' => 'bar'],
+            'chart' => ['type' => 'bar', 'height' => 320],
             'series' => [[
                 'name' => 'Invoices',
                 'data' => array_values($data->toArray()),
             ]],
             'xaxis' => ['categories' => array_keys($data->toArray())],
+            'colors' => ['#0ea5e9'],
+            'plotOptions' => ['bar' => ['borderRadius' => 4, 'columnWidth' => '55%']],
+            'dataLabels' => ['enabled' => false],
         ];
     }
 }
