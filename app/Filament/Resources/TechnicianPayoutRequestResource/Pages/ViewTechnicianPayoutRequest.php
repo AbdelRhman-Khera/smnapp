@@ -15,6 +15,14 @@ class ViewTechnicianPayoutRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('printVoucher')
+                ->label('Print Payout Voucher')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->status === 'approved')
+                ->url(fn (): string => route('admin.technician-payouts.print', $this->record))
+                ->openUrlInNewTab(),
+
             Actions\Action::make('approve')
                 ->label('Approve')
                 ->icon('heroicon-o-check-circle')

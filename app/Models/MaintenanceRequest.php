@@ -228,13 +228,12 @@ class MaintenanceRequest extends Model
             return (float) ($product->maintenance_fee ?? 0);
         });
 
-        $productMultiplier = $totalProducts <= 3
-            ? 1
-            : (int) ceil(($totalProducts - 1) / 2);
+        $areaFee = (float) ($this->address?->district?->area?->maintenance_fee ?? 0);
 
-        $productsFee = $highestProductFee * $productMultiplier;
+        // 1-2 products => x1, 3-4 => x2, 5-6 => x3, 7-8 => x4, ...
+        $multiplier = max(1, (int) ceil($totalProducts / 2));
 
-        return $productsFee + (float) ($this->address?->district?->area?->maintenance_fee ?? 0);
+        return ($highestProductFee + $areaFee) * $multiplier;
     }
 
     public function requiresVisitFeePayment(): bool

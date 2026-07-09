@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\SkipCsrfForPayment;
 use App\Models\Invoice;
+use App\Models\TechnicianPayoutRequest;
 use App\Http\Controllers\SimulationController;
 
 Route::get('/', function () {
@@ -49,6 +50,26 @@ Route::get('/admin/sales-invoices/{invoice}/print', function (Invoice $invoice) 
 
     return view('sales-invoices.print', compact('invoice'));
 })->middleware('auth')->name('admin.sales-invoices.print');
+
+Route::get('/admin/technician-payouts/{payout}/print', function (TechnicianPayoutRequest $payout) {
+    abort_unless(
+        auth()->user()?->can('view_technician::payout::request')
+            || auth()->user()?->can('view_any_technician::payout::request'),
+        403,
+    );
+
+    abort_unless($payout->status === 'approved', 404);
+
+    $payout->load([
+        'technician',
+        'processedBy',
+        'earnings.maintenanceRequest',
+    ]);
+
+    $dashboardUrl = \App\Filament\Resources\TechnicianPayoutRequestResource::getUrl('view', ['record' => $payout->id]);
+
+    return view('technician-payouts.print', compact('payout', 'dashboardUrl'));
+})->middleware('auth')->name('admin.technician-payouts.print');
 
 Route::middleware('auth')->prefix('simulate')->name('simulation.')->group(function () {
     Route::get('/', [SimulationController::class, 'index'])->name('index');

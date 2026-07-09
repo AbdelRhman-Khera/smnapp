@@ -134,6 +134,14 @@ class TechnicianPayoutRequestResource extends Resource
                             ->required(),
                     ])
                     ->action(fn (TechnicianPayoutRequest $record, array $data) => $record->reject(auth()->id(), $data['admin_notes'] ?? null)),
+
+                Tables\Actions\Action::make('printVoucher')
+                    ->label('Print Voucher')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->visible(fn (TechnicianPayoutRequest $record): bool => $record->status === 'approved')
+                    ->url(fn (TechnicianPayoutRequest $record): string => route('admin.technician-payouts.print', $record))
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([]);
     }
