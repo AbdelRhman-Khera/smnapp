@@ -179,6 +179,7 @@ class CustomerController extends Controller
             'first_name' => 'nullable|string|max:100',
             'last_name' => 'nullable|string|max:100',
             'email' => 'nullable|email|unique:customers,email,' . $customer->id,
+            'tax_number' => 'nullable|string|max:50',
         ]);
 
         if ($validator->fails()) {
@@ -439,6 +440,7 @@ class CustomerController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fcm_token' => 'required|string|max:255',
+            'preferred_locale' => 'nullable|in:ar,en',
         ]);
 
         if ($validator->fails()) {
@@ -452,6 +454,7 @@ class CustomerController extends Controller
 
         $customer->update([
             'fcm_token' => $request->fcm_token,
+            'preferred_locale' => $request->input('preferred_locale', substr((string) $request->header('Accept-Language', 'en'), 0, 2)) === 'ar' ? 'ar' : 'en',
         ]);
 
         return response()->json([

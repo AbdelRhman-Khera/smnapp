@@ -31,6 +31,7 @@ class AddressesRelationManager extends RelationManager
        return $form->schema([
             Select::make('customer_id')
                 ->relationship('customer', 'phone')
+                ->getOptionLabelFromRecordUsing(fn ($record) => \App\Support\CustomerPhone::optionLabel($record))
                 ->required()
                 ->default(fn ($livewire) => $livewire->ownerRecord->id)
                 ->disabled(),

@@ -12,6 +12,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Paytabscom\Laravel_paytabs\Facades\paypage;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
@@ -156,7 +157,8 @@ class MaintenanceRequestController extends Controller
         $customer = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:new_installation,regular_maintenance,emergency_maintenance',
+            'type' => 'required|in:new_installation,regular_maintenance,emergency_maintenance,warranty',
+            'warranty_source_request_id' => 'required_if:type,warranty|nullable|exists:maintenance_requests,id',
             // Accept either:
             // 1) products: [1,2,3]
             // 2) products: [{product_id: 1, quantity: 2}, ...]
@@ -169,11 +171,21 @@ class MaintenanceRequestController extends Controller
             'is_product_delivered' => 'nullable'
         ]);
 
-        $validator->after(function ($validator) use ($request) {
+        $validator->after(function ($validator) use ($request, $customer) {
             try {
                 $this->normalizeProductsForAttach($request->input('products', []));
             } catch (\InvalidArgumentException $e) {
                 $validator->errors()->add('products', $e->getMessage());
+            }
+
+            if ($request->input('type') === 'warranty') {
+                $sourceRequest = MaintenanceRequest::query()
+                    ->where('customer_id', $customer->id)
+                    ->find($request->input('warranty_source_request_id'));
+
+                if (! $sourceRequest || ! $sourceRequest->isEligibleWarrantySource()) {
+                    $validator->errors()->add('warranty_source_request_id', 'The selected request is not eligible for warranty.');
+                }
             }
         });
 
@@ -218,6 +230,7 @@ class MaintenanceRequestController extends Controller
         $maintenanceRequest = MaintenanceRequest::create([
             'customer_id' => $customer->id,
             'type' => $request->type,
+            'warranty_source_request_id' => $request->warranty_source_request_id ?? null,
             'address_id' => $request->address_id,
             'problem_description' => $request->problem_description ?? null,
             'last_maintenance_date' => $request->last_maintenance_date ?? null,
@@ -234,19 +247,59 @@ class MaintenanceRequestController extends Controller
 
         $maintenanceRequest->recalculateHours();
 
+        $initialStatus = $maintenanceRequest->requiresVisitFeePayment()
+            ? 'visit_payment_pending'
+            : 'pending';
+
+        if ($maintenanceRequest->requiresVisitFeePayment()) {
+            $this->createVisitFeeInvoice($maintenanceRequest);
+        }
+
         $maintenanceRequest->statuses()->create([
-            'status' => 'pending',
+            'status' => $initialStatus,
         ]);
 
-        $maintenanceRequest->last_status = 'pending';
+        $maintenanceRequest->last_status = $initialStatus;
         $maintenanceRequest->save();
-        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address.district.area', 'products', 'statuses', 'invoice', 'feedback']);
+        $maintenanceRequest->load(['customer', 'slot', 'technician', 'address.district.area', 'products', 'statuses', 'invoice', 'invoices', 'feedback']);
 
         return response()->json([
             'status' => 200,
             'response_code' => 'REQUEST_CREATED',
             'message' => __('messages.request_created'),
             'data' => $maintenanceRequest,
+        ], 200);
+    }
+
+    public function warrantyEligibleRequests(Request $request)
+    {
+        $customer = $request->user();
+
+        $eligibleRequests = MaintenanceRequest::query()
+            ->with(['address.city', 'address.district', 'products', 'slot', 'invoice'])
+            ->where('customer_id', $customer->id)
+            ->where('last_status', 'completed')
+            ->where(function ($query) {
+                $query->where(function ($query) {
+                    $query->whereIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                        ->whereHas('statuses', fn ($query) => $query
+                            ->where('status', 'completed')
+                            ->where('created_at', '>=', now()->subMonth()));
+                })->orWhere(function ($query) {
+                    $query->where('type', 'new_installation')
+                        ->whereHas('statuses', fn ($query) => $query
+                            ->where('status', 'completed')
+                            ->where('created_at', '>=', now()->subYears(2)));
+                });
+            })
+            ->latest('id')
+            ->paginate((int) $request->input('per_page', 10));
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'WARRANTY_ELIGIBLE_REQUESTS_FETCHED',
+            'message' => 'Warranty eligible requests fetched successfully.',
+            'data' => $eligibleRequests,
         ], 200);
     }
 
@@ -296,6 +349,80 @@ class MaintenanceRequestController extends Controller
         }
 
         return $attach;
+    }
+
+    private function createVisitFeeInvoice(MaintenanceRequest $maintenanceRequest)
+    {
+        $maintenanceRequest->loadMissing('products', 'address.district.area');
+
+        return $maintenanceRequest->invoices()->create([
+            'invoice_type' => 'visit_fee',
+            'total' => $maintenanceRequest->calculateVisitFee(),
+            'status' => 'pending',
+        ]);
+    }
+
+    private function payableInvoiceFor(MaintenanceRequest $maintenanceRequest)
+    {
+        if ($maintenanceRequest->last_status === 'visit_payment_pending') {
+            return $maintenanceRequest->invoices()
+                ->where('invoice_type', 'visit_fee')
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+        }
+
+        return $maintenanceRequest->invoices()
+            ->whereIn('invoice_type', ['final', 'workshop'])
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+    }
+
+    private function completeInvoicePayment(MaintenanceRequest $maintenanceRequest, $invoice, string $paymentMethod, $paymentDetails = null): void
+    {
+        DB::transaction(function () use ($maintenanceRequest, $invoice, $paymentMethod, $paymentDetails): void {
+            $invoice->update([
+                'status' => 'completed',
+                'payment_method' => $paymentMethod,
+                'payment_details' => is_array($paymentDetails) ? $paymentDetails : ['reference' => $paymentDetails],
+            ]);
+
+            if ($invoice->invoice_type === 'visit_fee') {
+                $maintenanceRequest->statuses()->create([
+                    'status' => 'service_paid',
+                    'notes' => 'Visit fee paid.',
+                ]);
+
+                $maintenanceRequest->update([
+                    'last_status' => 'service_paid',
+                ]);
+
+                return;
+            }
+
+            if ($invoice->invoice_type === 'workshop') {
+                $maintenanceRequest->statuses()->create([
+                    'status' => 'service_paid',
+                    'notes' => 'Workshop repair invoice paid. Request is ready for appointment booking.',
+                ]);
+
+                $maintenanceRequest->update([
+                    'last_status' => 'service_paid',
+                ]);
+
+                return;
+            }
+
+            $maintenanceRequest->statuses()->create([
+                'status' => 'completed',
+                'notes' => is_string($paymentDetails) ? $paymentDetails : null,
+            ]);
+
+            $maintenanceRequest->update([
+                'last_status' => 'completed',
+            ]);
+        });
     }
 
     /// new logic for available slots and assignment
@@ -671,6 +798,29 @@ class MaintenanceRequestController extends Controller
                 ->lockForUpdate()
                 ->findOrFail($request->slot_id);
 
+            if (
+                $maintenanceRequest->requiresVisitFeePayment()
+                && ! in_array($maintenanceRequest->last_status, ['service_paid', 'technician_assigned'], true)
+            ) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'VISIT_FEE_NOT_PAID',
+                    'message' => 'Visit fee must be paid before assigning a technician.',
+                ], 400);
+            }
+
+            if (
+                ! $maintenanceRequest->requiresVisitFeePayment()
+                && ! in_array($maintenanceRequest->last_status, ['pending', 'technician_assigned'], true)
+
+            ) {
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'INVALID_STATUS',
+                    'message' => 'Only pending or technician assigned requests can be assigned.',
+                ], 400);
+            }
+
             $requiredSlots = $this->requiredSlotsCount($maintenanceRequest);
 
             $slotGroup = $this->getConsecutiveAvailableSlotGroup($newSlot, $requiredSlots);
@@ -766,6 +916,19 @@ class MaintenanceRequestController extends Controller
             ], 400);
         }
 
+        $visitFeePaid = $maintenanceRequest->requiresVisitFeePayment()
+            && $maintenanceRequest->visitFeeInvoice()
+                ->where('status', 'completed')
+                ->exists();
+
+        if ($visitFeePaid) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'VISIT_FEE_ALREADY_PAID',
+                'message' => 'Cannot cancel request after visit fee has been paid.',
+            ], 400);
+        }
+
         $maintenanceRequest->statuses()->create([
             'status' => 'canceled',
         ]);
@@ -811,11 +974,11 @@ class MaintenanceRequestController extends Controller
             ], 403);
         }
 
-        if ($maintenanceRequest->current_status->status != 'waiting_for_payment') {
+        if (! in_array($maintenanceRequest->current_status->status, ['waiting_for_payment', 'visit_payment_pending'], true)) {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVALID_STATUS',
-                'message' => 'The request is not in waiting_for_payment status.',
+                'message' => 'The request is not ready for payment.',
             ], 400);
         }
 
@@ -860,7 +1023,7 @@ class MaintenanceRequestController extends Controller
         //         'message' => _('messages.cash_payment_not_available_for_freelancer_technician'),
         //     ], 400);
         // }
-        $invoice = $maintenanceRequest->invoice;
+        $invoice = $this->payableInvoiceFor($maintenanceRequest);
         if (!$invoice) {
             return response()->json([
                 'status' => 400,
@@ -868,7 +1031,6 @@ class MaintenanceRequestController extends Controller
                 'message' => 'Invoice not found for this request.',
             ], 400);
         }
-
 
         if ($validatedData['payment_method'] == 'remittance') {
             if ($request->hasFile('remittance')) {
@@ -884,23 +1046,13 @@ class MaintenanceRequestController extends Controller
                 ], 422);
             }
             $invoice->update([
-                'status' => 'completed',
-                'payment_method' => 'remittance',
                 'remittance' => $remittanceFile,
-                'payment_details' => [
-                    'remittance_file' => $remittanceFile,
-                    'uploaded_at' => now(),
-                ],
             ]);
 
-            $maintenanceRequest->statuses()->create([
-                'status' => 'completed',
-                'notes' => 'Payment by remittance',
+            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'remittance', [
+                'remittance_file' => $remittanceFile,
+                'uploaded_at' => now(),
             ]);
-            $maintenanceRequest->update([
-                'last_status' => 'completed',
-            ]);
-
 
             $sapResponse = app(\App\Http\Controllers\SapController::class)
                 ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
@@ -910,7 +1062,7 @@ class MaintenanceRequestController extends Controller
                 'response_code' => 'REMITTANCE_DETAILS_SUBMITTED',
                 'message' => 'Remittance details submitted successfully.',
                 'data' => [
-                    'maintenance_request' => $maintenanceRequest->load(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address.city', 'address.district', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                    'maintenance_request' => $maintenanceRequest->fresh(['statuses', 'feedback', 'customer', 'slot', 'technician', 'address.city', 'address.district', 'products', 'invoice', 'invoice.services', 'invoice.spareParts']),
                     'invoice' => $invoice->load('services', 'spareParts'),
                 ],
             ], 200);
@@ -919,6 +1071,17 @@ class MaintenanceRequestController extends Controller
         $invoice->update([
             'payment_method' => $validatedData['payment_method'],
         ]);
+
+        if ($invoice->invoice_type === 'visit_fee' && in_array($validatedData['payment_method'], ['cash', 'machine'], true)) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VISIT_FEE_PAYMENT_METHOD_NOT_ALLOWED',
+                'message' => 'Visit fee must be paid online or by remittance before technician assignment.',
+                'errors' => [
+                    'payment_method' => ['Visit fee must be paid online or by remittance before technician assignment.'],
+                ],
+            ], 422);
+        }
 
         if ($validatedData['payment_method'] == 'cash' || $validatedData['payment_method'] == 'machine') {
             $maintenanceRequest->statuses()->create([
@@ -941,9 +1104,11 @@ class MaintenanceRequestController extends Controller
 
         ////paytabs
         if ($validatedData['payment_method'] == 'online') {
-            $cart_id = 'MR-' . $maintenanceRequest->id;
+            $cart_id = 'MR-' . $maintenanceRequest->id . '-INV-' . $invoice->id;
             $cart_amount = $invoice->total;
-            $cart_description = "Payment for Maintenance Request #{$maintenanceRequest->id}";
+            $cart_description = $invoice->invoice_type === 'visit_fee'
+                ? "Visit fee for Maintenance Request #{$maintenanceRequest->id}"
+                : "Payment for Maintenance Request #{$maintenanceRequest->id}";
             $name = $maintenanceRequest->customer->first_name . ' ' . $maintenanceRequest->customer->last_name;
             $email = $maintenanceRequest->customer->email ?? 'test@samnan.com';
             $phone = $maintenanceRequest->customer->phone;
@@ -976,21 +1141,19 @@ class MaintenanceRequestController extends Controller
 
     public function paymentCallback(Request $request, $id)
     {
-        $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($id);
+        $maintenanceRequest = MaintenanceRequest::with('invoices')->findOrFail($id);
+        $invoice = $this->payableInvoiceFor($maintenanceRequest);
+
+        if (! $invoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_NOT_FOUND',
+                'message' => 'Invoice not found for this request.',
+            ], 400);
+        }
 
         if ($request->respStatus == 'A') {
-            $maintenanceRequest->statuses()->create([
-                'status' => 'completed',
-                'notes'  => $request->tranRef,
-            ]);
-            $maintenanceRequest->update([
-                'last_status' => 'completed',
-            ]);
-
-            $maintenanceRequest->invoice->update([
-                'status' => 'completed',
-                'payment_details' => $request->tranRef,
-            ]);
+            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->tranRef);
 
             $sapResponse = app(\App\Http\Controllers\SapController::class)
                 ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
@@ -999,7 +1162,7 @@ class MaintenanceRequestController extends Controller
                 'status' => 200,
                 'response_code' => 'PAYMENT_SUCCESSFUL',
                 'message' => 'Payment completed successfully.',
-                'data' => $maintenanceRequest->load(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
+                'data' => $maintenanceRequest->fresh(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
             ], 200);
         } else {
             return response()->json([
@@ -1027,22 +1190,19 @@ class MaintenanceRequestController extends Controller
             ], 422);
         }
 
-        $maintenanceRequest = MaintenanceRequest::with('invoice')->findOrFail($request->requestId);
+        $maintenanceRequest = MaintenanceRequest::with('invoices')->findOrFail($request->requestId);
+        $invoice = $this->payableInvoiceFor($maintenanceRequest);
+
+        if (! $invoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_NOT_FOUND',
+                'message' => 'Invoice not found for this request.',
+            ], 400);
+        }
 
         if ($request->responseStatus == 'A') {
-            $maintenanceRequest->statuses()->create([
-                'status' => 'completed',
-                'notes'  => $request->transactionReference,
-            ]);
-            $maintenanceRequest->update([
-                'last_status' => 'completed',
-            ]);
-
-            $maintenanceRequest->invoice->update([
-                'payment_method' => 'online',
-                'status' => 'completed',
-                'payment_details' => $request->transactionReference,
-            ]);
+            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
 
             $sapResponse = app(\App\Http\Controllers\SapController::class)
                 ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
@@ -1052,7 +1212,7 @@ class MaintenanceRequestController extends Controller
                 'status' => 200,
                 'response_code' => 'PAYMENT_SUCCESSFUL',
                 'message' => 'Payment completed successfully.',
-                'data' => $maintenanceRequest->load(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
+                'data' => $maintenanceRequest->fresh(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
             ], 200);
         } else {
             return response()->json([
@@ -1330,11 +1490,17 @@ class MaintenanceRequestController extends Controller
             ], 403);
         }
 
-        if ($maintenanceRequest->last_status !== 'pending') {
+        $requiredStatus = $maintenanceRequest->requiresVisitFeePayment()
+            ? 'service_paid'
+            : 'pending';
+
+        if ($maintenanceRequest->last_status !== $requiredStatus) {
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVALID_STATUS',
-                'message' => 'Only pending requests can be opened for freelancers.',
+                'message' => $maintenanceRequest->requiresVisitFeePayment()
+                    ? 'Visit fee must be paid before opening this request for freelancers.'
+                    : 'Only pending requests can be opened for freelancers.',
             ], 400);
         }
 
@@ -1352,7 +1518,7 @@ class MaintenanceRequestController extends Controller
         ]);
 
         $maintenanceRequest->statuses()->create([
-            'status' => 'pending',
+            'status' => $requiredStatus,
             'notes' => 'Customer opened this request for freelancer technicians.',
         ]);
 
@@ -1375,6 +1541,8 @@ class MaintenanceRequestController extends Controller
 
         $openStatuses = [
             'pending',
+            'visit_payment_pending',
+            'service_paid',
             'technician_assigned',
         ];
 

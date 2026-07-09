@@ -29,6 +29,7 @@ class Technician extends Authenticatable
         'rating',
         'reviews_count',
         'fcm_token',
+        'preferred_locale',
         'sap_id',
         'site_id',
         'is_freelancer',
@@ -75,6 +76,16 @@ class Technician extends Authenticatable
     public function maintenanceRequests()
     {
         return $this->hasMany(MaintenanceRequest::class);
+    }
+
+    public function earnings()
+    {
+        return $this->hasMany(TechnicianEarning::class);
+    }
+
+    public function payoutRequests()
+    {
+        return $this->hasMany(TechnicianPayoutRequest::class);
     }
 
     public function getNameAttribute()

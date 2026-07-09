@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
+use App\Models\Setting;
 use App\Models\Slot;
 use App\Models\Technician;
+use App\Models\TechnicianEarning;
+use App\Models\TechnicianPayoutRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +18,57 @@ use App\Services\NotificationService;
 
 class TechnicianController extends Controller
 {
+    public function index(Request $request)
+    {
+        $authTechnician = $request->user();
+
+        if (! $authTechnician instanceof Technician) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'TECHNICIAN_ONLY',
+                'message' => 'Only authenticated technicians can access technicians list.',
+                'data' => null,
+            ], 403);
+        }
+
+        if (! $authTechnician->authorized || ! $authTechnician->activated) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'TECHNICIAN_NOT_AUTHORIZED',
+                'message' => 'Technician is not authorized.',
+                'data' => null,
+            ], 403);
+        }
+
+        $technicians = Technician::query()
+            ->select([
+                'id',
+                'first_name',
+                'last_name',
+                'phone',
+                'email',
+                'rating',
+                'reviews_count',
+                'is_freelancer',
+                'sap_id',
+                'site_id',
+                'storage_location',
+            ])
+            ->where('authorized', true)
+            ->where('activated', true)
+            ->when($request->boolean('exclude_self'), fn ($query) => $query->whereKeyNot($authTechnician->id))
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIANS_FETCHED',
+            'message' => 'Technicians fetched successfully.',
+            'data' => $technicians,
+        ], 200);
+    }
+
     public function getTechnician()
     {
         $technician = Technician::find(auth()->user()->id);
@@ -125,23 +180,51 @@ class TechnicianController extends Controller
     {
         $technician = Technician::with(['districts', 'products'])->find(auth()->user()->id);
 
+        $validator = Validator::make($request->all(), [
+            'from_date' => 'nullable|date',
+            'to_date' => 'nullable|date|after_or_equal:from_date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+
+        $applyDateFilter = function ($query, string $column = 'created_at') use ($fromDate, $toDate) {
+            if ($fromDate) {
+                $query->whereDate($column, '>=', $fromDate);
+            }
+            if ($toDate) {
+                $query->whereDate($column, '<=', $toDate);
+            }
+
+            return $query;
+        };
+
         // Count all maintenance requests assigned to the technician
-        $totalRequests = MaintenanceRequest::where('technician_id', $technician->id)->count();
+        $totalRequests = $applyDateFilter(MaintenanceRequest::where('technician_id', $technician->id))->count();
 
         // Count requests by type
-        $requestsByType = MaintenanceRequest::where('technician_id', $technician->id)
+        $requestsByType = $applyDateFilter(MaintenanceRequest::where('technician_id', $technician->id))
             ->select('type', \DB::raw('count(*) as count'))
             ->groupBy('type')
             ->get();
 
         // Count requests by current status (latest status only)
-        $requestsByStatus = \DB::table('maintenance_requests')
+        $requestsByStatus = $applyDateFilter(\DB::table('maintenance_requests')
             ->join('request_statuses', function ($join) {
                 $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
                     ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
             })
             ->select('request_statuses.status', \DB::raw('count(*) as count'))
-            ->where('maintenance_requests.technician_id', $technician->id)
+            ->where('maintenance_requests.technician_id', $technician->id), 'maintenance_requests.created_at')
             ->groupBy('request_statuses.status')
             ->get();
 
@@ -167,20 +250,20 @@ class TechnicianController extends Controller
         $page = $request->input('page', 1);
 
         // Get all requests (history) with slot info
-        $allRequests = MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
+        $allRequests = $applyDateFilter(MaintenanceRequest::with(['customer', 'address', 'products', 'statuses' => function ($query) {
             $query->latest();
         }, 'slot'])
-            ->where('technician_id', $technician->id)
+            ->where('technician_id', $technician->id))
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
         // Count completed and ongoing requests
-        $completedRequests = \DB::table('maintenance_requests')
+        $completedRequests = $applyDateFilter(\DB::table('maintenance_requests')
             ->join('request_statuses', function ($join) {
                 $join->on('maintenance_requests.id', '=', 'request_statuses.maintenance_request_id')
                     ->whereRaw('request_statuses.id = (SELECT MAX(id) FROM request_statuses WHERE maintenance_requests.id = request_statuses.maintenance_request_id)');
             })
             ->where('maintenance_requests.technician_id', $technician->id)
-            ->where('request_statuses.status', 'completed')
+            ->where('request_statuses.status', 'completed'), 'maintenance_requests.created_at')
             ->count();
 
         $ongoingRequests = $totalRequests - $completedRequests;
@@ -198,8 +281,155 @@ class TechnicianController extends Controller
                 'ongoing_requests' => $ongoingRequests,
                 'next_request' => $nextRequest,
                 'all_requests' => $allRequests,
+                'filters' => [
+                    'from_date' => $fromDate,
+                    'to_date' => $toDate,
+                ],
             ],
         ]);
+    }
+
+    public function getWallet(Request $request)
+    {
+        $technician = $request->user();
+
+        $baseQuery = TechnicianEarning::where('technician_id', $technician->id);
+
+        $availableBalance = (float) (clone $baseQuery)->where('status', 'pending')->sum('amount');
+        $requestedBalance = (float) (clone $baseQuery)->where('status', 'requested')->sum('amount');
+        $totalPaid = (float) (clone $baseQuery)->where('status', 'paid')->sum('amount');
+
+        $pendingByType = (clone $baseQuery)
+            ->where('status', 'pending')
+            ->select('request_type', DB::raw('count(*) as count'), DB::raw('sum(amount) as total'))
+            ->groupBy('request_type')
+            ->get();
+
+        $earnings = TechnicianEarning::with('maintenanceRequest:id,type,last_status,created_at')
+            ->where('technician_id', $technician->id)
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 10));
+
+        $hasPendingPayoutRequest = TechnicianPayoutRequest::where('technician_id', $technician->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIAN_WALLET',
+            'message' => 'Technician wallet retrieved successfully.',
+            'data' => [
+                'wallet' => [
+                    'available_balance' => $availableBalance,
+                    'requested_balance' => $requestedBalance,
+                    'total_paid' => $totalPaid,
+                    'pending_requests_count' => (clone $baseQuery)->where('status', 'pending')->count(),
+                    'pending_by_type' => $pendingByType,
+                    'has_pending_payout_request' => $hasPendingPayoutRequest,
+                ],
+                'fees' => Setting::technicianMaintenanceFees(),
+                'earnings' => $earnings,
+            ],
+        ], 200);
+    }
+
+    public function requestPayout(Request $request)
+    {
+        $technician = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $hasPendingPayoutRequest = TechnicianPayoutRequest::where('technician_id', $technician->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingPayoutRequest) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PAYOUT_REQUEST_ALREADY_PENDING',
+                'message' => 'You already have a pending payout request.',
+            ], 400);
+        }
+
+        $payoutRequest = DB::transaction(function () use ($technician, $request) {
+            $pendingEarnings = TechnicianEarning::where('technician_id', $technician->id)
+                ->where('status', 'pending')
+                ->lockForUpdate()
+                ->get();
+
+            $totalAmount = (float) $pendingEarnings->sum('amount');
+
+            if ($pendingEarnings->isEmpty() || $totalAmount <= 0) {
+                return null;
+            }
+
+            $payoutRequest = TechnicianPayoutRequest::create([
+                'technician_id' => $technician->id,
+                'total_amount' => $totalAmount,
+                'requests_count' => $pendingEarnings->count(),
+                'status' => 'pending',
+                'notes' => $request->notes,
+            ]);
+
+            TechnicianEarning::whereIn('id', $pendingEarnings->pluck('id'))->update([
+                'status' => 'requested',
+                'payout_request_id' => $payoutRequest->id,
+            ]);
+
+            return $payoutRequest;
+        });
+
+        if (! $payoutRequest) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'NO_AVAILABLE_BALANCE',
+                'message' => 'There is no available balance to request a payout.',
+            ], 400);
+        }
+
+        NotificationService::notifyAdmins(
+            "Technician {$technician->name} requested a payout of " . number_format($payoutRequest->total_amount, 2) . " SAR (payout request #{$payoutRequest->id}).",
+            null
+        );
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'PAYOUT_REQUEST_CREATED',
+            'message' => 'Payout request created successfully.',
+            'data' => [
+                'payout_request' => $payoutRequest->load('earnings.maintenanceRequest:id,type,last_status,created_at'),
+            ],
+        ], 200);
+    }
+
+    public function getPayoutRequests(Request $request)
+    {
+        $technician = $request->user();
+
+        $payoutRequests = TechnicianPayoutRequest::with('earnings.maintenanceRequest:id,type,last_status,created_at')
+            ->where('technician_id', $technician->id)
+            ->orderByDesc('id')
+            ->paginate($request->input('per_page', 10));
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'TECHNICIAN_PAYOUT_REQUESTS',
+            'message' => 'Payout requests retrieved successfully.',
+            'data' => [
+                'payout_requests' => $payoutRequests,
+            ],
+        ], 200);
     }
 
     public function getAllRequests(Request $request)
@@ -335,7 +565,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'technician_on_the_way',
+            'last_status' => 'technician_on_the_way',
         ]);
 
         NotificationService::notifyCustomer(
@@ -395,7 +625,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'in_progress',
+            'last_status' => 'in_progress',
         ]);
 
         NotificationService::notifyCustomer(
@@ -439,7 +669,7 @@ class TechnicianController extends Controller
             'spare_parts' => 'nullable|array',
             'spare_parts.*.id' => 'required|exists:spare_parts,id',
             'spare_parts.*.quantity' => 'required|integer|min:1',
-            'services' => 'required|array',
+            'services' => 'nullable|array',
             'services.*.id' => 'required|exists:services,id',
         ]);
 
@@ -456,7 +686,7 @@ class TechnicianController extends Controller
 
         $total = 0;
 
-        foreach ($validatedData['spare_parts'] as $sparePart) {
+        foreach (($validatedData['spare_parts'] ?? []) as $sparePart) {
             $sparePartModel = \App\Models\SparePart::findOrFail($sparePart['id']);
             $total += $sparePartModel->price * $sparePart['quantity'];
         }
@@ -468,11 +698,12 @@ class TechnicianController extends Controller
 
         $invoice = new Invoice();
         $invoice->maintenance_request_id = $maintenanceRequest->id;
+        $invoice->invoice_type = 'final';
         $invoice->total = $total;
         $invoice->status = 'pending';
         $invoice->save();
 
-        foreach ($validatedData['spare_parts'] as $sparePart) {
+        foreach (($validatedData['spare_parts'] ?? []) as $sparePart) {
             $invoice->spareParts()->attach($sparePart['id'], [
                 'quantity' => $sparePart['quantity'],
                 'price' => \App\Models\SparePart::findOrFail($sparePart['id'])->price,
@@ -491,7 +722,7 @@ class TechnicianController extends Controller
         ]);
 
         $maintenanceRequest->update([
-            'status' => 'waiting_for_payment',
+            'last_status' => 'waiting_for_payment',
             'invoice_number' => $invoice->id,
         ]);
 
@@ -648,8 +879,11 @@ class TechnicianController extends Controller
             'longitude' => $request->long,
         ]);
 
+        $invoice = $this->createZeroServiceInvoice($maintenanceRequest, 'New installation completed without charge.');
+
         $maintenanceRequest->update([
             'last_status' => 'completed',
+            'invoice_number' => $invoice->id,
         ]);
 
         NotificationService::notifyCustomer(
@@ -679,12 +913,271 @@ class TechnicianController extends Controller
         ], 200);
     }
 
+    public function completeWithoutPayment(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to update this request.',
+            ], 403);
+        }
+
+        if (! in_array($maintenanceRequest->current_status->status, ['in_progress', 'waiting_for_payment'], true)) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVALID_STATUS',
+                'message' => 'The request is not in progress or waiting for payment.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+            'lat' => 'nullable|numeric',
+            'long' => 'nullable|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $paidInvoice = $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', '!=', 'pending')
+            ->exists();
+
+        if ($paidInvoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_ALREADY_PAID',
+                'message' => 'The invoice has already been paid and the request cannot be completed without payment.',
+            ], 400);
+        }
+
+        $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', 'pending')
+            ->get()
+            ->each
+            ->delete();
+
+        $invoice = $this->createZeroServiceInvoice(
+            $maintenanceRequest,
+            'Maintenance request completed without charge.'
+        );
+
+        $maintenanceRequest->statuses()->create([
+            'status' => 'completed',
+            'notes' => $request->notes,
+            'latitude' => $request->lat,
+            'longitude' => $request->long,
+        ]);
+
+        $maintenanceRequest->update([
+            'last_status' => 'completed',
+            'invoice_number' => $invoice->id,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'REQUEST_COMPLETED_WITHOUT_PAYMENT',
+            'message' => 'Request completed with a zero invoice.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->load(['statuses', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                'invoice' => $invoice,
+            ],
+        ], 200);
+    }
+
+    public function updatePendingInvoice(Request $request, $id)
+    {
+        $maintenanceRequest = MaintenanceRequest::with(['invoice.services', 'invoice.spareParts'])->findOrFail($id);
+
+        if ($maintenanceRequest->technician_id != Auth::id()) {
+            return response()->json([
+                'status' => 403,
+                'response_code' => 'UNAUTHORIZED_TECHNICIAN',
+                'message' => 'You are not authorized to update this request invoice.',
+            ], 403);
+        }
+
+        $invoice = $maintenanceRequest->invoices()
+            ->where('invoice_type', 'final')
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if (! $invoice) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'PENDING_INVOICE_NOT_FOUND',
+                'message' => 'No unpaid final invoice found for this request.',
+            ], 400);
+        }
+
+        if (! in_array($maintenanceRequest->last_status, ['waiting_for_payment', 'waiting_for_technician_confirm_payment'], true)) {
+            return response()->json([
+                'status' => 400,
+                'response_code' => 'INVOICE_NOT_EDITABLE',
+                'message' => 'Invoice can only be updated before customer payment is completed.',
+            ], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'notes' => 'nullable|string',
+            'payment_method' => 'nullable|string',
+            'spare_parts' => 'nullable|array',
+            'spare_parts.*.id' => 'required|exists:spare_parts,id',
+            'spare_parts.*.quantity' => 'required|integer|min:1',
+            'spare_parts.*.price' => 'nullable|numeric|min:0',
+            'services' => 'nullable|array',
+            'services.*.id' => 'required|exists:services,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 422,
+                'response_code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+        $before = $this->invoiceSnapshot($invoice->load(['services', 'spareParts']));
+
+        $services = array_key_exists('services', $validatedData)
+            ? $validatedData['services']
+            : $invoice->services->map(fn ($service) => ['id' => $service->id])->all();
+        $spareParts = array_key_exists('spare_parts', $validatedData)
+            ? $validatedData['spare_parts']
+            : $invoice->spareParts
+                ->map(fn ($part) => [
+                    'id' => $part->id,
+                    'quantity' => (int) ($part->pivot->quantity ?? 1),
+                    'price' => (float) ($part->pivot->price ?? $part->price ?? 0),
+                ])
+                ->all();
+
+        $servicesTotal = 0;
+        $serviceIds = [];
+
+        foreach ($services as $service) {
+            $serviceModel = \App\Models\Service::findOrFail($service['id']);
+            $servicesTotal += (float) $serviceModel->price;
+            $serviceIds[] = $serviceModel->id;
+        }
+
+        $sparePartsTotal = 0;
+        $sparePartSync = [];
+
+        foreach ($spareParts as $sparePart) {
+            $sparePartModel = \App\Models\SparePart::findOrFail($sparePart['id']);
+            $price = array_key_exists('price', $sparePart)
+                ? (float) $sparePart['price']
+                : (float) $sparePartModel->price;
+            $quantity = (int) $sparePart['quantity'];
+
+            $sparePartsTotal += $price * $quantity;
+            $sparePartSync[$sparePartModel->id] = [
+                'quantity' => $quantity,
+                'price' => $price,
+            ];
+        }
+
+        $invoice->services()->sync(array_values(array_unique($serviceIds)));
+        $invoice->spareParts()->sync($sparePartSync);
+
+        $invoice->refresh()->load(['services', 'spareParts']);
+
+        $notes = collect($invoice->notes ?? [])
+            ->push([
+                'type' => 'invoice_updated_by_technician',
+                'technician_id' => Auth::id(),
+                'note' => $validatedData['notes'] ?? null,
+                'before' => $before,
+                'after' => $this->invoiceSnapshot($invoice),
+                'created_at' => now()->toDateTimeString(),
+            ])
+            ->values()
+            ->all();
+
+        $invoice->update([
+            'total' => $servicesTotal + $sparePartsTotal,
+            'payment_method' => $validatedData['payment_method'] ?? $invoice->payment_method,
+            'notes' => $notes,
+        ]);
+
+        return response()->json([
+            'status' => 200,
+            'response_code' => 'INVOICE_UPDATED',
+            'message' => 'Invoice updated successfully.',
+            'data' => [
+                'maintenance_request' => $maintenanceRequest->fresh(['statuses', 'invoice', 'invoice.services', 'invoice.spareParts']),
+                'invoice' => $invoice->fresh(['services', 'spareParts']),
+            ],
+        ], 200);
+    }
+
+    private function invoiceSnapshot(Invoice $invoice): array
+    {
+        return [
+            'payment_method' => $invoice->payment_method,
+            'total' => (float) $invoice->total,
+            'services' => $invoice->services
+                ->map(fn ($service): array => [
+                    'id' => $service->id,
+                    'name' => $service->name_en ?? $service->name_ar,
+                    'price' => (float) ($service->price ?? 0),
+                ])
+                ->values()
+                ->all(),
+            'spare_parts' => $invoice->spareParts
+                ->map(fn ($part): array => [
+                    'id' => $part->id,
+                    'name' => $part->name_en ?? $part->name_ar,
+                    'quantity' => (int) ($part->pivot->quantity ?? 1),
+                    'price' => (float) ($part->pivot->price ?? $part->price ?? 0),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function createZeroServiceInvoice(MaintenanceRequest $maintenanceRequest, string $note): Invoice
+    {
+        return $maintenanceRequest->invoices()->firstOrCreate(
+            [
+                'invoice_type' => 'zero_service',
+                'status' => 'completed',
+            ],
+            [
+                'total' => 0,
+                'payment_method' => null,
+                'notes' => [
+                    [
+                        'note' => $note,
+                        'created_at' => now()->toDateTimeString(),
+                    ],
+                ],
+            ]
+        );
+    }
+
     public function updateFcmToken(Request $request)
     {
         $technician = $request->user();
 
         $validator = Validator::make($request->all(), [
             'fcm_token' => 'required|string|max:255',
+            'preferred_locale' => 'nullable|in:ar,en',
         ]);
 
         if ($validator->fails()) {
@@ -698,6 +1191,7 @@ class TechnicianController extends Controller
 
         $technician->update([
             'fcm_token' => $request->fcm_token,
+            'preferred_locale' => $request->input('preferred_locale', substr((string) $request->header('Accept-Language', 'en'), 0, 2)) === 'ar' ? 'ar' : 'en',
         ]);
 
         return response()->json([
@@ -734,7 +1228,15 @@ class TechnicianController extends Controller
             ->where('is_open_for_freelancers', true)
             ->whereNull('technician_id')
             ->whereNull('slot_id')
-            ->whereIn('last_status', ['pending'])
+            ->where(function ($query) {
+                $query->where(function ($query) {
+                    $query->whereIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                        ->where('last_status', 'service_paid');
+                })->orWhere(function ($query) {
+                    $query->whereNotIn('type', ['regular_maintenance', 'emergency_maintenance'])
+                        ->where('last_status', 'pending');
+                });
+            })
             ->whereHas('address', function ($query) use ($districtIds) {
                 $query->whereIn('district_id', $districtIds);
             })
@@ -790,11 +1292,17 @@ class TechnicianController extends Controller
                 ], 400);
             }
 
-            if ($maintenanceRequest->last_status !== 'pending') {
+            $requiredStatus = $maintenanceRequest->requiresVisitFeePayment()
+                ? 'service_paid'
+                : 'pending';
+
+            if ($maintenanceRequest->last_status !== $requiredStatus) {
                 return response()->json([
                     'status' => 400,
                     'response_code' => 'INVALID_STATUS',
-                    'message' => 'Only pending requests can be claimed.',
+                    'message' => $maintenanceRequest->requiresVisitFeePayment()
+                        ? 'Visit fee must be paid before this request can be claimed.'
+                        : 'Only pending requests can be claimed.',
                 ], 400);
             }
 

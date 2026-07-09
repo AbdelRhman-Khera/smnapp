@@ -39,6 +39,7 @@ class AddressResource extends Resource
         return $form->schema([
             Select::make('customer_id')
                 ->relationship('customer', 'phone')
+                ->getOptionLabelFromRecordUsing(fn ($record) => \App\Support\CustomerPhone::optionLabel($record))
                 ->searchable()
                 ->required()
                 ->reactive(),
@@ -119,7 +120,10 @@ class AddressResource extends Resource
                                 ->orWhere('last_name', 'like', "%{$search}%");
                         });
                     }),
-                TextColumn::make('customer.phone')->searchable()->label('Phone'),
+                TextColumn::make('customer.phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
+                    ->searchable()
+                    ->label('Phone'),
                 TextColumn::make('name')->sortable()->searchable(),
                 TextColumn::make('city.name_ar')->label('City (AR)')->sortable(),
                 TextColumn::make('district.name_ar')->label('District (AR)')->sortable(),

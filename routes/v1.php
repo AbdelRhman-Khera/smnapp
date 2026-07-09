@@ -4,6 +4,7 @@ use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DeviceWithdrawalRequestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\MaintenanceRequestController;
 use App\Http\Controllers\NotificationController;
@@ -50,11 +51,15 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::delete('/customer/products/{productId}', [ProductController::class, 'removeProductFromCustomer']);
 
         ////// technicians
+        Route::get('/technicians', [TechnicianController::class, 'index']);
         Route::post('/technician/change-password', [TechnicianController::class, 'changePassword']);
         Route::get('/technician', [TechnicianController::class, 'getTechnician']);
         Route::post('/technician/logout', [TechnicianController::class, 'logout']);
         Route::get('/technician/requests-summary', [TechnicianController::class, 'getRequestsSummary']);
         Route::get('/technician/requests', [TechnicianController::class, 'getAllRequests']);
+        Route::get('/technician/wallet', [TechnicianController::class, 'getWallet']);
+        Route::post('/technician/wallet/payout-request', [TechnicianController::class, 'requestPayout']);
+        Route::get('/technician/wallet/payout-requests', [TechnicianController::class, 'getPayoutRequests']);
         Route::post('/technician/update-fcm-token', [TechnicianController::class, 'updateFcmToken']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
@@ -75,6 +80,7 @@ Route::middleware([SetLanguage::class])->group(function () {
 
         ////// maintenance request
         Route::get('/maintenance-requests/check-open-requests', [MaintenanceRequestController::class, 'checkOpenRequests']);
+        Route::get('/maintenance-requests/warranty-eligible', [MaintenanceRequestController::class, 'warrantyEligibleRequests']);
         Route::post('/maintenance-request', [MaintenanceRequestController::class, 'create']);
         Route::get('/maintenance-requests', [MaintenanceRequestController::class, 'index']);
         Route::get('/maintenance-request/{id}', [MaintenanceRequestController::class, 'show']);
@@ -90,9 +96,22 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::post('/maintenance-request/{id}/set-on-the-way', [TechnicianController::class, 'setOnTheWay']);
         Route::post('/maintenance-request/{id}/set-in-progress', [TechnicianController::class, 'setInProgress']);
         Route::post('/maintenance-request/{id}/set-waiting-for-payment', [TechnicianController::class, 'setWaitingForPayment']);
+        Route::put('/maintenance-request/{id}/invoice', [TechnicianController::class, 'updatePendingInvoice']);
         Route::post('/maintenance-request/{id}/confirm-cash-payment', [TechnicianController::class, 'confirmCashPayment']);
         Route::post('/maintenance-request/{id}/confirm-machine-payment', [TechnicianController::class, 'confirmMachinePayment']);
         Route::post('/maintenance-request/{id}/finish-installation', [TechnicianController::class, 'finishInstallation']);
+        Route::post('/maintenance-request/{id}/complete-without-payment', [TechnicianController::class, 'completeWithoutPayment']);
+        Route::get('/technician/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianIndex']);
+        Route::post('/maintenance-request/{id}/device-withdrawals', [DeviceWithdrawalRequestController::class, 'technicianStore']);
+        Route::post('/device-withdrawals/{id}/assign-delivery-technician', [DeviceWithdrawalRequestController::class, 'assignDeliveryTechnician']);
+        Route::post('/device-withdrawals/{id}/receive-from-technician', [DeviceWithdrawalRequestController::class, 'receiveFromTechnician']);
+        Route::post('/device-withdrawals/{id}/deliver-to-branch', [DeviceWithdrawalRequestController::class, 'technicianDeliverToBranch']);
+        Route::post('/device-withdrawals/{id}/deliver-to-customer', [DeviceWithdrawalRequestController::class, 'technicianDeliverToCustomer']);
+
+        Route::get('/device-withdrawals', [DeviceWithdrawalRequestController::class, 'customerIndex']);
+        Route::post('/device-withdrawals/{id}/approve', [DeviceWithdrawalRequestController::class, 'customerApprove']);
+        Route::post('/device-withdrawals/{id}/reject', [DeviceWithdrawalRequestController::class, 'customerReject']);
+        Route::post('/device-withdrawals/{id}/confirm-received', [DeviceWithdrawalRequestController::class, 'customerConfirmReceived']);
 
         Route::post('/maintenance-request/{id}/set-payment-method', [MaintenanceRequestController::class, 'setPaymentMethod']);
         Route::post('/maintenance-request/{id}/submit-feedback', [MaintenanceRequestController::class, 'submitFeedback']);

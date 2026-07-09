@@ -80,6 +80,7 @@ class SapRequestLogResource extends Resource
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.customer.phone')
                     ->label('Customer Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -90,6 +91,7 @@ class SapRequestLogResource extends Resource
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                         default => $state ?: '-',
                     })
                     ->placeholder('-')
@@ -288,6 +290,7 @@ class SapRequestLogResource extends Resource
                             ->schema([
                                 TextEntry::make('maintenanceRequest.customer.phone')
                                     ->label('Customer Phone')
+                                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                                     ->placeholder('-'),
 
                                 TextEntry::make('maintenanceRequest.technician.first_name')

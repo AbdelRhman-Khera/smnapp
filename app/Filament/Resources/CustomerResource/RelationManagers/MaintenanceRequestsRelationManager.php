@@ -31,6 +31,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
             ->schema([
                 Select::make('customer_id')
                     ->relationship('customer', 'phone')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => \App\Support\CustomerPhone::optionLabel($record))
                     ->required()
                     ->default(fn ($livewire) => $livewire->ownerRecord->id)
                     ->disabled(),
@@ -51,6 +52,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
                         'new_installation' => 'New Installation',
                         'regular_maintenance' => 'Regular Maintenance',
                         'emergency_maintenance' => 'Emergency Maintenance',
+                        'warranty' => 'Warranty',
                     ])
                     ->required(),
                 Select::make('products')
@@ -116,6 +118,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
                     }),
                 TextColumn::make('customer.phone')
                     ->label('Phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('type')
@@ -127,6 +130,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
                             'new_installation' => 'New Installation',
                             'regular_maintenance' => 'Regular Maintenance',
                             'emergency_maintenance' => 'Emergency Maintenance',
+                            'warranty' => 'Warranty',
                             default => $state,
                         };
                     }),
@@ -137,6 +141,8 @@ class MaintenanceRequestsRelationManager extends RelationManager
                     ->formatStateUsing(function ($state) {
                         return match ($state) {
                             'pending' => 'Pending',
+                            'visit_payment_pending' => 'Visit Payment Pending',
+                            'service_paid' => 'Service Paid',
                             'technician_assigned' => 'Technician Assigned',
                             'technician_on_the_way' => 'Technician On The Way',
                             'technician_arrived' => 'Technician Arrived',
@@ -163,9 +169,18 @@ class MaintenanceRequestsRelationManager extends RelationManager
                 Tables\Filters\Filter::make('emergency_maintenance')
                     ->label('Emergency Maintenance')
                     ->query(fn (Builder $query) => $query->where('type', 'emergency_maintenance')),
+                Tables\Filters\Filter::make('warranty')
+                    ->label('Warranty')
+                    ->query(fn (Builder $query) => $query->where('type', 'warranty')),
                 Tables\Filters\Filter::make('pending')
                     ->label('Pending')
                     ->query(fn (Builder $query) => $query->where('last_status', 'pending')),
+                Tables\Filters\Filter::make('visit_payment_pending')
+                    ->label('Visit Payment Pending')
+                    ->query(fn (Builder $query) => $query->where('last_status', 'visit_payment_pending')),
+                Tables\Filters\Filter::make('service_paid')
+                    ->label('Service Paid')
+                    ->query(fn (Builder $query) => $query->where('last_status', 'service_paid')),
                 Tables\Filters\Filter::make('technician_assigned')
                     ->label('Technician Assigned')
                     ->query(fn (Builder $query) => $query->where('last_status', 'technician_assigned')),
@@ -199,7 +214,7 @@ class MaintenanceRequestsRelationManager extends RelationManager
                 Tables\Actions\Action::make('Book Appointment')
                     ->label('Book Appointment')
                     ->icon('heroicon-o-calendar')
-                    ->disabled(fn ($record) => !in_array($record->last_status, ['pending', 'technician_assigned']))
+                    ->disabled(fn ($record) => !in_array($record->last_status, ['pending', 'service_paid', 'technician_assigned']))
                     ->form([
                         DatePicker::make('selected_date')
                             ->label('Select Date')

@@ -19,12 +19,14 @@ class Customer extends Authenticatable
         'last_name',
         'phone',
         'email',
+        'tax_number',
         'otp',
         'token',
         'password',
         'authorized',
         'activated',
         'fcm_token',
+        'preferred_locale',
     ];
 
     /**

@@ -36,7 +36,31 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->sidebarFullyCollapsibleOnDesktop()
+            ->brandLogo(asset('assets/logo.png'))
+            ->brandLogoHeight('2.75rem')
+            ->favicon(asset('assets/fav.png'))
+            ->renderHook(
+                'panels::styles.after',
+                fn (): string => '<style>
+                    .fi-simple-layout {
+                        min-height: 100dvh;
+                        background-image: url(\'' . asset('assets/Bg.jpg') . '\');
+                        background-size: 100% 100%;
+                        background-position: center;
+                        background-repeat: no-repeat;
+                        background-attachment: fixed;
+                    }
+                    .fi-simple-main {
+                        background-color: rgb(255 255 255 / 0.92);
+                        backdrop-filter: blur(6px);
+                    }
+                    .dark .fi-simple-main {
+                        background-color: rgb(24 24 27 / 0.92);
+                        backdrop-filter: blur(6px);
+                    }
+                </style>'
+            )
+            ->sidebarCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::hex('#1C4199'),
             ])
@@ -60,9 +84,8 @@ class AdminPanelProvider extends PanelProvider
                 // OverlookWidget::class,
                 // Widgets\AccountWidget::class,
                 // Widgets\FilamentInfoWidget::class,
+                \App\Filament\Widgets\StatsOverview::class,
                 \App\Filament\Widgets\DailyMaintenanceRequestsChart::class,
-                \App\Filament\Widgets\RequestsByCityChart::class,
-                \App\Filament\Widgets\RequestsByDistrictChart::class,
                 \App\Filament\Widgets\MaintenanceRequestTypesChart::class,
                 \App\Filament\Widgets\CompletedPendingRequestsChart::class,
                 \App\Filament\Widgets\MonthlyInvoicesChart::class,
@@ -70,16 +93,20 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\TopProductsChart::class,
                 \App\Filament\Widgets\TopServicesChart::class,
                 \App\Filament\Widgets\SparePartUsageChart::class,
-                \App\Filament\Widgets\AvgCompletionTimeChart::class,
                 \App\Filament\Widgets\TechnicianRequestCountChart::class,
                 \App\Filament\Widgets\FeedbackRatingChart::class,
-                \App\Filament\Widgets\ServiceFrequencyChart::class,
                 \App\Filament\Widgets\NewCustomersChart::class,
-                \App\Filament\Widgets\RequestsPerSlotChart::class,
                 \App\Filament\Widgets\MostActiveDistrictsChart::class,
                 \App\Filament\Widgets\MostActiveCitiesChart::class,
-                \App\Filament\Widgets\SupportFormsPlatformChart::class,
                 \App\Filament\Widgets\CompletedRequestsMonthlyChart::class,
+                \App\Filament\Widgets\RevenueByPaymentMethodChart::class,
+                \App\Filament\Widgets\AvgInvoiceValueChart::class,
+                \App\Filament\Widgets\RequestsHeatmapChart::class,
+                \App\Filament\Widgets\CancelledRequestsChart::class,
+                \App\Filament\Widgets\WarrantyRateChart::class,
+                \App\Filament\Widgets\DeviceWithdrawalsByStatusChart::class,
+                \App\Filament\Widgets\TechnicianRatingChart::class,
+                \App\Filament\Widgets\FreelancerClaimChart::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),

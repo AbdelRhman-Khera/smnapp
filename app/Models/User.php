@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'avatar_url',
         'sap_id',
+        'branch_id',
     ];
 
     /**
@@ -62,5 +63,10 @@ class User extends Authenticatable
     {
         return LogOptions::defaults()->logAll();
 
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

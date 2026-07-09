@@ -14,6 +14,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'maintenance_request_id',
+        'invoice_type',
         'total',
         'service_cost',
         'payment_method',
@@ -28,6 +29,7 @@ class Invoice extends Model
     protected $casts = [
         'payment_details' => 'array',
         'notes' => 'array',
+        'total' => 'float',
     ];
 
     public function maintenanceRequest()

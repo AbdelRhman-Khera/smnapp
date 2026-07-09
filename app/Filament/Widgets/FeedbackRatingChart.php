@@ -13,15 +13,18 @@ class FeedbackRatingChart extends PermissionedApexChartWidget
     protected function getOptions(): array
     {
         $ratings = range(1, 5);
-        $counts = collect($ratings)->map(fn($r) => Feedback::where('rating', $r)->count());
+        $counts = collect($ratings)->map(fn (int $rating): int => $this->applyDateFilter(Feedback::where('rating', $rating))->count());
 
         return [
-            'chart' => ['type' => 'bar'],
+            'chart' => ['type' => 'bar', 'height' => 320],
             'series' => [[
                 'name' => 'Count',
                 'data' => $counts->toArray(),
             ]],
-            'xaxis' => ['categories' => $ratings],
+            'xaxis' => ['categories' => array_map(fn (int $rating): string => $rating . ' ★', $ratings)],
+            'colors' => ['#eab308'],
+            'plotOptions' => ['bar' => ['borderRadius' => 4, 'columnWidth' => '55%', 'distributed' => false]],
+            'dataLabels' => ['enabled' => false],
         ];
     }
 }

@@ -34,8 +34,12 @@ class CustomerResource extends Resource
                 Forms\Components\TextInput::make('phone')
                     ->tel()
                     ->required()
-                    ->maxLength(15),
+                    ->maxLength(15)
+                    ->visible(fn (string $operation): bool => $operation === 'create' || \App\Support\CustomerPhone::canView()),
                 Forms\Components\TextInput::make('email')->unique('customers', 'email', ignoreRecord: true)->email()->maxLength(100),
+                Forms\Components\TextInput::make('tax_number')
+                    ->label('Tax Number')
+                    ->maxLength(50),
                 Forms\Components\TextInput::make('password')
                     ->password()
                     ->required()
@@ -63,8 +67,13 @@ class CustomerResource extends Resource
                             ->orWhere('last_name', 'like', "%{$search}%");
                     }),
                 Tables\Columns\TextColumn::make('phone')
+                    ->formatStateUsing(fn (?string $state): ?string => \App\Support\CustomerPhone::display($state))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('tax_number')
+                    ->label('Tax Number')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('city')
