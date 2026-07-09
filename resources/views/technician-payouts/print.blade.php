@@ -71,7 +71,13 @@
         .footer{margin-top:40px;border-top:3px solid var(--blue);padding-top:12px;font-size:12px;color:var(--muted);text-align:center;line-height:1.9;}
         .footer b{color:var(--ink);}
         .print-action{position:fixed;top:16px;left:16px;border:0;border-radius:8px;background:var(--blue);color:#fff;padding:10px 16px;font-weight:700;font-family:'Tajawal',sans-serif;cursor:pointer;box-shadow:0 10px 25px rgba(20,30,70,.18);}
-        @media print{body{background:#fff;padding:0;}.voucher{box-shadow:none;width:100%;padding:26px 30px;}.print-action{display:none;}}
+        @page{size:A4 portrait;margin:9mm;}
+        @media print{
+            html,body{background:#fff;padding:0;margin:0;}
+            .voucher{box-shadow:none;width:100%;max-width:100%;padding:0;transform-origin:top center;}
+            .print-action{display:none;}
+            table,.info-grid,.statement,.amount-box,.lower,.footer{page-break-inside:avoid;}
+        }
     </style>
 </head>
 <body>
@@ -169,6 +175,27 @@
         } catch (e) {
             document.getElementById('qrcode').textContent = 'QR';
         }
+
+        // Scale the voucher down so all content fits on a single printed page.
+        (function () {
+            var el = document.querySelector('.voucher');
+            // A4 portrait usable area @96dpi minus @page margins (9mm each side).
+            var availableHeight = 1123 - Math.round((9 * 2) * 3.7795);
+
+            function fitToPage() {
+                el.style.zoom = '';
+                var height = el.offsetHeight;
+                if (height > availableHeight) {
+                    el.style.zoom = availableHeight / height;
+                }
+            }
+            function reset() {
+                el.style.zoom = '';
+            }
+
+            window.addEventListener('beforeprint', fitToPage);
+            window.addEventListener('afterprint', reset);
+        })();
     </script>
 </body>
 </html>

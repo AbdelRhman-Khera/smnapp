@@ -55,13 +55,13 @@
         *{box-sizing:border-box;margin:0;padding:0;}
         body{font-family:'Poppins',sans-serif;background:var(--page);color:var(--ink);display:flex;justify-content:center;padding:40px 16px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
         .invoice{background:#fff;width:794px;max-width:100%;padding:54px 56px 40px;box-shadow:0 18px 50px rgba(20,30,70,.10);position:relative;}
-        .logo{height:60px;margin-bottom:30px;display:flex;align-items:center;color:var(--blue);font-weight:800;font-size:28px;letter-spacing:.2px;}
-        .logo span{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:1.4px;text-transform:uppercase;margin-top:4px;}
-        .bar-row{display:flex;align-items:center;gap:0;margin-bottom:42px;}
+        .logo{height:60px;margin-bottom:24px;display:flex;align-items:center;}
+        .logo img{height:58px;width:auto;display:block;}
+        .bar-row{display:flex;align-items:center;gap:0;margin-bottom:34px;}
         .bar{height:34px;background:var(--blue);flex:1;}
         .bar.short{flex:0 0 56px;margin-left:14px;}
         .invoice-title{font-weight:800;font-size:46px;letter-spacing:1px;color:var(--ink);padding:0 18px;white-space:nowrap;}
-        .meta{display:flex;justify-content:space-between;margin-bottom:34px;gap:32px;}
+        .meta{display:flex;justify-content:space-between;margin-bottom:28px;gap:32px;}
         .bill-to .label{font-weight:600;font-size:18px;margin-bottom:8px;}
         .bill-to .name{font-weight:700;font-size:15px;margin-bottom:5px;}
         .bill-to .addr{font-size:11.5px;color:var(--muted);line-height:1.7;font-weight:300;}
@@ -78,7 +78,7 @@
         tbody td.sl{font-weight:600;}
         tbody td.desc{font-weight:500;}
         .col-price,.col-qty,.col-total{width:115px;}
-        .lower{display:flex;justify-content:space-between;margin-top:38px;gap:30px;}
+        .lower{display:flex;justify-content:space-between;margin-top:30px;gap:30px;}
         .lower-left{flex:1;}
         .zatca h4{font-size:13px;font-weight:700;margin-bottom:12px;}
         #qrcode{width:118px;height:118px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;}
@@ -86,14 +86,20 @@
         .totals{min-width:270px;}
         .total-box{display:flex;justify-content:space-between;align-items:center;background:var(--blue);color:#fff;padding:13px 18px;border-radius:5px;margin-top:10px;}
         .total-box .lbl,.total-box .amt{font-weight:700;font-size:15px;}
-        .footer{margin-top:54px;}
+        .footer{margin-top:40px;}
         .footer .divider{height:4px;background:var(--blue);border-radius:3px;margin-bottom:14px;}
         .footer .f-cols{display:flex;justify-content:space-between;align-items:flex-end;}
         .f-contact{font-size:12px;line-height:1.9;}
         .f-contact a{color:var(--ink);text-decoration:none;}
         .f-contact .vat b{font-weight:600;}
         .print-action{position:fixed;top:16px;right:16px;border:0;border-radius:8px;background:var(--blue);color:#fff;padding:10px 14px;font-weight:700;cursor:pointer;box-shadow:0 10px 25px rgba(20,30,70,.18);}
-        @media print{body{background:#fff;padding:0;}.invoice{box-shadow:none;width:100%;padding:30px 34px;}.print-action{display:none;}}
+        @page{size:A4 portrait;margin:9mm;}
+        @media print{
+            html,body{background:#fff;padding:0;margin:0;}
+            .invoice{box-shadow:none;width:100%;max-width:100%;padding:0;transform-origin:top center;}
+            .print-action{display:none;}
+            table,.meta,.lower,.footer{page-break-inside:avoid;}
+        }
     </style>
 </head>
 <body>
@@ -101,7 +107,7 @@
 
     <div class="invoice">
         <div class="logo">
-            <div>Samnan<span>Water Solutions</span></div>
+            <img src="{{ asset('assets/logo.png') }}" alt="Samnan Water Solutions">
         </div>
 
         <div class="bar-row">
@@ -213,6 +219,27 @@
         }catch(e){
             document.getElementById('qrcode').textContent = 'QR';
         }
+
+        // Scale the invoice down so all content fits on a single printed page.
+        (function () {
+            var el = document.querySelector('.invoice');
+            // A4 portrait usable area @96dpi minus @page margins (9mm each side).
+            var availableHeight = 1123 - Math.round((9 * 2) * 3.7795);
+
+            function fitToPage() {
+                el.style.zoom = '';
+                var height = el.offsetHeight;
+                if (height > availableHeight) {
+                    el.style.zoom = availableHeight / height;
+                }
+            }
+            function reset() {
+                el.style.zoom = '';
+            }
+
+            window.addEventListener('beforeprint', fitToPage);
+            window.addEventListener('afterprint', reset);
+        })();
     </script>
 </body>
 </html>

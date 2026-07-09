@@ -176,8 +176,8 @@ class SapController extends Controller
             ];
         }
 
-        // $url = 'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
-        $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
+        $url = 'https://portal.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
+        // $url = 'https://dev.samnan.com.sa/sap/bc/zrestful_sales?sap-client=300&Action=CREATE_SALESORDER&sap-language=E';
 
         $isVisitFeeInvoice = $invoice?->invoice_type === 'visit_fee';
         $visitFeeAmountBeforeVat = $isVisitFeeInvoice
@@ -260,8 +260,8 @@ class SapController extends Controller
             'ITEMS' => $items,
         ];
 
-        $username = config('services.sap_test.user');
-        $password = config('services.sap_test.pass');
+        $username = config('services.sap.user');
+        $password = config('services.sap.pass');
 
         $sapRequestLog = SapRequestLog::create([
             'maintenance_request_id' => $maintenanceRequest->id,
