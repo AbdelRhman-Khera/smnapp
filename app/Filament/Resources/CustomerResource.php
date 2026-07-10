@@ -42,9 +42,11 @@ class CustomerResource extends Resource
                     ->maxLength(50),
                 Forms\Components\TextInput::make('password')
                     ->password()
-                    ->required()
+                    ->required(fn (string $operation): bool => $operation === 'create')
                     ->maxLength(255)
-                    ->dehydrateStateUsing(fn($state) => Hash::make($state)),
+                    ->dehydrated(fn ($state): bool => filled($state))
+                    ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                    ->helperText(fn (string $operation): ?string => $operation === 'edit' ? 'Leave empty to keep the current password.' : null),
                 Forms\Components\Toggle::make('authorized'),
                 Forms\Components\Toggle::make('activated'),
             ]);
