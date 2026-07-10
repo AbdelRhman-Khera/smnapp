@@ -110,7 +110,7 @@ class TechnicianSparePartRequestResource extends Resource
                     ->label('Branch'),
 
                 Tables\Filters\SelectFilter::make('technician_id')
-                    ->relationship('technician', 'first_name')
+                    ->relationship('technician', 'name')
                     ->label('Technician'),
 
             ])
