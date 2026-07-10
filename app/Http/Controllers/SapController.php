@@ -186,7 +186,7 @@ class SapController extends Controller
 
         if ($isVisitFeeInvoice) {
             $items = [[
-                'MATNR' => '10032',
+                'MATNR' => '10954',
                 'QTY' => '1',
                 'PRICE' => (string) $visitFeeAmountBeforeVat,
             ]];
@@ -222,13 +222,13 @@ class SapController extends Controller
         $payload = [
             'CUSTOMER_ID' => (string) (
                 $isVisitFeeInvoice
-                    ? '18002W03'
+                    ? '18002T00'
                     : ($maintenanceRequest->technician->customer_id ?? '')
             ),
 
             'TECHNICIAN_ID' => (string) (
                 $isVisitFeeInvoice
-                    ? 'E2045'
+                    ? 'E0000'
                     : ($maintenanceRequest->technician->sap_id ?? '')
             ),
 
@@ -255,7 +255,7 @@ class SapController extends Controller
 
             'SITE' => (string) ($maintenanceRequest->technician->site_id ?? ''),
             'STORAGE' => (string) ($maintenanceRequest->technician->storage_location ?? ''),
-            'AMOUNT' => (string) ($isVisitFeeInvoice ? $visitFeeAmountBeforeVat : ($invoice->total ?? '')),
+            'AMOUNT' => (string) ($invoice?->total ?? 0),
 
             'ITEMS' => $items,
         ];
