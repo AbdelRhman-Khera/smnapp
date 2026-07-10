@@ -110,7 +110,10 @@ class TechnicianSparePartRequestResource extends Resource
                     ->label('Branch'),
 
                 Tables\Filters\SelectFilter::make('technician_id')
-                    ->relationship('technician', 'name')
+                    ->relationship('technician', 'first_name')
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => trim($record->first_name . ' ' . $record->last_name))
+                    ->searchable()
+                    ->preload()
                     ->label('Technician'),
 
             ])
