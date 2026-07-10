@@ -101,6 +101,7 @@ class PushNotificationCampaignResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->poll('15s')
             ->columns([
                 TextColumn::make('id')->sortable(),
                 TextColumn::make('audience')
@@ -139,14 +140,14 @@ class PushNotificationCampaignResource extends Resource
                     ->color('primary')
                     ->requiresConfirmation()
                     ->modalHeading('Send push notification?')
-                    ->modalDescription('This sends the localized message to the selected audience immediately.')
+                    ->modalDescription('The message will be queued and sent to the selected audience in the background. Counters update as sending progresses.')
                     ->action(function (PushNotificationCampaign $record): void {
-                        $result = app(PushNotificationCampaignService::class)->send($record);
+                        $result = app(PushNotificationCampaignService::class)->queue($record);
 
                         Notification::make()
-                            ->title('Push notification sent')
-                            ->body("Targeted: {$result['targeted']} | Sent: {$result['success']} | Failed: {$result['failed']}")
-                            ->color($result['failed'] > 0 ? 'warning' : 'success')
+                            ->title('Push notification queued')
+                            ->body("Targeted: {$result['targeted']} recipients in {$result['jobs']} batches. Sending runs in the background — the Sent/Failed counters will update as it progresses.")
+                            ->color('success')
                             ->send();
                     }),
                 Tables\Actions\EditAction::make(),
