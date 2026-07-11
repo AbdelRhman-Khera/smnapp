@@ -1468,6 +1468,15 @@ class MaintenanceRequestController extends Controller
             return response()->json(['response_code' => 'NOT_AUTHORIZED'], 200);
         }
 
+        if (strtolower((string) data_get($verification, 'tran_type')) !== 'sale') {
+            Log::channel('PayTabs')->info('[payment.ipn] Ignoring non-sale transaction', [
+                'tran_ref' => $tranRef,
+                'tran_type' => data_get($verification, 'tran_type'),
+            ]);
+
+            return response()->json(['response_code' => 'IGNORED_TRAN_TYPE'], 200);
+        }
+
         $cartId = data_get($verification, 'cart_id') ?: $cartId;
         $maintenanceRequestId = null;
 
