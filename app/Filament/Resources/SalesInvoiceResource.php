@@ -376,7 +376,7 @@ class SalesInvoiceResource extends Resource
                     ->modalDescription('This will create a SAP sales order for this maintenance request.')
                     ->visible(fn (Invoice $record): bool => static::canEdit($record)
                         && in_array($record->maintenanceRequest?->sap_sync_status, ['pending', 'failed'], true)
-                        && $record->maintenanceRequest?->last_status === 'completed')
+                        && ($record->status === 'completed' || $record->maintenanceRequest?->last_status === 'completed'))
                     ->action(function (Invoice $record): void {
                         $record->loadMissing([
                             'maintenanceRequest.invoice',
