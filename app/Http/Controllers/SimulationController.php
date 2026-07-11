@@ -73,9 +73,10 @@ class SimulationController extends Controller
         return $this->redirectToSimulation($simulationRequest, 'Simulation request created.');
     }
 
-    public function payVisitFeeAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
+    public function payVisitFeeAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $this->payVisitFee($maintenanceRequest);
+        $this->overrideLatestStatusNote($maintenanceRequest, $request->input('note'));
 
         return $this->redirectToSimulation($maintenanceRequest, 'Visit fee paid. Request is ready for appointment booking.');
     }
@@ -85,23 +86,27 @@ class SimulationController extends Controller
         $data = $request->validate([
             'technician_id' => ['required', 'exists:technicians,id'],
             'scheduled_at' => ['required', 'date'],
+            'note' => ['nullable', 'string'],
         ]);
 
         $this->assignTechnician($maintenanceRequest, (int) $data['technician_id'], $data['scheduled_at']);
+        $this->overrideLatestStatusNote($maintenanceRequest, $data['note'] ?? null);
 
         return $this->redirectToSimulation($maintenanceRequest, 'Technician and appointment assigned.');
     }
 
-    public function onTheWayAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
+    public function onTheWayAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $this->advanceTechnicianStatus($maintenanceRequest, 'technician_on_the_way');
+        $this->overrideLatestStatusNote($maintenanceRequest, $request->input('note'));
 
         return $this->redirectToSimulation($maintenanceRequest, 'Technician marked as on the way.');
     }
 
-    public function inProgressAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
+    public function inProgressAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $this->advanceTechnicianStatus($maintenanceRequest, 'in_progress');
+        $this->overrideLatestStatusNote($maintenanceRequest, $request->input('note'));
 
         return $this->redirectToSimulation($maintenanceRequest, 'Request marked as in progress.');
     }
@@ -115,16 +120,19 @@ class SimulationController extends Controller
             'spare_parts.*.spare_part_id' => ['nullable', 'exists:spare_parts,id'],
             'spare_parts.*.quantity' => ['nullable', 'integer', 'min:1'],
             'spare_parts.*.price' => ['nullable', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string'],
         ]);
 
         $this->createFinalInvoice($maintenanceRequest, $data['services'] ?? [], $data['spare_parts'] ?? []);
+        $this->overrideLatestStatusNote($maintenanceRequest, $data['note'] ?? null);
 
         return $this->redirectToSimulation($maintenanceRequest, 'Final invoice created.');
     }
 
-    public function payFinalInvoiceAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
+    public function payFinalInvoiceAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $maintenanceRequest = $this->payFinalInvoice($maintenanceRequest);
+        $this->overrideLatestStatusNote($maintenanceRequest, $request->input('note'));
 
         return $this->redirectToSimulation(
             $maintenanceRequest,
@@ -134,11 +142,21 @@ class SimulationController extends Controller
         );
     }
 
-    public function completeWithoutPaymentAction(MaintenanceRequest $maintenanceRequest): RedirectResponse
+    public function completeWithoutPaymentAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse
     {
         $this->completeWithoutPayment($maintenanceRequest);
+        $this->overrideLatestStatusNote($maintenanceRequest, $request->input('note'));
 
         return $this->redirectToSimulation($maintenanceRequest, 'Request completed with a zero invoice.');
+    }
+
+    private function overrideLatestStatusNote(MaintenanceRequest $maintenanceRequest, ?string $note): void
+    {
+        if (blank($note)) {
+            return;
+        }
+
+        $maintenanceRequest->statuses()->latest('id')->first()?->update(['notes' => $note]);
     }
 
     public function createWithdrawalAction(Request $request, MaintenanceRequest $maintenanceRequest): RedirectResponse

@@ -71,7 +71,7 @@ Route::get('/admin/technician-payouts/{payout}/print', function (TechnicianPayou
     return view('technician-payouts.print', compact('payout', 'dashboardUrl'));
 })->middleware('auth')->name('admin.technician-payouts.print');
 
-Route::middleware('auth')->prefix('simulate')->name('simulation.')->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\SimulationAccess::class])->prefix('simulate')->name('simulation.')->group(function () {
     Route::get('/', [SimulationController::class, 'index'])->name('index');
     Route::post('/requests', [SimulationController::class, 'store'])->name('store');
     Route::post('/requests/{maintenanceRequest}/visit-fee', [SimulationController::class, 'payVisitFeeAction'])->name('visit-fee');
