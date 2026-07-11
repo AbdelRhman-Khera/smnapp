@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             '/api/v1/payment/success/*',
             '/api/v1/payment/callback/*',
+            '/api/v1/payment/ipn',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

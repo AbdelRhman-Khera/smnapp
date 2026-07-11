@@ -1361,6 +1361,30 @@ class MaintenanceRequestController extends Controller
         }
 
         if ($request->responseStatus == 'A') {
+            $verification = app(\App\Services\PayTabsGateway::class)->verifyTransaction($request->transactionReference);
+
+            if ($verification !== null && ! app(\App\Services\PayTabsGateway::class)->isAuthorized($verification)) {
+                Log::channel('PayTabs')->error('[payment.mobileCallback] Transaction NOT authorized at PayTabs, rejecting', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'tran_ref' => $request->transactionReference,
+                    'paytabs_status' => data_get($verification, 'payment_result.response_status'),
+                    'paytabs_message' => data_get($verification, 'payment_result.response_message'),
+                ]);
+
+                return response()->json([
+                    'status' => 400,
+                    'response_code' => 'PAYMENT_NOT_VERIFIED',
+                    'message' => 'Payment could not be verified with PayTabs.',
+                ], 400);
+            }
+
+            if ($verification === null) {
+                Log::channel('PayTabs')->warning('[payment.mobileCallback] Could not verify transaction with PayTabs, proceeding with app-reported status', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'tran_ref' => $request->transactionReference,
+                ]);
+            }
+
             $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
 
             Log::channel('PayTabs')->info('[payment.mobileCallback] Payment completed and request status updated', [
@@ -1399,6 +1423,112 @@ class MaintenanceRequestController extends Controller
             'response_code' => 'PAYMENT_FAILED',
             'message' => 'Payment failed. Please try again.',
         ], 400);
+    }
+
+    /**
+     * Server-to-server IPN from PayTabs (configured in the merchant dashboard).
+     * Safety net that registers payments even when the mobile app fails to
+     * report them. Always verified against PayTabs before anything is updated.
+     */
+    public function paymentIpn(Request $request)
+    {
+        Log::channel('PayTabs')->info('[payment.ipn] Incoming IPN', [
+            'ip' => $request->ip(),
+            'payload' => $request->all(),
+        ]);
+
+        $tranRef = $request->input('tran_ref') ?? $request->input('tranRef');
+        $cartId = $request->input('cart_id') ?? $request->input('cartId');
+
+        if (blank($tranRef)) {
+            Log::channel('PayTabs')->warning('[payment.ipn] Missing tran_ref, ignoring');
+
+            return response()->json(['response_code' => 'IGNORED_NO_TRAN_REF'], 200);
+        }
+
+        $gateway = app(\App\Services\PayTabsGateway::class);
+        $verification = $gateway->verifyTransaction($tranRef);
+
+        if ($verification === null) {
+            Log::channel('PayTabs')->error('[payment.ipn] Could not verify transaction with PayTabs', [
+                'tran_ref' => $tranRef,
+            ]);
+
+            // Non-2xx so PayTabs retries the IPN later.
+            return response()->json(['response_code' => 'VERIFICATION_UNAVAILABLE'], 503);
+        }
+
+        if (! $gateway->isAuthorized($verification)) {
+            Log::channel('PayTabs')->info('[payment.ipn] Transaction not authorized, nothing to do', [
+                'tran_ref' => $tranRef,
+                'paytabs_status' => data_get($verification, 'payment_result.response_status'),
+                'paytabs_message' => data_get($verification, 'payment_result.response_message'),
+            ]);
+
+            return response()->json(['response_code' => 'NOT_AUTHORIZED'], 200);
+        }
+
+        $cartId = data_get($verification, 'cart_id') ?: $cartId;
+        $maintenanceRequestId = null;
+
+        if (is_string($cartId) && preg_match('/MR-(\d+)/', $cartId, $matches)) {
+            $maintenanceRequestId = (int) $matches[1];
+        } elseif (is_numeric($cartId)) {
+            $maintenanceRequestId = (int) $cartId;
+        }
+
+        if (! $maintenanceRequestId) {
+            Log::channel('PayTabs')->error('[payment.ipn] Could not map cart_id to a maintenance request', [
+                'tran_ref' => $tranRef,
+                'cart_id' => $cartId,
+            ]);
+
+            return response()->json(['response_code' => 'UNMAPPED_CART_ID'], 200);
+        }
+
+        $maintenanceRequest = MaintenanceRequest::with('invoices')->find($maintenanceRequestId);
+
+        if (! $maintenanceRequest) {
+            Log::channel('PayTabs')->error('[payment.ipn] Maintenance request not found', [
+                'tran_ref' => $tranRef,
+                'maintenance_request_id' => $maintenanceRequestId,
+            ]);
+
+            return response()->json(['response_code' => 'REQUEST_NOT_FOUND'], 200);
+        }
+
+        $invoice = $this->payableInvoiceFor($maintenanceRequest);
+
+        if (! $invoice) {
+            Log::channel('PayTabs')->info('[payment.ipn] No payable invoice (already processed or nothing pending)', [
+                'tran_ref' => $tranRef,
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'request_last_status' => $maintenanceRequest->last_status,
+            ]);
+
+            return response()->json(['response_code' => 'NOTHING_TO_PROCESS'], 200);
+        }
+
+        $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef);
+
+        Log::channel('PayTabs')->info('[payment.ipn] Payment completed via IPN safety net', [
+            'tran_ref' => $tranRef,
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice->id,
+            'new_last_status' => $maintenanceRequest->fresh()->last_status,
+        ]);
+
+        try {
+            app(\App\Http\Controllers\SapController::class)
+                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+        } catch (\Throwable $exception) {
+            Log::channel('PayTabs')->error('[payment.ipn] SAP sales order call failed', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return response()->json(['response_code' => 'PAYMENT_PROCESSED'], 200);
     }
 
     public function submitFeedback(Request $request, $id)
