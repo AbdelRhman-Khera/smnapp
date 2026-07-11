@@ -58,9 +58,11 @@ return [
             'ignore_exceptions' => false,
         ],
         'PayTabs' => [
-            'driver' => 'single',
+            'driver' => 'daily',
             'path' => storage_path('logs/PayTabs.log'),
             'level' => 'info',
+            'days' => 30,
+            'replace_placeholders' => true,
         ],
 
         'single' => [

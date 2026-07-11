@@ -131,10 +131,14 @@
 
                     <div class="actions" style="margin-top: 20px;">
                         @if ($request->last_status === 'visit_payment_pending')
-                            <form method="post" action="{{ route('simulation.visit-fee', $request) }}">@csrf<button type="submit">Pay Visit Fee</button></form>
+                            <form method="post" action="{{ route('simulation.visit-fee', $request) }}" class="grid" style="width: 100%; grid-template-columns: 1fr auto; align-items: end;">
+                                @csrf
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
+                                <button type="submit">Pay Visit Fee</button>
+                            </form>
                         @endif
                         @if (in_array($request->last_status, ['pending', 'service_paid']))
-                            <form method="post" action="{{ route('simulation.assign', $request) }}" class="grid" style="width: 100%; grid-template-columns: 1fr 1fr auto; align-items: end;">
+                            <form method="post" action="{{ route('simulation.assign', $request) }}" class="grid" style="width: 100%; grid-template-columns: 1fr 1fr 1fr auto; align-items: end;">
                                 @csrf
                                 <label>Technician
                                     <select name="technician_id" required>
@@ -147,14 +151,23 @@
                                 <label>Appointment Time
                                     <input type="datetime-local" name="scheduled_at" value="{{ now()->addDay()->setTime(10, 0)->format('Y-m-d\\TH:i') }}" required>
                                 </label>
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
                                 <button type="submit">Assign Technician</button>
                             </form>
                         @endif
                         @if ($request->last_status === 'technician_assigned')
-                            <form method="post" action="{{ route('simulation.on-the-way', $request) }}">@csrf<button type="submit">Set On The Way</button></form>
+                            <form method="post" action="{{ route('simulation.on-the-way', $request) }}" class="grid" style="width: 100%; grid-template-columns: 1fr auto; align-items: end;">
+                                @csrf
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
+                                <button type="submit">Set On The Way</button>
+                            </form>
                         @endif
                         @if ($request->last_status === 'technician_on_the_way')
-                            <form method="post" action="{{ route('simulation.in-progress', $request) }}">@csrf<button type="submit">Set In Progress</button></form>
+                            <form method="post" action="{{ route('simulation.in-progress', $request) }}" class="grid" style="width: 100%; grid-template-columns: 1fr auto; align-items: end;">
+                                @csrf
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
+                                <button type="submit">Set In Progress</button>
+                            </form>
                         @endif
                     </div>
                 </section>
@@ -383,6 +396,7 @@
                                     <label>Quantity<input type="number" min="1" name="spare_parts[0][quantity]" value="1"></label>
                                     <label>Custom Price<input type="number" min="0" step="0.01" name="spare_parts[0][price]"></label>
                                 </div>
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
                                 <button type="submit">Create Final Invoice</button>
                             </form>
 
@@ -390,6 +404,7 @@
                                 @csrf
                                 <h3>Complete Without Payment</h3>
                                 <p class="muted">Creates a zero-service invoice and closes this request immediately.</p>
+                                <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
                                 <div class="actions"><button type="submit" class="secondary">Create Zero Invoice and Complete</button></div>
                             </form>
                         </div>
@@ -399,8 +414,9 @@
                 @if ($request->last_status === 'waiting_for_payment')
                     <section class="card">
                         <h2>Final Payment</h2>
-                        <form method="post" action="{{ route('simulation.pay-final', $request) }}">
+                        <form method="post" action="{{ route('simulation.pay-final', $request) }}" class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
                             @csrf
+                            <label>Note<input type="text" name="note" placeholder="Optional status note"></label>
                             <button type="submit" class="success">Pay Final Invoice and Complete Request</button>
                         </form>
                     </section>

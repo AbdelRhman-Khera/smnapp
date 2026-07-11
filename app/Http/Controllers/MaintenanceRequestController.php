@@ -1121,14 +1121,48 @@ class MaintenanceRequestController extends Controller
             $return = route('payment.success', ['id' => $maintenanceRequest->id]);
             $callback = route('payment.callback', ['id' => $maintenanceRequest->id]);
             $language = 'en';
-            $pay = paypage::sendPaymentCode('all')
-                ->sendTransaction('sale', 'ecom')
-                ->sendCart($cart_id, $cart_amount, $cart_description)
-                ->sendCustomerDetails($name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
-                ->shipping_same_billing()
-                ->sendURLs($return, $callback)
-                ->sendLanguage($language)
-                ->create_pay_page();;
+
+            Log::channel('PayTabs')->info('[pay-page] Creating PayTabs pay page', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+                'invoice_type' => $invoice->invoice_type,
+                'cart_id' => $cart_id,
+                'amount' => $cart_amount,
+                'customer_id' => $maintenanceRequest->customer_id,
+                'return_url' => $return,
+                'callback_url' => $callback,
+            ]);
+
+            try {
+                $pay = paypage::sendPaymentCode('all')
+                    ->sendTransaction('sale', 'ecom')
+                    ->sendCart($cart_id, $cart_amount, $cart_description)
+                    ->sendCustomerDetails($name, $email, $phone, $street1, $city, $state, $country, $zip, $ip)
+                    ->shipping_same_billing()
+                    ->sendURLs($return, $callback)
+                    ->sendLanguage($language)
+                    ->create_pay_page();
+            } catch (\Throwable $exception) {
+                Log::channel('PayTabs')->error('[pay-page] Failed to create PayTabs pay page', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'invoice_id' => $invoice->id,
+                    'cart_id' => $cart_id,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return response()->json([
+                    'status' => 500,
+                    'response_code' => 'PAYMENT_LINK_FAILED',
+                    'message' => 'Could not generate the payment link. Please try again.',
+                ], 500);
+            }
+
+            Log::channel('PayTabs')->info('[pay-page] PayTabs pay page created', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+                'cart_id' => $cart_id,
+                'payment_url' => $pay->getTargetUrl(),
+            ]);
 
             return response()->json([
                 'status' => 200,
@@ -1141,10 +1175,70 @@ class MaintenanceRequestController extends Controller
 
     public function paymentCallback(Request $request, $id)
     {
-        $maintenanceRequest = MaintenanceRequest::with('invoices')->findOrFail($id);
+        $source = $request->route()?->getName() ?: 'payment.callback';
+
+        Log::channel('PayTabs')->info("[{$source}] Incoming payment notification", [
+            'maintenance_request_id' => $id,
+            'ip' => $request->ip(),
+            'payload' => $request->all(),
+        ]);
+
+        $maintenanceRequest = MaintenanceRequest::with('invoices')->find($id);
+
+        if (! $maintenanceRequest) {
+            Log::channel('PayTabs')->error("[{$source}] Maintenance request not found", [
+                'maintenance_request_id' => $id,
+            ]);
+
+            return response()->json([
+                'status' => 404,
+                'response_code' => 'REQUEST_NOT_FOUND',
+                'message' => 'Maintenance request not found.',
+            ], 404);
+        }
+
+        // The return URL (browser redirect) sends respStatus/tranRef, while the
+        // server-to-server callback sends payment_result.response_status/tran_ref.
+        $responseStatus = $request->input('respStatus') ?? $request->input('payment_result.response_status');
+        $tranRef = $request->input('tranRef') ?? $request->input('tran_ref');
+
+        Log::channel('PayTabs')->info("[{$source}] Parsed payment result", [
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'response_status' => $responseStatus,
+            'tran_ref' => $tranRef,
+            'request_last_status' => $maintenanceRequest->last_status,
+        ]);
+
         $invoice = $this->payableInvoiceFor($maintenanceRequest);
 
         if (! $invoice) {
+            $hasCompletedInvoice = $maintenanceRequest->invoices()
+                ->where('status', 'completed')
+                ->exists();
+
+            if ($hasCompletedInvoice) {
+                Log::channel('PayTabs')->info("[{$source}] Payment already processed, nothing to do", [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'tran_ref' => $tranRef,
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'response_code' => 'PAYMENT_ALREADY_PROCESSED',
+                    'message' => 'Payment was already processed for this request.',
+                ], 200);
+            }
+
+            Log::channel('PayTabs')->error("[{$source}] No payable invoice found", [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'request_last_status' => $maintenanceRequest->last_status,
+                'invoices' => $maintenanceRequest->invoices->map(fn ($inv) => [
+                    'id' => $inv->id,
+                    'type' => $inv->invoice_type,
+                    'status' => $inv->status,
+                ])->all(),
+            ]);
+
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVOICE_NOT_FOUND',
@@ -1152,11 +1246,38 @@ class MaintenanceRequestController extends Controller
             ], 400);
         }
 
-        if ($request->respStatus == 'A') {
-            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->tranRef);
+        Log::channel('PayTabs')->info("[{$source}] Payable invoice resolved", [
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice->id,
+            'invoice_type' => $invoice->invoice_type,
+            'invoice_total' => $invoice->total,
+        ]);
 
-            $sapResponse = app(\App\Http\Controllers\SapController::class)
-                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+        if ($responseStatus == 'A') {
+            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef);
+
+            Log::channel('PayTabs')->info("[{$source}] Payment completed and request status updated", [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+                'tran_ref' => $tranRef,
+                'new_last_status' => $maintenanceRequest->fresh()->last_status,
+            ]);
+
+            try {
+                $sapResponse = app(\App\Http\Controllers\SapController::class)
+                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+
+                Log::channel('PayTabs')->info("[{$source}] SAP sales order call finished", [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                ]);
+            } catch (\Throwable $exception) {
+                // The payment is already registered; a SAP failure must not
+                // make PayTabs believe the callback failed.
+                Log::channel('PayTabs')->error("[{$source}] SAP sales order call failed", [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'status' => 200,
@@ -1164,17 +1285,29 @@ class MaintenanceRequestController extends Controller
                 'message' => 'Payment completed successfully.',
                 'data' => $maintenanceRequest->fresh(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
             ], 200);
-        } else {
-            return response()->json([
-                'status' => 400,
-                'response_code' => 'PAYMENT_FAILED',
-                'message' => 'Payment failed. Please try again.',
-            ], 400);
         }
+
+        Log::channel('PayTabs')->warning("[{$source}] Payment not approved", [
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice->id,
+            'response_status' => $responseStatus,
+            'tran_ref' => $tranRef,
+        ]);
+
+        return response()->json([
+            'status' => 400,
+            'response_code' => 'PAYMENT_FAILED',
+            'message' => 'Payment failed. Please try again.',
+        ], 400);
     }
 
     public function paymentCallbackMobile(Request $request)
     {
+        Log::channel('PayTabs')->info('[payment.mobileCallback] Incoming payment notification', [
+            'ip' => $request->ip(),
+            'payload' => $request->all(),
+        ]);
+
         $validator = Validator::make($request->all(), [
             'responseStatus' => 'required',
             'requestId' => 'required|exists:maintenance_requests,id',
@@ -1182,6 +1315,10 @@ class MaintenanceRequestController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::channel('PayTabs')->error('[payment.mobileCallback] Validation failed', [
+                'errors' => $validator->errors()->all(),
+            ]);
+
             return response()->json([
                 'status' => 422,
                 'response_code' => 'VALIDATION_ERROR',
@@ -1194,6 +1331,28 @@ class MaintenanceRequestController extends Controller
         $invoice = $this->payableInvoiceFor($maintenanceRequest);
 
         if (! $invoice) {
+            $hasCompletedInvoice = $maintenanceRequest->invoices()
+                ->where('status', 'completed')
+                ->exists();
+
+            if ($hasCompletedInvoice) {
+                Log::channel('PayTabs')->info('[payment.mobileCallback] Payment already processed, nothing to do', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'tran_ref' => $request->transactionReference,
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'response_code' => 'PAYMENT_ALREADY_PROCESSED',
+                    'message' => 'Payment was already processed for this request.',
+                ], 200);
+            }
+
+            Log::channel('PayTabs')->error('[payment.mobileCallback] No payable invoice found', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'request_last_status' => $maintenanceRequest->last_status,
+            ]);
+
             return response()->json([
                 'status' => 400,
                 'response_code' => 'INVOICE_NOT_FOUND',
@@ -1204,9 +1363,22 @@ class MaintenanceRequestController extends Controller
         if ($request->responseStatus == 'A') {
             $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
 
-            $sapResponse = app(\App\Http\Controllers\SapController::class)
-                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+            Log::channel('PayTabs')->info('[payment.mobileCallback] Payment completed and request status updated', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+                'tran_ref' => $request->transactionReference,
+                'new_last_status' => $maintenanceRequest->fresh()->last_status,
+            ]);
 
+            try {
+                $sapResponse = app(\App\Http\Controllers\SapController::class)
+                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+            } catch (\Throwable $exception) {
+                Log::channel('PayTabs')->error('[payment.mobileCallback] SAP sales order call failed', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'status' => 200,
@@ -1214,13 +1386,19 @@ class MaintenanceRequestController extends Controller
                 'message' => 'Payment completed successfully.',
                 'data' => $maintenanceRequest->fresh(['statuses', 'invoice', 'feedback', 'customer', 'slot', 'technician', 'address', 'products']),
             ], 200);
-        } else {
-            return response()->json([
-                'status' => 400,
-                'response_code' => 'PAYMENT_FAILED',
-                'message' => 'Payment failed. Please try again.',
-            ], 400);
         }
+
+        Log::channel('PayTabs')->warning('[payment.mobileCallback] Payment not approved', [
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice->id,
+            'response_status' => $request->responseStatus,
+        ]);
+
+        return response()->json([
+            'status' => 400,
+            'response_code' => 'PAYMENT_FAILED',
+            'message' => 'Payment failed. Please try again.',
+        ], 400);
     }
 
     public function submitFeedback(Request $request, $id)
