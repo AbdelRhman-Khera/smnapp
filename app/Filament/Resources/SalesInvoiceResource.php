@@ -223,11 +223,13 @@ class SalesInvoiceResource extends Resource
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'visit_fee' => 'Visit Fee',
                         'final' => 'Final',
+                        'workshop' => 'Workshop',
                         'zero_service' => 'Zero Service',
                         default => ucfirst((string) ($state ?: '-')),
                     })
                     ->color(fn (?string $state): string => match ($state) {
                         'visit_fee' => 'info',
+                        'workshop' => 'warning',
                         'zero_service' => 'gray',
                         default => 'success',
                     }),
@@ -305,6 +307,15 @@ class SalesInvoiceResource extends Resource
                     ->options([
                         'pending' => 'Pending',
                         'completed' => 'Completed',
+                    ]),
+
+                SelectFilter::make('invoice_type')
+                    ->label('Invoice Type')
+                    ->options([
+                        'visit_fee' => 'Visit Fee',
+                        'final' => 'Final',
+                        'workshop' => 'Workshop',
+                        'zero_service' => 'Zero Service',
                     ]),
 
                 SelectFilter::make('sap_sync_status')

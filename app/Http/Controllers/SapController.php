@@ -258,7 +258,11 @@ class SapController extends Controller
                     ? '2T01'
                     : ($maintenanceRequest->technician->site_id ?? '')
             ),
-            'STORAGE' => (string) ($maintenanceRequest->technician->storage_location ?? ''),
+            'STORAGE' => (string) (
+                $isVisitFeeInvoice
+                    ? 'M000'
+                    : ($maintenanceRequest->technician->storage_location ?? '')
+            ),
             'AMOUNT' => (string) ($invoice?->total ?? 0),
 
             'ITEMS' => $items,
