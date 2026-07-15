@@ -212,7 +212,15 @@ class MaintenanceRequestResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-
+            ->modifyQueryUsing(fn (Builder $query) => $query->with([
+                'customer',
+                'technician',
+                'slot',
+                'address.city',
+                'address.district',
+                'createdBy',
+                'updatedBy',
+            ]))
             ->columns([
                 TextColumn::make('id')
                     ->sortable()
@@ -289,6 +297,32 @@ class MaintenanceRequestResource extends Resource
                         'canceled' => 'Canceled',
                         default => $state,
                     }),
+                TextColumn::make('technician_name')
+                    ->label('Technician')
+                    ->getStateUsing(fn($record) => $record->technician
+                        ? trim($record->technician->first_name . ' ' . $record->technician->last_name)
+                        : null)
+                    ->placeholder('-')
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('technician', function (Builder $technicianQuery) use ($search) {
+                            $technicianQuery->where('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%");
+                        });
+                    })
+                    ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('slot.date')
+                    ->label('Appointment')
+                    ->getStateUsing(fn($record) => $record->slot
+                        ? trim($record->slot->date . ' ' . \Carbon\Carbon::parse($record->slot->time)->format('h:i A'))
+                        : null)
+                    ->placeholder('-')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                TextColumn::make('sap_order_id')
+                    ->label('Store Order')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: false),
                 TextColumn::make('address.city.name_ar')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('address.district.name_ar')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
