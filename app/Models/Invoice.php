@@ -22,6 +22,9 @@ class Invoice extends Model
         'payment_details',
         'notes',
         'qr_code',
+        'sap_sync_status',
+        'sap_sales_order_no',
+        'sap_last_error',
         'remittance',
         'machine_pic',
     ];

@@ -807,8 +807,7 @@ class TechnicianController extends Controller
             'last_status' => 'completed',
         ]);
 
-        $sapResponse = app(\App\Http\Controllers\SapController::class)
-            ->createSalesOrder($maintenanceRequest->fresh(), 'Cash');
+        \App\Jobs\SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Cash');
 
         NotificationService::notifyCustomer(
             $maintenanceRequest->customer_id,
@@ -1492,8 +1491,7 @@ class TechnicianController extends Controller
             'last_status' => 'completed',
         ]);
 
-        $sapResponse = app(\App\Http\Controllers\SapController::class)
-            ->createSalesOrder($maintenanceRequest->fresh(), 'Machine');
+        \App\Jobs\SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Machine');
 
         NotificationService::notifyCustomer(
             $maintenanceRequest->customer_id,
