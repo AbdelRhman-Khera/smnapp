@@ -20,8 +20,8 @@ class ListSalesInvoices extends ListRecords
         $invoiceCount = (clone $query)->count();
         $paidInvoices = (clone $query)->where('status', 'completed')->count();
         $pendingInvoices = (clone $query)->where('status', 'pending')->count();
-        $syncedInvoices = (clone $query)->whereHas('maintenanceRequest', fn (Builder $query): Builder => $query->where('sap_sync_status', 'success'))->count();
-        $failedSyncInvoices = (clone $query)->whereHas('maintenanceRequest', fn (Builder $query): Builder => $query->where('sap_sync_status', 'failed'))->count();
+        $syncedInvoices = (clone $query)->where('invoices.sap_sync_status', 'success')->count();
+        $failedSyncInvoices = (clone $query)->where('invoices.sap_sync_status', 'failed')->count();
         $averageInvoice = $invoiceCount > 0 ? $totalRevenue / $invoiceCount : 0;
 
         $paymentBreakdown = (clone $query)

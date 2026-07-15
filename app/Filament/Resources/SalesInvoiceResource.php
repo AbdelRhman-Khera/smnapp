@@ -274,7 +274,7 @@ class SalesInvoiceResource extends Resource
 
                 Tables\Columns\TextColumn::make('sap_sales_order_no')
                     ->label('SAP Sales Order No')
-                    ->searchable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->orWhere('invoices.sap_sales_order_no', 'like', "%{$search}%"))
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('created_at')
