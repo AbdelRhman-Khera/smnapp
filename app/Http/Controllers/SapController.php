@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 
 use App\Models\Customer;
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -140,7 +141,7 @@ class SapController extends Controller
         ], 200);
     }
 
-    public function createSalesOrder(MaintenanceRequest $maintenanceRequest, string $paymentMethod = 'Cash'): array
+    public function createSalesOrder(MaintenanceRequest $maintenanceRequest, string $paymentMethod = 'Cash', ?Invoice $invoice = null): array
     {
         $maintenanceRequest->loadMissing([
             'customer',
@@ -152,7 +153,8 @@ class SapController extends Controller
             'invoice.spareParts',
         ]);
 
-        $invoice = $maintenanceRequest->invoice;
+        $invoice ??= $maintenanceRequest->invoice;
+        $invoice?->loadMissing(['services', 'spareParts']);
 
         if (
             $invoice
@@ -166,13 +168,16 @@ class SapController extends Controller
             ];
         }
 
+        // Duplicate guard is per INVOICE: another invoice on the same request
+        // may still legitimately need its own sales order.
         if (
-            $maintenanceRequest->sap_sync_status === 'success'
-            && filled($invoice?->qr_code)
+            $invoice
+            && $invoice->sap_sync_status === 'success'
+            && (filled($invoice->sap_sales_order_no) || filled($invoice->qr_code))
         ) {
             return [
                 'success' => true,
-                'message' => 'Already synced with SAP.',
+                'message' => 'This invoice is already synced with SAP.',
             ];
         }
 
@@ -273,6 +278,7 @@ class SapController extends Controller
 
         $sapRequestLog = SapRequestLog::create([
             'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice?->id,
             'action' => 'create_sales_order',
             'payment_method' => $paymentMethod,
             'http_method' => 'POST',
@@ -323,6 +329,9 @@ class SapController extends Controller
 
             $invoice?->update([
                 'qr_code' => $isSuccess ? $sapQr : null,
+                'sap_sync_status' => $isSuccess ? 'success' : 'failed',
+                'sap_sales_order_no' => $isSuccess ? $sapDesc : null,
+                'sap_last_error' => $isSuccess ? null : ($sapDesc ?? 'SAP request failed'),
             ]);
 
             return [
@@ -340,6 +349,11 @@ class SapController extends Controller
             ]);
 
             $maintenanceRequest->update([
+                'sap_sync_status' => 'failed',
+                'sap_last_error' => $e->getMessage(),
+            ]);
+
+            $invoice?->update([
                 'sap_sync_status' => 'failed',
                 'sap_last_error' => $e->getMessage(),
             ]);

@@ -7,12 +7,14 @@
             $typeLabels = [
                 'visit_fee' => 'Visit Fee',
                 'final' => 'Final Invoice',
+                'workshop' => 'Workshop Invoice',
                 'zero_service' => 'Zero Service',
             ];
 
             $typeStyles = [
                 'visit_fee' => 'bg-info-100 text-info-800 ring-info-200 dark:bg-info-500/15 dark:text-info-200 dark:ring-info-500/25',
                 'final' => 'bg-success-100 text-success-800 ring-success-200 dark:bg-success-500/15 dark:text-success-200 dark:ring-success-500/25',
+                'workshop' => 'bg-warning-100 text-warning-800 ring-warning-200 dark:bg-warning-500/15 dark:text-warning-200 dark:ring-warning-500/25',
                 'zero_service' => 'bg-gray-100 text-gray-700 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700',
             ];
         @endphp
@@ -238,20 +240,30 @@
                                         <div class="smn-muted-card rounded-xl border p-6">
                                             <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">SAP Sales Order</div>
                                             <div class="mt-4 break-all text-lg font-bold leading-tight text-gray-950 dark:text-white">
-                                                {{ $record?->sap_sales_order_no ?: '-' }}
+                                                {{ $invoice->sap_sales_order_no ?: '-' }}
                                             </div>
                                         </div>
 
-                                        <div class="smn-muted-card rounded-xl border p-6">
-                                            <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Invoice Date</div>
-                                            <div class="mt-4 text-lg font-bold leading-tight text-gray-950 dark:text-white">
-                                                {{ $invoice->created_at?->format('Y-m-d h:i A') }}
-                                            </div>
+                                        <div class="smn-muted-card rounded-xl border p-4">
+                                            <div class="text-center text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">ZATCA QR</div>
+                                            @if ($invoice->qr_code)
+                                                <div class="mt-2 flex justify-center">
+                                                    <a href="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={{ urlencode($invoice->qr_code) }}" target="_blank" title="Open QR code">
+                                                        <img
+                                                            src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ urlencode($invoice->qr_code) }}"
+                                                            class="h-24 w-24 rounded-md border border-gray-200 bg-white object-contain p-1 shadow-sm dark:border-gray-700"
+                                                            alt="Invoice QR Code"
+                                                        >
+                                                    </a>
+                                                </div>
+                                            @else
+                                                <div class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">No QR yet.</div>
+                                            @endif
                                         </div>
                                     </div>
 
-                                    <div class="grid gap-6 lg:grid-cols-3">
-                                        <div class="space-y-6 lg:col-span-2">
+                                    <div class="grid gap-6">
+                                        <div class="space-y-6">
                                             <div class="grid gap-6 xl:grid-cols-2">
                                                 <div class="smn-table-panel overflow-hidden rounded-xl border">
                                                     <div class="smn-table-heading border-b px-6 py-5">
@@ -360,27 +372,6 @@
                                                 </div>
                                             @endif
                                         </div>
-
-                                        <aside class="smn-qr-card rounded-xl border p-5">
-                                            <h4 class="mb-4 text-center font-bold text-gray-950 dark:text-white">QR Code</h4>
-
-                                            @if ($invoice->qr_code)
-                                                <div class="flex justify-center">
-                                                    <img
-                                                        src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data={{ urlencode($invoice->qr_code) }}"
-                                                        class="h-44 w-44 rounded-lg border border-gray-200 bg-white object-contain p-2 shadow-sm dark:border-gray-700"
-                                                        alt="Invoice QR Code"
-                                                    >
-                                                </div>
-                                                <div class="smn-panel-card mt-4 max-h-28 overflow-auto break-all rounded-lg border p-3 text-xs text-gray-500 dark:text-gray-400">
-                                                    {{ $invoice->qr_code }}
-                                                </div>
-                                            @else
-                                                <div class="smn-panel-card rounded-lg border border-dashed p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                    No QR code available.
-                                                </div>
-                                            @endif
-                                        </aside>
                                     </div>
                                 </div>
                             </details>

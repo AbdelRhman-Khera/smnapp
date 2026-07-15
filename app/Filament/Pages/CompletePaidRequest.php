@@ -83,13 +83,17 @@ class CompletePaidRequest extends Page implements HasForms
         $paymentMethod = (string) $data['payment_method'];
         $statusNote = "Completed by: {$userName} | Payment method: {$paymentMethod} | Note: {$note}";
 
-        DB::transaction(function () use ($maintenanceRequest, $paymentMethod, $statusNote): void {
-            $maintenanceRequest->invoices()
+        $invoice = null;
+
+        DB::transaction(function () use ($maintenanceRequest, $paymentMethod, $statusNote, &$invoice): void {
+            $invoice = $maintenanceRequest->invoices()
                 ->where('status', 'pending')
                 ->where('invoice_type', 'final')
                 ->latest()
-                ->firstOrFail()
-                ->update([
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $invoice->update([
                 'status' => 'completed',
                 'payment_method' => $paymentMethod,
             ]);
@@ -105,8 +109,9 @@ class CompletePaidRequest extends Page implements HasForms
         });
 
         $sapResult = app(SapController::class)->createSalesOrder(
-            $maintenanceRequest->fresh(['invoice', 'invoice.services', 'invoice.spareParts', 'customer', 'technician', 'address.city', 'address.district']),
+            $maintenanceRequest->fresh(['customer', 'technician', 'address.city', 'address.district']),
             $this->formatPaymentMethodForSap($paymentMethod),
+            $invoice->fresh(['services', 'spareParts']),
         );
 
         $success = (bool) ($sapResult['success'] ?? false);

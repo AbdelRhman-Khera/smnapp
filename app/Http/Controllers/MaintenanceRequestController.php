@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendInvoiceToSapJob;
 use App\Models\Feedback;
+use App\Models\Invoice;
 use App\Models\MaintenanceRequest;
 use App\Models\Setting;
 use App\Models\Product;
@@ -379,49 +381,65 @@ class MaintenanceRequestController extends Controller
             ->first();
     }
 
-    private function completeInvoicePayment(MaintenanceRequest $maintenanceRequest, $invoice, string $paymentMethod, $paymentDetails = null): void
+    /**
+     * Registers the payment idempotently: the invoice row is locked and the
+     * payment is applied only once, even when the mobile callback and the
+     * PayTabs IPN arrive at the same moment. Returns false when the invoice
+     * was already processed by a concurrent request.
+     */
+    private function completeInvoicePayment(MaintenanceRequest $maintenanceRequest, $invoice, string $paymentMethod, $paymentDetails = null, ?string $noteSuffix = null): bool
     {
-        DB::transaction(function () use ($maintenanceRequest, $invoice, $paymentMethod, $paymentDetails): void {
-            $invoice->update([
+        return DB::transaction(function () use ($maintenanceRequest, $invoice, $paymentMethod, $paymentDetails, $noteSuffix): bool {
+            $lockedInvoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->first();
+
+            if (! $lockedInvoice || $lockedInvoice->status !== 'pending') {
+                return false;
+            }
+
+            $suffix = $noteSuffix ? " ({$noteSuffix})" : '';
+
+            $lockedInvoice->update([
                 'status' => 'completed',
                 'payment_method' => $paymentMethod,
                 'payment_details' => is_array($paymentDetails) ? $paymentDetails : ['reference' => $paymentDetails],
             ]);
 
-            if ($invoice->invoice_type === 'visit_fee') {
+            if ($lockedInvoice->invoice_type === 'visit_fee') {
                 $maintenanceRequest->statuses()->create([
                     'status' => 'service_paid',
-                    'notes' => 'Visit fee paid.',
+                    'notes' => 'Visit fee paid.' . $suffix,
                 ]);
 
                 $maintenanceRequest->update([
                     'last_status' => 'service_paid',
                 ]);
 
-                return;
+                return true;
             }
 
-            if ($invoice->invoice_type === 'workshop') {
+            if ($lockedInvoice->invoice_type === 'workshop') {
                 $maintenanceRequest->statuses()->create([
                     'status' => 'service_paid',
-                    'notes' => 'Workshop repair invoice paid. Request is ready for appointment booking.',
+                    'notes' => 'Workshop repair invoice paid. Request is ready for appointment booking.' . $suffix,
                 ]);
 
                 $maintenanceRequest->update([
                     'last_status' => 'service_paid',
                 ]);
 
-                return;
+                return true;
             }
 
             $maintenanceRequest->statuses()->create([
                 'status' => 'completed',
-                'notes' => is_string($paymentDetails) ? $paymentDetails : null,
+                'notes' => trim((is_string($paymentDetails) ? $paymentDetails : '') . $suffix) ?: null,
             ]);
 
             $maintenanceRequest->update([
                 'last_status' => 'completed',
             ]);
+
+            return true;
         });
     }
 
@@ -1049,13 +1067,14 @@ class MaintenanceRequestController extends Controller
                 'remittance' => $remittanceFile,
             ]);
 
-            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'remittance', [
+            $processed = $this->completeInvoicePayment($maintenanceRequest, $invoice, 'remittance', [
                 'remittance_file' => $remittanceFile,
                 'uploaded_at' => now(),
             ]);
 
-            $sapResponse = app(\App\Http\Controllers\SapController::class)
-                ->createSalesOrder($maintenanceRequest->fresh(), 'Remittance');
+            if ($processed) {
+                SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Remittance');
+            }
 
             return response()->json([
                 'status' => 200,
@@ -1254,7 +1273,21 @@ class MaintenanceRequestController extends Controller
         ]);
 
         if ($responseStatus == 'A') {
-            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef);
+            $processed = $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef);
+
+            if (! $processed) {
+                Log::channel('PayTabs')->info("[{$source}] Payment already processed by a concurrent notification, skipping", [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'invoice_id' => $invoice->id,
+                    'tran_ref' => $tranRef,
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'response_code' => 'PAYMENT_ALREADY_PROCESSED',
+                    'message' => 'Payment was already processed for this request.',
+                ], 200);
+            }
 
             Log::channel('PayTabs')->info("[{$source}] Payment completed and request status updated", [
                 'maintenance_request_id' => $maintenanceRequest->id,
@@ -1263,21 +1296,12 @@ class MaintenanceRequestController extends Controller
                 'new_last_status' => $maintenanceRequest->fresh()->last_status,
             ]);
 
-            try {
-                $sapResponse = app(\App\Http\Controllers\SapController::class)
-                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
+            SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Online');
 
-                Log::channel('PayTabs')->info("[{$source}] SAP sales order call finished", [
-                    'maintenance_request_id' => $maintenanceRequest->id,
-                ]);
-            } catch (\Throwable $exception) {
-                // The payment is already registered; a SAP failure must not
-                // make PayTabs believe the callback failed.
-                Log::channel('PayTabs')->error("[{$source}] SAP sales order call failed", [
-                    'maintenance_request_id' => $maintenanceRequest->id,
-                    'error' => $exception->getMessage(),
-                ]);
-            }
+            Log::channel('PayTabs')->info("[{$source}] SAP sync queued", [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+            ]);
 
             return response()->json([
                 'status' => 200,
@@ -1385,7 +1409,21 @@ class MaintenanceRequestController extends Controller
                 ]);
             }
 
-            $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
+            $processed = $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $request->transactionReference);
+
+            if (! $processed) {
+                Log::channel('PayTabs')->info('[payment.mobileCallback] Payment already processed by a concurrent notification, skipping', [
+                    'maintenance_request_id' => $maintenanceRequest->id,
+                    'invoice_id' => $invoice->id,
+                    'tran_ref' => $request->transactionReference,
+                ]);
+
+                return response()->json([
+                    'status' => 200,
+                    'response_code' => 'PAYMENT_ALREADY_PROCESSED',
+                    'message' => 'Payment was already processed for this request.',
+                ], 200);
+            }
 
             Log::channel('PayTabs')->info('[payment.mobileCallback] Payment completed and request status updated', [
                 'maintenance_request_id' => $maintenanceRequest->id,
@@ -1394,15 +1432,12 @@ class MaintenanceRequestController extends Controller
                 'new_last_status' => $maintenanceRequest->fresh()->last_status,
             ]);
 
-            try {
-                $sapResponse = app(\App\Http\Controllers\SapController::class)
-                    ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
-            } catch (\Throwable $exception) {
-                Log::channel('PayTabs')->error('[payment.mobileCallback] SAP sales order call failed', [
-                    'maintenance_request_id' => $maintenanceRequest->id,
-                    'error' => $exception->getMessage(),
-                ]);
-            }
+            SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Online');
+
+            Log::channel('PayTabs')->info('[payment.mobileCallback] SAP sync queued', [
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+            ]);
 
             return response()->json([
                 'status' => 200,
@@ -1518,7 +1553,17 @@ class MaintenanceRequestController extends Controller
             return response()->json(['response_code' => 'NOTHING_TO_PROCESS'], 200);
         }
 
-        $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef);
+        $processed = $this->completeInvoicePayment($maintenanceRequest, $invoice, 'online', $tranRef, 'ipn');
+
+        if (! $processed) {
+            Log::channel('PayTabs')->info('[payment.ipn] Payment already processed by a concurrent notification, skipping', [
+                'tran_ref' => $tranRef,
+                'maintenance_request_id' => $maintenanceRequest->id,
+                'invoice_id' => $invoice->id,
+            ]);
+
+            return response()->json(['response_code' => 'PAYMENT_ALREADY_PROCESSED'], 200);
+        }
 
         Log::channel('PayTabs')->info('[payment.ipn] Payment completed via IPN safety net', [
             'tran_ref' => $tranRef,
@@ -1527,15 +1572,12 @@ class MaintenanceRequestController extends Controller
             'new_last_status' => $maintenanceRequest->fresh()->last_status,
         ]);
 
-        try {
-            app(\App\Http\Controllers\SapController::class)
-                ->createSalesOrder($maintenanceRequest->fresh(), 'Online');
-        } catch (\Throwable $exception) {
-            Log::channel('PayTabs')->error('[payment.ipn] SAP sales order call failed', [
-                'maintenance_request_id' => $maintenanceRequest->id,
-                'error' => $exception->getMessage(),
-            ]);
-        }
+        SendInvoiceToSapJob::queueFor($invoice->fresh(), 'Online');
+
+        Log::channel('PayTabs')->info('[payment.ipn] SAP sync queued', [
+            'maintenance_request_id' => $maintenanceRequest->id,
+            'invoice_id' => $invoice->id,
+        ]);
 
         return response()->json(['response_code' => 'PAYMENT_PROCESSED'], 200);
     }

@@ -12,6 +12,7 @@ class SapRequestLog extends Model
 
     protected $fillable = [
         'maintenance_request_id',
+        'invoice_id',
         'action',
         'payment_method',
         'http_method',
@@ -35,6 +36,11 @@ class SapRequestLog extends Model
     public function maintenanceRequest()
     {
         return $this->belongsTo(MaintenanceRequest::class);
+    }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class);
     }
 
     public function creator()

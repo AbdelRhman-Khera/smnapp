@@ -63,6 +63,7 @@ class SapRequestLogResource extends Resource
                         'maintenanceRequest.customer',
                         'maintenanceRequest.technician',
                         'maintenanceRequest.invoice',
+                        'invoice',
                         'creator',
                     ])
             )
@@ -76,6 +77,15 @@ class SapRequestLogResource extends Resource
                     ->searchable()
                     ->url(fn (SapRequestLog $record): ?string => $record->maintenance_request_id
                         ? MaintenanceRequestResource::getUrl('view', ['record' => $record->maintenance_request_id])
+                        : null),
+
+                Tables\Columns\TextColumn::make('invoice_id')
+                    ->label('Invoice ID')
+                    ->sortable()
+                    ->searchable()
+                    ->placeholder('-')
+                    ->url(fn (SapRequestLog $record): ?string => $record->invoice_id
+                        ? SalesInvoiceResource::getUrl('edit', ['record' => $record->invoice_id])
                         : null),
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.customer.phone')
@@ -97,11 +107,30 @@ class SapRequestLogResource extends Resource
                     ->placeholder('-')
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('maintenanceRequest.invoice.total')
+                Tables\Columns\TextColumn::make('invoice.total')
                     ->label('Amount')
                     ->money('SAR')
-                    ->sortable()
+                    ->state(fn (SapRequestLog $record) => $record->invoice?->total ?? $record->maintenanceRequest?->invoice?->total)
                     ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('invoice.invoice_type')
+                    ->label('Invoice Type')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'visit_fee' => 'Visit Fee',
+                        'final' => 'Final',
+                        'workshop' => 'Workshop',
+                        'zero_service' => 'Zero Service',
+                        default => ucfirst((string) ($state ?: '-')),
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'visit_fee' => 'info',
+                        'workshop' => 'warning',
+                        'zero_service' => 'gray',
+                        default => 'success',
+                    })
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('maintenanceRequest.technician.sap_id')
                     ->label('Technician SAP ID')
@@ -345,14 +374,22 @@ class SapRequestLogResource extends Resource
         $result = app(SapController::class)->createSalesOrder(
             $maintenanceRequest,
             $paymentMethod,
+            $record->invoice,
         );
 
         $success = (bool) ($result['success'] ?? false);
         $newLogId = $result['sap_request_log_id'] ?? null;
 
         if ($newLogId) {
+            // Prune duplicates of the SAME invoice only — logs of other
+            // invoices on the same request must be kept.
             SapRequestLog::query()
-                ->where('maintenance_request_id', $record->maintenance_request_id)
+                ->when(
+                    $record->invoice_id,
+                    fn ($query) => $query->where('invoice_id', $record->invoice_id),
+                    fn ($query) => $query->where('maintenance_request_id', $record->maintenance_request_id)
+                        ->whereNull('invoice_id'),
+                )
                 ->whereKeyNot($newLogId)
                 ->delete();
         }

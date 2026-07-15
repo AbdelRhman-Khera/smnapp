@@ -259,7 +259,7 @@ class SalesInvoiceResource extends Resource
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('maintenanceRequest.sap_sync_status')
+                Tables\Columns\TextColumn::make('sap_sync_status')
                     ->label('SAP Sync Status')
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => ucfirst($state ?: '-'))
@@ -272,7 +272,7 @@ class SalesInvoiceResource extends Resource
                     })
                     ->placeholder('-'),
 
-                Tables\Columns\TextColumn::make('maintenanceRequest.sap_sales_order_no')
+                Tables\Columns\TextColumn::make('sap_sales_order_no')
                     ->label('SAP Sales Order No')
                     ->searchable()
                     ->placeholder('-'),
@@ -325,10 +325,7 @@ class SalesInvoiceResource extends Resource
                         'queued' => 'Queued',
                         'success' => 'Success',
                         'failed' => 'Failed',
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
-                        ? $query->whereHas('maintenanceRequest', fn (Builder $query) => $query->where('sap_sync_status', $data['value']))
-                        : $query),
+                    ]),
 
                 SelectFilter::make('maintenance_type')
                     ->label('Maintenance Type')
@@ -386,13 +383,12 @@ class SalesInvoiceResource extends Resource
                     ->modalHeading('Send invoice to SAP?')
                     ->modalDescription('This will create a SAP sales order for this maintenance request.')
                     ->visible(fn (Invoice $record): bool => static::canEdit($record)
-                        && in_array($record->maintenanceRequest?->sap_sync_status, ['pending', 'failed'], true)
+                        && in_array($record->sap_sync_status, ['pending', 'failed'], true)
                         && ($record->status === 'completed' || $record->maintenanceRequest?->last_status === 'completed'))
                     ->action(function (Invoice $record): void {
                         $record->loadMissing([
-                            'maintenanceRequest.invoice',
-                            'maintenanceRequest.invoice.services',
-                            'maintenanceRequest.invoice.spareParts',
+                            'services',
+                            'spareParts',
                             'maintenanceRequest.customer',
                             'maintenanceRequest.technician',
                             'maintenanceRequest.address.city',
@@ -402,6 +398,7 @@ class SalesInvoiceResource extends Resource
                         $result = app(SapController::class)->createSalesOrder(
                             $record->maintenanceRequest,
                             static::formatPaymentMethodForSap((string) $record->payment_method),
+                            $record,
                         );
 
                         $success = (bool) ($result['success'] ?? false);

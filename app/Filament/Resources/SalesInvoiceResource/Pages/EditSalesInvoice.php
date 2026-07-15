@@ -121,6 +121,7 @@ class EditSalesInvoice extends EditRecord
         $sapResult = app(SapController::class)->createSalesOrder(
             $record->maintenanceRequest,
             $this->formatPaymentMethodForSap((string) $record->payment_method),
+            $record,
         );
 
         $success = (bool) ($sapResult['success'] ?? false);
