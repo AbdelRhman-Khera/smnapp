@@ -18,6 +18,7 @@ class MaintenanceRequest extends Model
         'customer_id',
         'technician_id',
         'type',
+        'purchase_source',
         'warranty_source_request_id',
         'products',
         'address_id',
@@ -42,8 +43,7 @@ class MaintenanceRequest extends Model
         'created_by',
         'updated_by',
         'is_product_delivered',
-
-
+        'technician_received_products',
     ];
 
     protected $casts = [
@@ -161,6 +161,11 @@ class MaintenanceRequest extends Model
         return $this->hasOne(DeviceWithdrawalRequest::class, 'follow_up_maintenance_request_id');
     }
 
+    public function productHandovers()
+    {
+        return $this->hasMany(ProductHandover::class);
+    }
+
     public function getCurrentStatusAttribute()
     {
         return $this->statuses()->latest()->first();
@@ -197,11 +202,18 @@ class MaintenanceRequest extends Model
     {
         $this->loadMissing('products');
 
-        $productHours = $this->products->sum(function ($product) {
-            $quantity = (float) ($product->pivot->quantity ?? 1);
-            $productHours = (float) ($product->hours ?? 0);
+        $isInstallation = $this->type === 'new_installation';
 
-            return $productHours * $quantity;
+        $productHours = $this->products->sum(function ($product) use ($isInstallation) {
+            $quantity = (float) ($product->pivot->quantity ?? 1);
+
+            // Installation requests use the product's installation hours,
+            // falling back to the visit hours when not configured.
+            $hours = $isInstallation
+                ? (float) ($product->installation_hours ?? $product->hours ?? 0)
+                : (float) ($product->hours ?? 0);
+
+            return $hours * $quantity;
         });
 
         $this->loadMissing('address.district.area');
@@ -238,7 +250,12 @@ class MaintenanceRequest extends Model
 
     public function requiresVisitFeePayment(): bool
     {
-        return in_array($this->type, ['regular_maintenance', 'emergency_maintenance'], true);
+        if (in_array($this->type, ['regular_maintenance', 'emergency_maintenance'], true)) {
+            return true;
+        }
+
+        // Installing a product bought outside the store is charged a visit fee.
+        return $this->type === 'new_installation' && $this->purchase_source === 'external';
     }
 
     public function isEligibleWarrantySource(): bool

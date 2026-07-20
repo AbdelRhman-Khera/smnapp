@@ -160,6 +160,7 @@ class MaintenanceRequestController extends Controller
 
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:new_installation,regular_maintenance,emergency_maintenance,warranty',
+            'purchase_source' => 'nullable|in:store,external',
             'warranty_source_request_id' => 'required_if:type,warranty|nullable|exists:maintenance_requests,id',
             // Accept either:
             // 1) products: [1,2,3]
@@ -187,6 +188,16 @@ class MaintenanceRequestController extends Controller
 
                 if (! $sourceRequest || ! $sourceRequest->isEligibleWarrantySource()) {
                     $validator->errors()->add('warranty_source_request_id', 'The selected request is not eligible for warranty.');
+                } else {
+                    $hasActiveWarranty = MaintenanceRequest::query()
+                        ->where('type', 'warranty')
+                        ->where('warranty_source_request_id', $sourceRequest->id)
+                        ->whereNotIn('last_status', ['completed', 'canceled'])
+                        ->exists();
+
+                    if ($hasActiveWarranty) {
+                        $validator->errors()->add('warranty_source_request_id', 'There is already an active warranty request for this order.');
+                    }
                 }
             }
         });
@@ -232,6 +243,11 @@ class MaintenanceRequestController extends Controller
         $maintenanceRequest = MaintenanceRequest::create([
             'customer_id' => $customer->id,
             'type' => $request->type,
+            // Old app versions do not send purchase_source, so installations
+            // default to 'store' (the original free-installation behavior).
+            'purchase_source' => $request->type === 'new_installation'
+                ? $request->input('purchase_source', 'store')
+                : null,
             'warranty_source_request_id' => $request->warranty_source_request_id ?? null,
             'address_id' => $request->address_id,
             'problem_description' => $request->problem_description ?? null,
@@ -281,6 +297,8 @@ class MaintenanceRequestController extends Controller
             ->with(['address.city', 'address.district', 'products', 'slot', 'invoice'])
             ->where('customer_id', $customer->id)
             ->where('last_status', 'completed')
+            ->whereDoesntHave('warrantyRequests', fn ($query) => $query
+                ->whereNotIn('last_status', ['completed', 'canceled']))
             ->where(function ($query) {
                 $query->where(function ($query) {
                     $query->whereIn('type', ['regular_maintenance', 'emergency_maintenance'])

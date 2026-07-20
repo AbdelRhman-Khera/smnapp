@@ -4,8 +4,10 @@
 
     $earnings = $payout->earnings;
 
+    // The earning is created the moment the request is completed,
+    // so its created_at is the request completion date.
     $requestDates = $earnings
-        ->map(fn ($earning) => $earning->maintenanceRequest?->created_at)
+        ->map(fn ($earning) => $earning->created_at)
         ->filter()
         ->sort()
         ->values();
@@ -119,7 +121,7 @@
                     <th>رقم الطلب</th>
                     <th>نوع الصيانة</th>
                     <th>عدد الأجهزة</th>
-                    <th>تاريخ الطلب</th>
+                    <th>تاريخ الإكمال</th>
                     <th>المبلغ (ريال)</th>
                 </tr>
             </thead>
@@ -130,7 +132,7 @@
                         <td>#{{ $earning->maintenance_request_id }}</td>
                         <td>{{ $typeLabels[$earning->request_type] ?? $earning->request_type }}</td>
                         <td>{{ $earning->devices_count }}</td>
-                        <td>{{ $earning->maintenanceRequest?->created_at?->format('Y-m-d') ?: '-' }}</td>
+                        <td>{{ $earning->created_at?->format('Y-m-d') ?: '-' }}</td>
                         <td>{{ number_format((float) $earning->amount, 2) }}</td>
                     </tr>
                 @endforeach

@@ -24,5 +24,7 @@ return [
         'device_withdrawal_assigned_by_branch' => 'A branch employee assigned device withdrawal request #:id to you.',
         'payout_approved' => 'Your payout request #:id has been approved. :amount SAR will be transferred to you.',
         'payout_rejected' => 'Your payout request #:id has been rejected. The amount is back in your wallet balance.',
+        'product_handover_created' => 'Products for installation request #:id are ready for handover. Please review the serial numbers and confirm.',
+        'product_handover_canceled' => 'The product handover for installation request #:id has been canceled.',
     ],
 ];

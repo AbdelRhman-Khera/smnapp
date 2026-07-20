@@ -35,7 +35,17 @@ class ProductResource extends Resource
             Textarea::make('description_ar')->label('Description (Arabic)'),
             Textarea::make('description_en')->label('Description (English)'),
             FileUpload::make('image')->label('Image'),
-            TextInput::make('hours')->label('Hours')->numeric()->required(),
+            TextInput::make('hours')
+                ->label('Visit Hours')
+                ->helperText('Hours used for maintenance / visit requests.')
+                ->numeric()
+                ->required(),
+            TextInput::make('installation_hours')
+                ->label('Installation Hours')
+                ->helperText('Hours used for new installation requests. Leave empty to use the visit hours.')
+                ->numeric()
+                ->step(0.5)
+                ->minValue(0),
             TextInput::make('maintenance_fee')
                 ->label('Product Maintenance Fee')
                 ->numeric()
@@ -65,6 +75,11 @@ class ProductResource extends Resource
                 TextColumn::make('name_ar')->label('Name (Arabic)'),
                 TextColumn::make('name_en')->label('Name (English)'),
                 TextColumn::make('category.name_en')->label('Category')->sortable()->searchable(),
+                TextColumn::make('hours')->label('Visit Hours')->sortable(),
+                TextColumn::make('installation_hours')
+                    ->label('Installation Hours')
+                    ->placeholder('= Visit Hours')
+                    ->sortable(),
                 TextColumn::make('maintenance_fee')->label('Maintenance Fee')->money('SAR')->sortable(),
                 TextColumn::make('is_active')
                     ->label('Status')

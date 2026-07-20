@@ -60,6 +60,12 @@ Route::middleware([SetLanguage::class])->group(function () {
         Route::get('/technician/wallet', [TechnicianController::class, 'getWallet']);
         Route::post('/technician/wallet/payout-request', [TechnicianController::class, 'requestPayout']);
         Route::get('/technician/wallet/payout-requests', [TechnicianController::class, 'getPayoutRequests']);
+
+        // product handovers (new installation)
+        Route::get('/technician/product-handovers', [\App\Http\Controllers\ProductHandoverController::class, 'index']);
+        Route::get('/technician/product-handover/{id}', [\App\Http\Controllers\ProductHandoverController::class, 'show']);
+        Route::post('/technician/product-handover/{id}/accept', [\App\Http\Controllers\ProductHandoverController::class, 'accept']);
+        Route::post('/technician/product-handover/{id}/reject', [\App\Http\Controllers\ProductHandoverController::class, 'reject']);
         Route::post('/technician/update-fcm-token', [TechnicianController::class, 'updateFcmToken']);
         // Route::delete('/technician/remove', [TechnicianController::class, 'removeTechnician']);
 
