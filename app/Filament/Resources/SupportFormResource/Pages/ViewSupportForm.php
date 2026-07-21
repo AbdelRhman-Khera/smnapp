@@ -3,12 +3,11 @@
 namespace App\Filament\Resources\SupportFormResource\Pages;
 
 use App\Filament\Resources\SupportFormResource;
-use App\Models\SupportForm;
 use Filament\Actions;
 use Filament\Notifications\Notification;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ViewRecord;
 
-class EditSupportForm extends EditRecord
+class ViewSupportForm extends ViewRecord
 {
     protected static string $resource = SupportFormResource::class;
 
@@ -42,7 +41,7 @@ class EditSupportForm extends EditRecord
                         ->send();
                 }),
 
-            Actions\ViewAction::make(),
+            Actions\EditAction::make(),
         ];
     }
 }
