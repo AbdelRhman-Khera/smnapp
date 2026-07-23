@@ -96,6 +96,7 @@ class ProductHandoverResource extends Resource
 
                             if (! $maintenanceRequest) {
                                 $set('technician_name', null);
+                                $set('sap_order_id', null);
                                 $set('items', []);
 
                                 return;
@@ -105,6 +106,8 @@ class ProductHandoverResource extends Resource
                                 ($maintenanceRequest->technician?->first_name ?? '') . ' ' .
                                 ($maintenanceRequest->technician?->last_name ?? '')
                             ) ?: '-');
+
+                            $set('sap_order_id', $maintenanceRequest->sap_order_id ?: '-');
 
                             $items = [];
 
@@ -126,6 +129,12 @@ class ProductHandoverResource extends Resource
 
                     Forms\Components\TextInput::make('technician_name')
                         ->label('Assigned Technician')
+                        ->disabled()
+                        ->dehydrated(false)
+                        ->placeholder('Select a request first'),
+
+                    Forms\Components\TextInput::make('sap_order_id')
+                        ->label('SAP Order ID')
                         ->disabled()
                         ->dehydrated(false)
                         ->placeholder('Select a request first'),

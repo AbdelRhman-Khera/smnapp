@@ -76,9 +76,13 @@
         @page{size:A4 portrait;margin:9mm;}
         @media print{
             html,body{background:#fff;padding:0;margin:0;}
-            .voucher{box-shadow:none;width:100%;max-width:100%;padding:0;transform-origin:top center;}
+            .voucher{box-shadow:none;width:100%;max-width:100%;padding:0;}
             .print-action{display:none;}
-            table,.info-grid,.statement,.amount-box,.lower,.footer{page-break-inside:avoid;}
+            /* Keep small blocks intact, but let the items table flow across pages. */
+            .info-grid,.statement,.amount-box,.lower,.footer{page-break-inside:avoid;}
+            thead{display:table-header-group;}
+            tfoot{display:table-footer-group;}
+            tr{page-break-inside:avoid;}
         }
     </style>
 </head>
@@ -177,27 +181,6 @@
         } catch (e) {
             document.getElementById('qrcode').textContent = 'QR';
         }
-
-        // Scale the voucher down so all content fits on a single printed page.
-        (function () {
-            var el = document.querySelector('.voucher');
-            // A4 portrait usable area @96dpi minus @page margins (9mm each side).
-            var availableHeight = 1123 - Math.round((9 * 2) * 3.7795);
-
-            function fitToPage() {
-                el.style.zoom = '';
-                var height = el.offsetHeight;
-                if (height > availableHeight) {
-                    el.style.zoom = availableHeight / height;
-                }
-            }
-            function reset() {
-                el.style.zoom = '';
-            }
-
-            window.addEventListener('beforeprint', fitToPage);
-            window.addEventListener('afterprint', reset);
-        })();
     </script>
 </body>
 </html>

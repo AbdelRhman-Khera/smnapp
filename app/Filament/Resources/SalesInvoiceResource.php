@@ -300,14 +300,20 @@ class SalesInvoiceResource extends Resource
                         'cash' => 'Cash',
                         'online' => 'Online',
                         'machine' => 'Machine',
-                    ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->where('invoices.payment_method', $data['value'])
+                        : $query),
 
                 SelectFilter::make('status')
                     ->label('Payment Status')
                     ->options([
                         'pending' => 'Pending',
                         'completed' => 'Completed',
-                    ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->where('invoices.status', $data['value'])
+                        : $query),
 
                 SelectFilter::make('invoice_type')
                     ->label('Invoice Type')
@@ -316,7 +322,10 @@ class SalesInvoiceResource extends Resource
                         'final' => 'Final',
                         'workshop' => 'Workshop',
                         'zero_service' => 'Zero Service',
-                    ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->where('invoices.invoice_type', $data['value'])
+                        : $query),
 
                 SelectFilter::make('sap_sync_status')
                     ->label('SAP Sync Status')
@@ -325,7 +334,10 @@ class SalesInvoiceResource extends Resource
                         'queued' => 'Queued',
                         'success' => 'Success',
                         'failed' => 'Failed',
-                    ]),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                        ? $query->where('invoices.sap_sync_status', $data['value'])
+                        : $query),
 
                 SelectFilter::make('maintenance_type')
                     ->label('Maintenance Type')
